@@ -1,0 +1,3 @@
+# One shared release target dir with the spike's zcash-devtool build (saves time and disk).
+[build]
+target-dir = "../vintage/zcash-devtool/target"

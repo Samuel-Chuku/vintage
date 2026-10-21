@@ -1,0 +1,31 @@
+[package]
+name = "vintage-cli"
+description = "vintage: send, verify, witness, status, tx, registry"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "vintage"
+path = "src/main.rs"
+
+[dependencies]
+vintage-core = { path = "../vintage-core" }
+
+anyhow.workspace = true
+clap.workspace = true
+ed25519-zebra.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tonic.workspace = true
+
+incrementalmerkletree.workspace = true
+rand.workspace = true
+rusqlite.workspace = true
+zcash_client_backend.workspace = true
+zcash_client_sqlite.workspace = true
+zcash_primitives.workspace = true
+zcash_protocol.workspace = true

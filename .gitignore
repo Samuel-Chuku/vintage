@@ -1,0 +1,8 @@
+# Build output (the target dir is shared, see .cargo/config.toml)
+target/
+
+# Private keys: registry signing key, wallet seeds, age identities. Never commit.
+/secrets/
+/wallets/
+*.age
+*-key.txt

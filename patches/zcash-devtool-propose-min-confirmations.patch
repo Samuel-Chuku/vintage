@@ -1,0 +1,28 @@
+diff --git a/src/commands/wallet/propose.rs b/src/commands/wallet/propose.rs
+index 5460a29..68fd1af 100644
+--- a/src/commands/wallet/propose.rs
++++ b/src/commands/wallet/propose.rs
+@@ -48,6 +48,12 @@ pub(crate) struct Command {
+     #[arg(long)]
+     #[arg(default_value_t = 10000000)]
+     min_split_output_value: u64,
++
++    /// Minimum confirmations required for notes to be spendable, applied to trusted and
++    /// untrusted notes alike (same semantics as `send --min-confirmations`). The proposal's
++    /// anchor is `target_height - min_confirmations`. Defaults to the standard policy.
++    #[arg(long)]
++    min_confirmations: Option<std::num::NonZeroU32>,
+ }
+ 
+ impl Command {
+@@ -84,7 +90,9 @@ impl Command {
+             &input_selector,
+             &change_strategy,
+             request,
+-            ConfirmationsPolicy::default(),
++            self.min_confirmations.map_or_else(ConfirmationsPolicy::default, |n| {
++                ConfirmationsPolicy::new_symmetrical(n, true)
++            }),
+             // Preserve the pre-upgrade behavior: transfers never spend
+             // transparent UTXOs; they must be shielded first.
+             &SpendPolicy::default(),

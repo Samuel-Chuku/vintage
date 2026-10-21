@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "incidents": [
+    {
+      "id": "bitget-2026-09",
+      "label": "Bitget hot-wallet exploit: first shielding into Ironwood",
+      "network": "main",
+      "first_inflow_height": 3501240,
+      "txids": [
+        "9bf8d13474eff83ee9fcb214a3df7e1d1acbb745a0f820c837c08eb35e1e4e1a",
+        "64e5a66cce034745dfe1447b4779ce37b910d99365d0583cef65eb0504b573a2",
+        "61d2cb335127636f2854e587dd41fecf2ec31c9c1e9e5e5b543c3a416048b258"
+      ],
+      "sources": [
+        "https://t.me/investigations/364",
+        "https://www.coindesk.com/markets/2026/09/30/bitget-hackers-move-usd4-million-into-zcash-s-private-pool-making-funds-harder-to-trace"
+      ],
+      "added_at": "2026-10-21",
+      "notes": "Txids from ZachXBT's post. Heights and amounts confirmed via lightwalletd GetTransaction on mainnet: 3501240 (08:15:37 UTC, 876.42648607 ZEC), 3501242 (08:19:07 UTC, 876.42319409 ZEC), 3501265 (08:46:11 UTC, 993.46054874 ZEC); 2746.31022890 ZEC total. This entry labels a height only: it names no person or address."
+    },
+    {
+      "id": "vintage-demo-2026-10",
+      "label": "Vintage demo: simulated incident (not a real hack)",
+      "network": "main",
+      "first_inflow_height": 3525709,
+      "txids": [
+        "e66bb554e869a376e56753c03ba3637ec08a439fe409ac53600d9473e68d3577"
+      ],
+      "sources": [
+        "On-chain: mainnet txid e66bb554e869a376e56753c03ba3637ec08a439fe409ac53600d9473e68d3577 (block 3525709)"
+      ],
+      "added_at": "2026-10-21",
+      "notes": "Staged by the Vintage team for the hackathon demo (Demo B): the project-controlled flagged wallet was funded at this height to stand in for an incident inflow. Not a real incident; no third party involved."
+    }
+  ]
+}
