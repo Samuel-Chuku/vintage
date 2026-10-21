@@ -11,6 +11,7 @@ use vintage_core::{
 
 mod lwd;
 mod registry_cmd;
+mod send;
 mod witness;
 
 #[derive(Parser)]
@@ -44,6 +45,38 @@ enum Cmd {
         locate_back: u32,
         #[arg(long, default_value_t = 16)]
         concurrency: usize,
+    },
+    /// Send from a zcash-devtool wallet with an anchor before block H, so the tx proves its inputs predate H.
+    Send {
+        /// zcash-devtool wallet directory.
+        #[arg(long)]
+        wallet: PathBuf,
+        /// age identity file that decrypts the wallet seed (passed to zcash-devtool; vintage never reads it).
+        #[arg(short, long)]
+        identity: Option<PathBuf>,
+        /// Recipient: Unified, Sapling or transparent address.
+        #[arg(long)]
+        to: String,
+        /// Amount in zatoshis.
+        #[arg(long)]
+        value: u64,
+        #[arg(long)]
+        memo: Option<String>,
+        /// A block height, or an incident id from the registry.
+        #[arg(long)]
+        before: String,
+        /// Path to zcash-devtool (default: next to the vintage binary).
+        #[arg(long)]
+        devtool: Option<PathBuf>,
+        /// Skip the sync (the wallet was just synced).
+        #[arg(long)]
+        no_sync: bool,
+        /// Show the proposal and stop: nothing is signed or broadcast.
+        #[arg(long)]
+        dry_run: bool,
+        /// Broadcast without the confirmation prompt.
+        #[arg(long)]
+        yes: bool,
     },
     /// Read-only: ask a zcash-devtool wallet's Ironwood tree for each note's witness at a height.
     Witness {
@@ -117,6 +150,14 @@ async fn main() -> Result<()> {
 
     match cli.cmd {
         Cmd::Registry(c) => registry_cmd::run(c, &cli.registry),
+        Cmd::Send { wallet, identity, to, value, memo, before, devtool, no_sync, dry_run, yes } => {
+            let (h, label) = resolve_before(&cli.registry, network, &before)?;
+            send::run(
+                network,
+                &server,
+                send::Args { wallet, identity, to, value, memo, before: h, before_arg: before, label, devtool, no_sync, dry_run, yes },
+            )
+        }
         Cmd::Witness { wallet, anchor_height } => witness::run(network, &wallet, anchor_height),
         Cmd::Tx { txid } => {
             let client = lwd::connect(&server).await?;

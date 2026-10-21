@@ -3148,10 +3148,12 @@ dependencies = [
  "tokio",
  "tonic",
  "vintage-core",
+ "zcash_address",
  "zcash_client_backend",
  "zcash_client_sqlite",
  "zcash_primitives",
  "zcash_protocol",
+ "zip321",
 ]
 
 [[package]]
