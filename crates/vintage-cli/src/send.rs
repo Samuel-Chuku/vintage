@@ -67,19 +67,48 @@ pub(crate) struct Args {
     pub yes: bool,
 }
 
-struct NoteRow {
-    txid: String,
-    mined_height: Option<u32>,
-    value: u64,
+pub(crate) struct NoteRow {
+    pub txid: String,
+    pub mined_height: Option<u32>,
+    pub value: u64,
 }
 
-fn fmt_amount(network: VintageNetwork, zat: u64) -> String {
+/// Whether the wallet keeps a durable Ironwood checkpoint at `height` (it can build witnesses there).
+pub(crate) fn has_retained_checkpoint(conn: &Connection, height: u32) -> Result<bool> {
+    Ok(conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM ironwood_tree_retained_checkpoints WHERE checkpoint_id = ?1)",
+        [height],
+        |r| r.get(0),
+    )?)
+}
+
+/// The wallet's unspent Ironwood notes, oldest first.
+pub(crate) fn unspent_ironwood_notes(conn: &Connection) -> Result<Vec<NoteRow>> {
+    let mut stmt = conn.prepare(
+        "SELECT t.txid, t.mined_height, n.value
+         FROM ironwood_received_notes n
+         JOIN transactions t ON t.id_tx = n.transaction_id
+         WHERE NOT EXISTS(SELECT 1 FROM ironwood_received_note_spends s
+                          WHERE s.ironwood_received_note_id = n.id)
+         ORDER BY t.mined_height",
+    )?;
+    let notes = stmt
+        .query_map([], |r| {
+            let mut txid: Vec<u8> = r.get(0)?;
+            txid.reverse();
+            Ok(NoteRow { txid: hex::encode(txid), mined_height: r.get(1)?, value: r.get(2)? })
+        })?
+        .collect::<Result<_, _>>()?;
+    Ok(notes)
+}
+
+pub(crate) fn fmt_amount(network: VintageNetwork, zat: u64) -> String {
     let unit = if network == VintageNetwork::Main { "ZEC" } else { "TAZ" };
     format!("{}.{:08} {unit}", zat / 100_000_000, zat % 100_000_000)
 }
 
 /// zcash-devtool sits next to `vintage` in the shared release target dir.
-fn devtool_path(explicit: Option<PathBuf>) -> Result<PathBuf> {
+pub(crate) fn devtool_path(explicit: Option<PathBuf>) -> Result<PathBuf> {
     if let Some(p) = explicit {
         return Ok(p);
     }
@@ -91,7 +120,7 @@ fn devtool_path(explicit: Option<PathBuf>) -> Result<PathBuf> {
     Ok(p)
 }
 
-fn devtool(bin: &Path, wallet: &Path) -> Command {
+pub(crate) fn devtool(bin: &Path, wallet: &Path) -> Command {
     let mut c = Command::new(bin);
     if std::env::var_os("RUST_LOG").is_none() {
         c.env("RUST_LOG", "warn");
@@ -128,12 +157,7 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     // 2. The wallet must hold a durable checkpoint at H_a, or it can't build witnesses there.
     let conn = Connection::open_with_flags(&db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
         .with_context(|| format!("opening {}", db_path.display()))?;
-    let retained: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM ironwood_tree_retained_checkpoints WHERE checkpoint_id = ?1)",
-        [h_a],
-        |r| r.get(0),
-    )?;
-    if !retained {
+    if !has_retained_checkpoint(&conn, h_a)? {
         bail!(
             "the wallet has no retained Ironwood checkpoint at block {h_a}. It must have been \
              scanning before then: restore or rescan it from a birthday below {h_a}."
@@ -142,22 +166,7 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     println!("checkpoint:    retained at {h_a} ✓");
 
     // Unspent Ironwood notes, split by whether they existed at H_a.
-    let mut stmt = conn.prepare(
-        "SELECT t.txid, t.mined_height, n.value
-         FROM ironwood_received_notes n
-         JOIN transactions t ON t.id_tx = n.transaction_id
-         WHERE NOT EXISTS(SELECT 1 FROM ironwood_received_note_spends s
-                          WHERE s.ironwood_received_note_id = n.id)
-         ORDER BY t.mined_height",
-    )?;
-    let notes: Vec<NoteRow> = stmt
-        .query_map([], |r| {
-            let mut txid: Vec<u8> = r.get(0)?;
-            txid.reverse();
-            Ok(NoteRow { txid: hex::encode(txid), mined_height: r.get(1)?, value: r.get(2)? })
-        })?
-        .collect::<Result<_, _>>()?;
-    drop(stmt);
+    let notes = unspent_ironwood_notes(&conn)?;
     drop(conn);
     let qualifies = |n: &NoteRow| n.mined_height.is_some_and(|h| h <= h_a);
     let qualifying: u64 = notes.iter().filter(|n| qualifies(n)).map(|n| n.value).sum();

@@ -4,9 +4,12 @@ use std::collections::BTreeMap;
 
 use anyhow::{Context, Result, anyhow};
 use futures_util::stream::{self, StreamExt, TryStreamExt};
+use incrementalmerkletree::frontier::CommitmentTree;
+use orchard::tree::MerkleHashOrchard;
 use tonic::transport::{Channel, ClientTlsConfig};
 use zcash_client_backend::proto::service::{
-    BlockId, ChainSpec, RawTransaction, TxFilter, compact_tx_streamer_client::CompactTxStreamerClient,
+    BlockId, BlockRange, ChainSpec, PoolType, RawTransaction, TxFilter,
+    compact_tx_streamer_client::CompactTxStreamerClient,
 };
 use zcash_protocol::TxId;
 
@@ -84,7 +87,84 @@ pub async fn ironwood_root(client: Client, height: u32) -> Result<(u32, [u8; 32]
     Ok((height, tree.root().to_bytes(), empty))
 }
 
-/// Roots for every height in `[from, to]`. (Day 3 replaces this with change-point fetching + cache.)
+pub type IronwoodTree = CommitmentTree<MerkleHashOrchard, { orchard::NOTE_COMMITMENT_TREE_DEPTH as u8 }>;
+
+/// The server's Ironwood tree as of the end of `height`.
+pub async fn ironwood_tree(client: &Client, height: u32) -> Result<IronwoodTree> {
+    let ts = client
+        .clone()
+        .get_tree_state(BlockId { height: height.into(), hash: vec![] })
+        .await
+        .with_context(|| format!("GetTreeState({height})"))?
+        .into_inner();
+    if ts.ironwood_tree.is_empty() {
+        return Err(anyhow!("server returned an empty ironwoodTree at {height}; it does not expose Ironwood trees"));
+    }
+    ts.ironwood_tree().with_context(|| format!("decoding ironwoodTree at {height}"))
+}
+
+/// One compact block's Ironwood content: tree size at its end and the note commitments it adds.
+pub struct IronwoodBlock {
+    pub height: u32,
+    pub size: u32,
+    pub cmxs: Vec<[u8; 32]>,
+}
+
+/// Compact blocks `[from, to]` filtered to Ironwood (`poolTypes = [IRONWOOD]`), in height order.
+pub async fn ironwood_blocks(client: &Client, from: u32, to: u32) -> Result<Vec<IronwoodBlock>> {
+    let mut blocks = client
+        .clone()
+        .get_block_range(BlockRange {
+            start: Some(BlockId { height: from.into(), hash: vec![] }),
+            end: Some(BlockId { height: to.into(), hash: vec![] }),
+            pool_types: vec![PoolType::Ironwood as i32],
+        })
+        .await
+        .with_context(|| format!("GetBlockRange({from}..={to})"))?
+        .into_inner();
+    let mut out = Vec::with_capacity((to - from + 1) as usize);
+    while let Some(b) = blocks.message().await.with_context(|| format!("GetBlockRange({from}..={to})"))? {
+        let size = b
+            .chain_metadata
+            .as_ref()
+            .ok_or_else(|| anyhow!("block {} has no chain_metadata", b.height))?
+            .ironwood_commitment_tree_size;
+        let cmxs = b
+            .vtx
+            .iter()
+            .flat_map(|tx| tx.ironwood_actions.iter())
+            .map(|a| a.cmx.as_slice().try_into().map_err(|_| anyhow!("bad cmx in block {}", b.height)))
+            .collect::<Result<_>>()?;
+        out.push(IronwoodBlock { height: b.height as u32, size, cmxs });
+    }
+    if out.len() != (to - from + 1) as usize || out.iter().zip(from..).any(|(b, h)| b.height != h) {
+        return Err(anyhow!("GetBlockRange({from}..={to}) returned {} blocks, not the full range in order", out.len()));
+    }
+    Ok(out)
+}
+
+/// `(height, txid)` of every transaction with Ironwood actions in `[from, to]` (for test samples).
+pub async fn ironwood_txids(client: &Client, from: u32, to: u32) -> Result<Vec<(u32, String)>> {
+    let mut blocks = client
+        .clone()
+        .get_block_range(BlockRange {
+            start: Some(BlockId { height: from.into(), hash: vec![] }),
+            end: Some(BlockId { height: to.into(), hash: vec![] }),
+            pool_types: vec![PoolType::Ironwood as i32],
+        })
+        .await
+        .context("GetBlockRange")?
+        .into_inner();
+    let mut out = vec![];
+    while let Some(b) = blocks.message().await.context("GetBlockRange")? {
+        for tx in b.vtx.iter().filter(|tx| !tx.ironwood_actions.is_empty()) {
+            out.push((b.height as u32, tx.txid().to_string()));
+        }
+    }
+    Ok(out)
+}
+
+/// Roots for every height in `[from, to]`: one GetTreeState per block. Slow; kept for `--locate-back`.
 pub async fn roots_in_range(
     client: &Client,
     from: u32,

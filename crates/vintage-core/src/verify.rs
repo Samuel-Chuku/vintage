@@ -18,6 +18,40 @@ pub enum Verdict {
     NotProvable { reasons: Vec<&'static str> },
 }
 
+/// Consecutive heights at which the Ironwood tree has the same size. The tree is append-only, so
+/// equal size on one chain means identical contents and therefore the same root: one root per run
+/// stands for every height in it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Run {
+    pub from: u32,
+    pub to: u32,
+    pub size: u32,
+}
+
+/// Split per-height tree sizes (consecutive heights) into runs of equal size.
+pub fn size_runs(sizes: &BTreeMap<u32, u32>) -> Result<Vec<Run>, String> {
+    let mut runs: Vec<Run> = vec![];
+    for (&h, &size) in sizes {
+        match runs.last_mut() {
+            Some(r) if h != r.to + 1 => return Err(format!("missing tree size for heights {}..{h}", r.to + 1)),
+            Some(r) if size < r.size => {
+                return Err(format!("Ironwood tree shrank from {} to {size} at height {h} (reorg?)", r.size));
+            }
+            Some(r) if size == r.size => r.to = h,
+            _ => runs.push(Run { from: h, to: h, size }),
+        }
+    }
+    Ok(runs)
+}
+
+/// Decide from one root per run, with the runs covering `[before, tip]`.
+pub fn decide_runs(anchor: &[u8; 32], runs: &[(Run, [u8; 32])]) -> Verdict {
+    match runs.iter().find(|(_, root)| root == anchor) {
+        Some((r, _)) => Verdict::Fail { matched_from: r.from, matched_to: r.to },
+        None => Verdict::Pass { roots_checked: runs.len() },
+    }
+}
+
 /// Decide from a complete map of `height → Ironwood root` covering `[before, tip]`.
 pub fn decide(anchor: &[u8; 32], roots: &BTreeMap<u32, [u8; 32]>) -> Verdict {
     let matches: Vec<u32> = roots
@@ -33,5 +67,33 @@ pub fn decide(anchor: &[u8; 32], roots: &BTreeMap<u32, [u8; 32]>) -> Verdict {
         _ => Verdict::Pass {
             roots_checked: roots.len(),
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runs_and_decision() {
+        let sizes: BTreeMap<u32, u32> = [(10, 5), (11, 5), (12, 7), (13, 7), (14, 7), (15, 9)].into();
+        let runs = size_runs(&sizes).unwrap();
+        assert_eq!(
+            runs,
+            vec![
+                Run { from: 10, to: 11, size: 5 },
+                Run { from: 12, to: 14, size: 7 },
+                Run { from: 15, to: 15, size: 9 },
+            ]
+        );
+        let with_roots: Vec<_> = runs.iter().map(|r| (*r, [r.size as u8; 32])).collect();
+        assert_eq!(decide_runs(&[7; 32], &with_roots), Verdict::Fail { matched_from: 12, matched_to: 14 });
+        assert_eq!(decide_runs(&[3; 32], &with_roots), Verdict::Pass { roots_checked: 3 });
+    }
+
+    #[test]
+    fn runs_reject_gaps_and_shrinking() {
+        assert!(size_runs(&[(10, 5), (12, 5)].into()).is_err());
+        assert!(size_runs(&[(10, 5), (11, 4)].into()).is_err());
     }
 }

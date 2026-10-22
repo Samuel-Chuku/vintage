@@ -11,7 +11,9 @@ use vintage_core::{
 
 mod lwd;
 mod registry_cmd;
+mod roots;
 mod send;
+mod status;
 mod witness;
 
 #[derive(Parser)]
@@ -45,6 +47,15 @@ enum Cmd {
         locate_back: u32,
         #[arg(long, default_value_t = 16)]
         concurrency: usize,
+        /// Print the verdict and evidence as JSON (exit code: 0 PASS, 1 FAIL, 2 not provable).
+        #[arg(long)]
+        json: bool,
+        /// Root cache (SQLite). Default: ~/.cache/vintage/cache.sqlite.
+        #[arg(long)]
+        cache: Option<PathBuf>,
+        /// Don't read or write the root cache.
+        #[arg(long)]
+        no_cache: bool,
     },
     /// Send from a zcash-devtool wallet with an anchor before block H, so the tx proves its inputs predate H.
     Send {
@@ -85,6 +96,24 @@ enum Cmd {
         #[arg(long)]
         anchor_height: u32,
     },
+    /// For each registry incident: how much of a wallet's ZEC a Vintage send can prove predates it.
+    Status {
+        /// zcash-devtool wallet directory.
+        #[arg(long)]
+        wallet: PathBuf,
+        /// Sync the wallet first (via zcash-devtool).
+        #[arg(long)]
+        sync: bool,
+        /// Path to zcash-devtool (default: next to the vintage binary).
+        #[arg(long)]
+        devtool: Option<PathBuf>,
+    },
+    /// List txids with Ironwood actions in the last `blocks` blocks (test samples for benchmarks).
+    #[command(hide = true)]
+    Sample {
+        #[arg(long, default_value_t = 50)]
+        blocks: u32,
+    },
     /// Incident registry: keygen, sign, check.
     #[command(subcommand)]
     Registry(registry_cmd::RegistryCmd),
@@ -114,8 +143,7 @@ fn resolve_before(cli_registry: &std::path::Path, network: VintageNetwork, befor
 
 async fn fetch_summary(client: &lwd::Client, network: VintageNetwork, txid: &str) -> Result<(TxSummary, u32)> {
     let parsed = tx::parse_txid(txid)?;
-    let raw = lwd::get_tx(client, &parsed).await?;
-    let tip = lwd::tip(client).await?;
+    let (raw, tip) = tokio::try_join!(lwd::get_tx(client, &parsed), lwd::tip(client))?;
     // RawTransaction.height: 0 = mempool, u64::MAX (-1) = not mined (per the proto docs).
     let mined = u32::try_from(raw.height).ok().filter(|h| *h > 0);
     let summary = tx::summarize(network, &raw.data, mined, mined.unwrap_or(tip + 1), Some(&parsed))?;
@@ -158,6 +186,18 @@ async fn main() -> Result<()> {
                 send::Args { wallet, identity, to, value, memo, before: h, before_arg: before, label, devtool, no_sync, dry_run, yes },
             )
         }
+        Cmd::Status { wallet, sync, devtool } => {
+            let reg = load_registry(&cli.registry)?;
+            status::run(network, &server, &reg, &wallet, sync, devtool)
+        }
+        Cmd::Sample { blocks } => {
+            let client = lwd::connect(&server).await?;
+            let tip = lwd::tip(&client).await?;
+            for (h, txid) in lwd::ironwood_txids(&client, tip.saturating_sub(blocks) + 1, tip).await? {
+                println!("{h} {txid}");
+            }
+            Ok(())
+        }
         Cmd::Witness { wallet, anchor_height } => witness::run(network, &wallet, anchor_height),
         Cmd::Tx { txid } => {
             let client = lwd::connect(&server).await?;
@@ -195,32 +235,87 @@ async fn main() -> Result<()> {
             }
             Ok(())
         }
-        Cmd::Verify { txid, before, locate_back, concurrency } => {
+        Cmd::Verify { txid, before, locate_back, concurrency, json, cache, no_cache } => {
+            let t0 = std::time::Instant::now();
             let (h, label) = resolve_before(&cli.registry, network, &before)?;
             let client = lwd::connect(&server).await?;
             let (s, tip) = fetch_summary(&client, network, &txid).await?;
-            println!("txid:        {}", s.txid);
-            println!("network:     {}", network.name());
-            println!("mined:       {}", s.mined_height.map_or("not yet".into(), |h| h.to_string()));
-            println!("chain tip:   {tip}");
-            println!("before H:    {h}  ({label})");
+            let mut out = serde_json::json!({
+                "txid": s.txid,
+                "network": network.name(),
+                "mined_height": s.mined_height,
+                "chain_tip": tip,
+                "before": { "height": h, "label": label, "requested": before },
+            });
+            if !json {
+                println!("txid:        {}", s.txid);
+                println!("network:     {}", network.name());
+                println!("mined:       {}", s.mined_height.map_or("not yet".into(), |h| h.to_string()));
+                println!("chain tip:   {tip}");
+                println!("before H:    {h}  ({label})");
+            }
             let reasons = s.out_of_scope();
             if !reasons.is_empty() {
-                let v = Verdict::NotProvable { reasons };
-                println!("\nFAIL — not provable: {}", match &v { Verdict::NotProvable { reasons } => reasons.join(", "), _ => unreachable!() });
+                out["verdict"] = "NOT_PROVABLE".into();
+                out["reasons"] = reasons.clone().into();
+                if json {
+                    println!("{out:#}");
+                } else {
+                    println!("\nFAIL — not provable: {}", reasons.join(", "));
+                }
                 std::process::exit(2);
             }
             let iw = s.ironwood.as_ref().expect("in scope implies Ironwood bundle");
-            println!("anchor:      {}", hex::encode(iw.anchor));
+            out["anchor"] = hex::encode(iw.anchor).into();
+            if !json {
+                println!("anchor:      {}", hex::encode(iw.anchor));
+            }
             if h > tip {
                 bail!("H = {h} is above the chain tip {tip}");
             }
-            let t = std::time::Instant::now();
-            let (roots, empty) = lwd::roots_in_range(&client, h, tip, concurrency).await?;
-            if empty == roots.len() {
-                bail!("server returned an empty ironwoodTree for every height; it does not expose Ironwood roots");
+            let mut cache = match (no_cache, cache.or_else(roots::default_cache_path)) {
+                (false, Some(p)) => Some(roots::Cache::open(&p, network)?),
+                _ => None,
+            };
+            let r = roots::roots_for(&client, cache.as_mut(), h, tip, concurrency).await?;
+            let st = &r.stats;
+            out["evidence"] = serde_json::json!({
+                "blocks_covered": st.blocks,
+                "distinct_roots": r.runs.len(),
+                "blocks_downloaded": st.blocks_downloaded,
+                "blocks_from_cache": st.blocks_from_cache,
+                "server_tree_checks": st.server_tree_checks,
+            });
+            if !json {
+                println!(
+                    "checked:     {} blocks ({h}..={tip}) = {} distinct Ironwood roots, in {:.1}s",
+                    st.blocks,
+                    r.runs.len(),
+                    st.secs
+                );
+                println!(
+                    "             {} blocks downloaded and computed, {} from cache; {} server tree checks passed",
+                    st.blocks_downloaded, st.blocks_from_cache, st.server_tree_checks
+                );
             }
-            println!("checked:     {} Ironwood roots for heights {h}..={tip} in {:.1}s", roots.len(), t.elapsed().as_secs_f64());
+            let verdict = verify::decide_runs(&iw.anchor, &r.runs);
+            out["elapsed_secs"] = ((t0.elapsed().as_secs_f64() * 1000.0).round() / 1000.0).into();
+            if json {
+                match verdict {
+                    Verdict::Pass { .. } => out["verdict"] = "PASS".into(),
+                    Verdict::Fail { matched_from, matched_to } => {
+                        out["verdict"] = "FAIL".into();
+                        out["matched_heights"] = serde_json::json!([matched_from, matched_to]);
+                        out["root_existed_before_h"] = (matched_from == h && r.size_before == r.runs[0].0.size).into();
+                    }
+                    Verdict::NotProvable { .. } => unreachable!(),
+                }
+                println!("{out:#}");
+                if !matches!(verdict, Verdict::Pass { .. }) {
+                    std::process::exit(1);
+                }
+                return Ok(());
+            }
             if locate_back > 0 {
                 let from = h.saturating_sub(locate_back);
                 let (below, _) = lwd::roots_in_range(&client, from, h - 1, concurrency).await?;
@@ -231,16 +326,16 @@ async fn main() -> Result<()> {
                 }
             }
             println!();
-            match verify::decide(&iw.anchor, &roots) {
+            match verdict {
                 Verdict::Pass { roots_checked } => {
                     println!("PASS — all inputs existed before block {h} ({label})");
-                    println!("evidence:    anchor matched none of the {roots_checked} Ironwood roots at heights {h}..={tip}; consensus requires it to be the root of an earlier block");
+                    println!("evidence:    anchor matched none of the {roots_checked} distinct Ironwood roots at heights {h}..={tip}; consensus requires it to be the root of an earlier block");
                     Ok(())
                 }
                 Verdict::Fail { matched_from, matched_to } => {
                     println!("FAIL — anchor is the Ironwood root at heights {matched_from}..={matched_to}, which is not before block {h} ({label})");
-                    if matched_from == h {
-                        println!("note:        no Ironwood notes were added between the anchor's block and H, so the root at H repeats it. The inputs may still predate H; choose an earlier boundary to prove it.");
+                    if matched_from == h && r.size_before == r.runs[0].0.size {
+                        println!("note:        that same root already existed at block {} (no Ironwood notes were added in between), so the inputs may still predate H; anchoring to an earlier grid height would prove it.", h - 1);
                     }
                     std::process::exit(1);
                 }

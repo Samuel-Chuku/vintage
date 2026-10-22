@@ -23,6 +23,7 @@ tokio.workspace = true
 tonic.workspace = true
 
 incrementalmerkletree.workspace = true
+orchard.workspace = true
 rand.workspace = true
 rusqlite.workspace = true
 zcash_address.workspace = true
