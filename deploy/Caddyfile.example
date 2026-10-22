@@ -1,0 +1,8 @@
+# Add to /etc/caddy/Caddyfile, replacing the hostname, then:
+#   sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy
+# Caddy obtains the HTTPS certificate automatically once DNS points at the server.
+
+api.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:8080
+}

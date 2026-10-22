@@ -3,6 +3,10 @@
 `vintage-api` is a read-only HTTP verifier for exchanges, bridges and anyone else. It gives the same
 verdicts as `vintage verify --json` because both use the same library (`crates/vintage-verifier`).
 
+**Public instance:** `https://api.usevintage.site` (mainnet, for demos and quick checks; production
+users should self-host against their own node, see [THREAT_MODEL.md](THREAT_MODEL.md#who-you-trust)). It
+keeps no access log. Deployment files: [`deploy/`](../deploy).
+
 ```
 vintage-api --network main --listen 127.0.0.1:8080 \
             --server <your-lightwalletd:443> --registry registry \

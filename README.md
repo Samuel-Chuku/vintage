@@ -61,7 +61,13 @@ vintage verify <txid> --before 3501240 --json        # any height; JSON for mach
 
 Exit codes: `0` PASS, `1` FAIL, `2` not provable.
 
-Run the HTTP verifier:
+Or use the public verifier, no install:
+
+```sh
+curl 'https://api.usevintage.site/verify/<txid>?before=bitget-2026-09'
+```
+
+Or run your own:
 
 ```sh
 vintage-api --listen 127.0.0.1:8080
