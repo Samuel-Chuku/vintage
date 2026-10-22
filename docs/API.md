@@ -5,7 +5,8 @@ verdicts as `vintage verify --json` because both use the same library (`crates/v
 
 **Public instance:** `https://api.usevintage.site` (mainnet, for demos and quick checks; production
 users should self-host against their own node, see [THREAT_MODEL.md](THREAT_MODEL.md#who-you-trust)). It
-keeps no access log. Deployment files: [`deploy/`](../deploy).
+keeps no request log, over HTTPS or plain HTTP, and its only record of use is the anonymous counts at
+`/stats`. Deployment files: [`deploy/`](../deploy).
 
 ```
 vintage-api --network main --listen 127.0.0.1:8080 \
@@ -20,6 +21,7 @@ vintage-api --network main --listen 127.0.0.1:8080 \
 | `--server` | zec.rocks for the network | lightwalletd/Zaino gRPC `host:port` (TLS). For production, your own. |
 | `--registry` | `registry` | Directory with `incidents.json`, `incidents.json.sig`, `pubkey.hex`. The signature is checked at startup. |
 | `--cache` | `~/.cache/vintage/cache.sqlite` | Root cache. About 2 MB per 25,000 blocks. |
+| `--stats` | `stats.sqlite` next to the cache | Anonymous daily counts for `/stats` (no txids, no IPs). |
 | `--allow-origin` | `*` | `Access-Control-Allow-Origin` value. |
 | `--max-parallel` | `4` | Verifications at once; more wait their turn. |
 | `--refresh-secs` | `30` | Background refresh that keeps roots computed from the earliest incident to the tip. `0` disables it. |
@@ -116,6 +118,24 @@ The registry entries for this network, its public key and the paths of the signe
 
 The exact signed bytes and the hex ed25519 signature, so a client can verify the registry without
 trusting the API. The signature covers the file bytes exactly as served.
+
+### `GET /stats`
+
+Anonymous usage counts, public on purpose: daily totals of completed checks, by verdict and by incident.
+
+```json
+{
+  "what_is_counted": "Only daily totals of completed checks, by verdict and by incident. No transaction ids, IP addresses, times of day or other request details are recorded.",
+  "since": "2026-10-22",
+  "total_checks": 5,
+  "by_verdict": { "FAIL": 3, "NOT_PROVABLE": 1, "PASS": 1 },
+  "by_incident": { "bitget-2026-09": 3, "custom height": 1, "vintage-demo-2026-10": 1 },
+  "days": [ { "day": "2026-10-22", "counts": { "FAIL": 3, "NOT_PROVABLE": 1, "PASS": 1, "total": 5 } } ]
+}
+```
+
+A check against a height that isn't a registry incident counts as `"custom height"`, without the
+height. Malformed requests and errors aren't counted.
 
 ### `GET /health`
 

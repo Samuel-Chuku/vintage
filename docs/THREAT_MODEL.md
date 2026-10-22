@@ -92,8 +92,16 @@ But a malicious server could lie consistently, for example serve a fake transact
   trustworthy as your node.
 - The public API is a convenience for demos and quick checks.
 
-**The API operator** learns which transaction ids are checked and when. Self-host `vintage-api` if that
-matters. It is one binary, uses ~16 MB of RAM, and needs only network access to a lightwalletd.
+**The API operator** necessarily sees each request as it is served: the transaction id being checked and
+the caller's IP address. What matters is what gets kept. The public instance keeps:
+
+- **no request log**: no access log on HTTPS or plain HTTP (the reverse proxy is configured to skip this
+  host), and `vintage-api` never logs transaction ids;
+- **only anonymous counts** (`GET /stats`): daily totals of completed checks by verdict and by incident.
+  No transaction ids, IP addresses, times of day or custom heights.
+
+You still have to trust the operator to run it as described. If that matters, self-host `vintage-api`: it
+is one binary, uses ~16 MB of RAM, and needs only network access to a lightwalletd.
 
 ## Unmined transactions: same txid, different anchor
 

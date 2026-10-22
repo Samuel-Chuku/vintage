@@ -1,8 +1,18 @@
-# Add to /etc/caddy/Caddyfile, replacing the hostname, then:
+# Reverse proxy in front of vintage-api (Caddy syntax). Replace the hostname, add both blocks to
+# /etc/caddy/Caddyfile, then:
 #   sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy
 # Caddy obtains the HTTPS certificate automatically once DNS points at the server.
+#
+# Privacy: neither block has a `log` directive, so requests to this host are not access-logged. The
+# explicit http:// block matters when another site on the same server enables logging: without it,
+# plain-HTTP requests for this host (which carry the txid in the path) would be logged on port 80 before
+# the redirect. Check with `caddy adapt`: this host should appear in `skip_hosts` for both :443 and :80.
 
 api.example.com {
 	encode gzip
 	reverse_proxy 127.0.0.1:8080
+}
+
+http://api.example.com {
+	redir https://{host}{uri} permanent
 }

@@ -27,7 +27,7 @@ incrementalmerkletree = "0.9"
 orchard = { version = "0.16", default-features = false }
 rand = { version = "0.10", default-features = false, features = ["sys_rng"] }
 zcash_address = "=0.14.0-pre.2"
-rusqlite = { version = "0.37", features = ["time"] }
+rusqlite = { version = "0.37", features = ["bundled", "time"] }
 zcash_client_backend = { version = "=0.25.0-pre.2", features = ["lightwalletd-tonic-tls-webpki-roots", "orchard"] }
 zcash_client_sqlite = { version = "=0.23.0-pre.2", features = ["transparent-inputs", "unstable", "orchard", "serde", "test-dependencies"] }
 zcash_primitives = "=0.31.0-pre.2"
