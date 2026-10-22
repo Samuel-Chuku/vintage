@@ -67,7 +67,7 @@ pub fn run(cmd: RegistryCmd, dir: &Path) -> Result<()> {
             Ok(())
         }
         RegistryCmd::Check => {
-            let reg = super::load_registry(dir)?;
+            let reg = vintage_verifier::load_registry(dir)?;
             println!("signature OK ({} incident(s))", reg.incidents.len());
             for i in &reg.incidents {
                 println!("- {} [{}] first inflow height {}: {}", i.id, i.network, i.first_inflow_height, i.label);

@@ -41,6 +41,13 @@ pub async fn tip(client: &Client) -> Result<u32> {
         .height as u32)
 }
 
+/// Chain tip height and block hash. The hash commits to the whole chain, so data derived from blocks
+/// up to this tip stays valid exactly as long as the tip hash is the same.
+pub async fn tip_id(client: &Client) -> Result<(u32, Vec<u8>)> {
+    let b = client.clone().get_latest_block(ChainSpec {}).await.context("GetLatestBlock")?.into_inner();
+    Ok((b.height as u32, b.hash))
+}
+
 /// Fetch a raw transaction. Returns (raw, mined height if mined).
 pub async fn get_tx(client: &Client, txid: &TxId) -> Result<RawTransaction> {
     Ok(client

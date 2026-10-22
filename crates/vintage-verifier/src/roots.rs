@@ -1,4 +1,4 @@
-//! Ironwood roots for every block in `[from, tip]`, computed locally, with a SQLite cache.
+//! Ironwood roots for every block in `[from, tip]`, computed locally, with a cache.
 //!
 //! Asking the server for each root (`GetTreeState`) runs at ~40/s, and on mainnet most blocks add
 //! Ironwood notes, so that takes minutes. Instead, per chunk of up to `CHUNK` blocks:
@@ -10,12 +10,14 @@
 //!    (same size, same root).
 //!
 //! The tree is append-only, so a root is determined by the tree size: the cache stores sizes by
-//! height and roots by size. Only blocks at least `FINAL_DEPTH` below the tip are cached, so a reorg
-//! can't poison it.
+//! height and roots by size. Blocks at least `FINAL_DEPTH` below the tip go to SQLite. Newer blocks
+//! are kept in memory only, tagged with the tip's block hash, and dropped as soon as the tip changes,
+//! so a reorg can't poison either layer.
 
 use std::{
     collections::BTreeMap,
     path::{Path, PathBuf},
+    sync::Mutex,
     time::Instant,
 };
 
@@ -35,8 +37,18 @@ const FINAL_DEPTH: u32 = 100;
 /// Blocks per chunk: one GetBlockRange stream and two GetTreeState calls each.
 const CHUNK: u32 = 500;
 
+/// Recent (not yet final) blocks, valid only while the chain tip is `tip_hash`.
+#[derive(Default)]
+struct Recent {
+    tip_hash: Vec<u8>,
+    sizes: BTreeMap<u32, u32>,
+    roots: BTreeMap<u32, [u8; 32]>,
+}
+
+/// Shared by concurrent requests: each layer has its own lock, held only for reads and writes.
 pub struct Cache {
-    conn: Connection,
+    conn: Mutex<Connection>,
+    recent: Mutex<Recent>,
     network: &'static str,
 }
 
@@ -62,54 +74,83 @@ impl Cache {
                  network TEXT NOT NULL, size INTEGER NOT NULL, root BLOB NOT NULL,
                  PRIMARY KEY (network, size));",
         )?;
-        Ok(Cache { conn, network: network.name() })
+        Ok(Cache { conn: Mutex::new(conn), recent: Mutex::default(), network: network.name() })
     }
 
-    fn sizes(&self, from: u32, to: u32) -> Result<BTreeMap<u32, u32>> {
-        let mut stmt = self.conn.prepare(
+    /// Known sizes for `[from, to]` and roots for those sizes: SQLite, plus recent blocks if they
+    /// belong to the chain ending in `tip_hash`.
+    fn get(&self, from: u32, to: u32, tip_hash: &[u8]) -> Result<(BTreeMap<u32, u32>, BTreeMap<u32, [u8; 32]>)> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare_cached(
             "SELECT height, size FROM ironwood_sizes WHERE network = ?1 AND height BETWEEN ?2 AND ?3",
         )?;
-        let rows = stmt.query_map(params![self.network, from, to], |r| Ok((r.get(0)?, r.get(1)?)))?;
-        Ok(rows.collect::<Result<_, _>>()?)
-    }
-
-    fn roots(&self, min_size: u32, max_size: u32) -> Result<BTreeMap<u32, [u8; 32]>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT size, root FROM ironwood_roots WHERE network = ?1 AND size BETWEEN ?2 AND ?3",
-        )?;
-        let rows = stmt.query_map(params![self.network, min_size, max_size], |r| {
-            Ok((r.get::<_, u32>(0)?, r.get::<_, Vec<u8>>(1)?))
-        })?;
-        rows.map(|r| {
-            let (size, root) = r?;
-            Ok((size, root.try_into().map_err(|_| anyhow!("bad cached root"))?))
-        })
-        .collect()
-    }
-
-    fn put(&mut self, blocks: &[(u32, u32, [u8; 32])]) -> Result<()> {
-        let tx = self.conn.transaction()?;
-        {
-            let mut sizes =
-                tx.prepare("INSERT OR REPLACE INTO ironwood_sizes (network, height, size) VALUES (?1, ?2, ?3)")?;
-            let mut roots =
-                tx.prepare("INSERT OR REPLACE INTO ironwood_roots (network, size, root) VALUES (?1, ?2, ?3)")?;
-            for (h, size, root) in blocks {
-                sizes.execute(params![self.network, h, size])?;
-                roots.execute(params![self.network, size, root.as_slice()])?;
+        let mut sizes: BTreeMap<u32, u32> = stmt
+            .query_map(params![self.network, from, to], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<Result<_, _>>()?;
+        let mut roots = BTreeMap::new();
+        if let (Some(min), Some(max)) = (sizes.values().min(), sizes.values().max()) {
+            let mut stmt = conn.prepare_cached(
+                "SELECT size, root FROM ironwood_roots WHERE network = ?1 AND size BETWEEN ?2 AND ?3",
+            )?;
+            let rows = stmt.query_map(params![self.network, min, max], |r| {
+                Ok((r.get::<_, u32>(0)?, r.get::<_, Vec<u8>>(1)?))
+            })?;
+            for row in rows {
+                let (size, root) = row?;
+                roots.insert(size, root.try_into().map_err(|_| anyhow!("bad cached root"))?);
             }
         }
-        Ok(tx.commit()?)
+        drop(stmt);
+        drop(conn);
+        let recent = self.recent.lock().unwrap();
+        if !tip_hash.is_empty() && recent.tip_hash == tip_hash {
+            sizes.extend(recent.sizes.range(from..=to));
+            roots.extend(recent.roots.iter());
+        }
+        Ok((sizes, roots))
+    }
+
+    /// Store computed blocks: final ones in SQLite, newer ones in memory under `tip_hash`.
+    fn put(&self, blocks: &[(u32, u32, [u8; 32])], final_to: u32, tip_hash: &[u8]) -> Result<()> {
+        {
+            let mut conn = self.conn.lock().unwrap();
+            let tx = conn.transaction()?;
+            {
+                let mut sizes = tx.prepare_cached(
+                    "INSERT OR REPLACE INTO ironwood_sizes (network, height, size) VALUES (?1, ?2, ?3)",
+                )?;
+                let mut roots = tx.prepare_cached(
+                    "INSERT OR REPLACE INTO ironwood_roots (network, size, root) VALUES (?1, ?2, ?3)",
+                )?;
+                for (h, size, root) in blocks.iter().filter(|(h, _, _)| *h <= final_to) {
+                    sizes.execute(params![self.network, h, size])?;
+                    roots.execute(params![self.network, size, root.as_slice()])?;
+                }
+            }
+            tx.commit()?;
+        }
+        if !tip_hash.is_empty() {
+            let mut recent = self.recent.lock().unwrap();
+            if recent.tip_hash != tip_hash {
+                *recent = Recent { tip_hash: tip_hash.to_vec(), ..Default::default() };
+            }
+            for (h, size, root) in blocks.iter().filter(|(h, _, _)| *h > final_to) {
+                recent.sizes.insert(*h, *size);
+                recent.roots.insert(*size, *root);
+            }
+        }
+        Ok(())
     }
 }
 
 /// What it took to produce the roots (for the output and the benchmarks).
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, serde::Serialize)]
 pub struct Stats {
     pub blocks: u32,
     pub blocks_downloaded: u32,
     pub blocks_from_cache: u32,
     pub server_tree_checks: u32,
+    #[serde(skip)]
     pub secs: f64,
 }
 
@@ -168,11 +209,13 @@ async fn compute_chunk(client: lwd::Client, s: u32, e: u32) -> Result<Vec<(u32, 
     .await?
 }
 
+/// Roots for `[from, tip]`. `tip_hash` is the tip block's hash (empty disables the in-memory layer).
 pub async fn roots_for(
     client: &lwd::Client,
-    mut cache: Option<&mut Cache>,
+    cache: Option<&Cache>,
     from: u32,
     tip: u32,
+    tip_hash: &[u8],
     concurrency: usize,
 ) -> Result<Roots> {
     let t = Instant::now();
@@ -180,16 +223,8 @@ pub async fn roots_for(
     let final_to = tip.saturating_sub(FINAL_DEPTH);
     let mut stats = Stats { blocks: tip - from + 1, ..Default::default() };
 
-    // What the cache already knows.
-    let (mut sizes, mut roots) = match &cache {
-        Some(c) => {
-            let sizes = c.sizes(lo, tip)?;
-            let roots = match (sizes.values().min(), sizes.values().max()) {
-                (Some(min), Some(max)) => c.roots(*min, *max)?,
-                _ => BTreeMap::new(),
-            };
-            (sizes, roots)
-        }
+    let (mut sizes, mut roots) = match cache {
+        Some(c) => c.get(lo, tip, tip_hash)?,
         None => (BTreeMap::new(), BTreeMap::new()),
     };
 
@@ -210,9 +245,8 @@ pub async fn roots_for(
         .await?;
     let computed: Vec<(u32, u32, [u8; 32])> = computed.into_iter().flatten().collect();
     stats.blocks_downloaded = computed.len() as u32;
-    if let Some(c) = cache.as_deref_mut() {
-        let finalized: Vec<_> = computed.iter().filter(|(h, _, _)| *h <= final_to).copied().collect();
-        c.put(&finalized)?;
+    if let Some(c) = cache {
+        c.put(&computed, final_to, tip_hash)?;
     }
     for (h, size, root) in computed {
         sizes.insert(h, size);
@@ -220,7 +254,7 @@ pub async fn roots_for(
     }
 
     let size_before = *sizes.get(&lo).expect("size at from − 1 is known");
-    sizes.remove(&lo);
+    sizes.retain(|h, _| *h >= from && *h <= tip);
     let runs = size_runs(&sizes).map_err(|e| anyhow!(e))?;
     let runs: Vec<(Run, [u8; 32])> = runs
         .into_iter()

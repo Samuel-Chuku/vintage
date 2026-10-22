@@ -1,0 +1,24 @@
+[package]
+name = "vintage-verifier"
+description = "Vintage verifier: lightwalletd access, Ironwood roots from compact blocks with a cache, and verification reports. Shared by the vintage CLI and vintage-api."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+vintage-core = { path = "../vintage-core" }
+
+anyhow.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tonic.workspace = true
+
+incrementalmerkletree.workspace = true
+orchard.workspace = true
+rusqlite.workspace = true
+zcash_client_backend.workspace = true
+zcash_protocol.workspace = true

@@ -1,17 +1,14 @@
 use std::path::PathBuf;
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use vintage_core::{
     VintageNetwork,
-    registry::{self, Registry},
     tx::{self, TxSummary},
-    verify::{self, Verdict},
 };
+use vintage_verifier::{load_registry, lwd, report, resolve_before, roots};
 
-mod lwd;
 mod registry_cmd;
-mod roots;
 mod send;
 mod status;
 mod witness;
@@ -119,28 +116,6 @@ enum Cmd {
     Registry(registry_cmd::RegistryCmd),
 }
 
-fn load_registry(dir: &std::path::Path) -> Result<Registry> {
-    let bytes = std::fs::read(dir.join("incidents.json")).context("reading incidents.json")?;
-    let sig = std::fs::read_to_string(dir.join("incidents.json.sig")).context("reading incidents.json.sig")?;
-    let pk = std::fs::read_to_string(dir.join("pubkey.hex")).context("reading pubkey.hex")?;
-    Ok(registry::load_verified(&bytes, &sig, &pk)?)
-}
-
-/// Resolve `--before` to (height, label).
-fn resolve_before(cli_registry: &std::path::Path, network: VintageNetwork, before: &str) -> Result<(u32, String)> {
-    if let Ok(h) = before.parse::<u32>() {
-        return Ok((h, format!("block {h}")));
-    }
-    let reg = load_registry(cli_registry)?;
-    let inc = reg
-        .find(before)
-        .ok_or_else(|| anyhow!("no incident `{before}` in the registry"))?;
-    if inc.network != network.name() {
-        bail!("incident `{before}` is on {}, but --network is {}", inc.network, network.name());
-    }
-    Ok((inc.first_inflow_height, inc.label.clone()))
-}
-
 async fn fetch_summary(client: &lwd::Client, network: VintageNetwork, txid: &str) -> Result<(TxSummary, u32)> {
     let parsed = tx::parse_txid(txid)?;
     let (raw, tip) = tokio::try_join!(lwd::get_tx(client, &parsed), lwd::tip(client))?;
@@ -179,11 +154,24 @@ async fn main() -> Result<()> {
     match cli.cmd {
         Cmd::Registry(c) => registry_cmd::run(c, &cli.registry),
         Cmd::Send { wallet, identity, to, value, memo, before, devtool, no_sync, dry_run, yes } => {
-            let (h, label) = resolve_before(&cli.registry, network, &before)?;
+            let b = resolve_before(|| load_registry(&cli.registry), network, &before)?;
             send::run(
                 network,
                 &server,
-                send::Args { wallet, identity, to, value, memo, before: h, before_arg: before, label, devtool, no_sync, dry_run, yes },
+                send::Args {
+                    wallet,
+                    identity,
+                    to,
+                    value,
+                    memo,
+                    before: b.height,
+                    before_arg: before,
+                    label: b.label,
+                    devtool,
+                    no_sync,
+                    dry_run,
+                    yes,
+                },
             )
         }
         Cmd::Status { wallet, sync, devtool } => {
@@ -236,111 +224,70 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Cmd::Verify { txid, before, locate_back, concurrency, json, cache, no_cache } => {
-            let t0 = std::time::Instant::now();
-            let (h, label) = resolve_before(&cli.registry, network, &before)?;
+            let before = resolve_before(|| load_registry(&cli.registry), network, &before)?;
             let client = lwd::connect(&server).await?;
-            let (s, tip) = fetch_summary(&client, network, &txid).await?;
-            let mut out = serde_json::json!({
-                "txid": s.txid,
-                "network": network.name(),
-                "mined_height": s.mined_height,
-                "chain_tip": tip,
-                "before": { "height": h, "label": label, "requested": before },
-            });
-            if !json {
-                println!("txid:        {}", s.txid);
-                println!("network:     {}", network.name());
-                println!("mined:       {}", s.mined_height.map_or("not yet".into(), |h| h.to_string()));
-                println!("chain tip:   {tip}");
-                println!("before H:    {h}  ({label})");
-            }
-            let reasons = s.out_of_scope();
-            if !reasons.is_empty() {
-                out["verdict"] = "NOT_PROVABLE".into();
-                out["reasons"] = reasons.clone().into();
-                if json {
-                    println!("{out:#}");
-                } else {
-                    println!("\nFAIL — not provable: {}", reasons.join(", "));
-                }
-                std::process::exit(2);
-            }
-            let iw = s.ironwood.as_ref().expect("in scope implies Ironwood bundle");
-            out["anchor"] = hex::encode(iw.anchor).into();
-            if !json {
-                println!("anchor:      {}", hex::encode(iw.anchor));
-            }
-            if h > tip {
-                bail!("H = {h} is above the chain tip {tip}");
-            }
-            let mut cache = match (no_cache, cache.or_else(roots::default_cache_path)) {
+            let cache = match (no_cache, cache.or_else(roots::default_cache_path)) {
                 (false, Some(p)) => Some(roots::Cache::open(&p, network)?),
                 _ => None,
             };
-            let r = roots::roots_for(&client, cache.as_mut(), h, tip, concurrency).await?;
-            let st = &r.stats;
-            out["evidence"] = serde_json::json!({
-                "blocks_covered": st.blocks,
-                "distinct_roots": r.runs.len(),
-                "blocks_downloaded": st.blocks_downloaded,
-                "blocks_from_cache": st.blocks_from_cache,
-                "server_tree_checks": st.server_tree_checks,
-            });
-            if !json {
+            let r = report::verify(&client, network, cache.as_ref(), &txid, before, concurrency).await?;
+            let code = match r.verdict {
+                "PASS" => 0,
+                "FAIL" => 1,
+                _ => 2,
+            };
+            if json {
+                println!("{}", serde_json::to_string_pretty(&r)?);
+                std::process::exit(code);
+            }
+            let (h, label) = (r.before.height, &r.before.label);
+            println!("txid:        {}", r.txid);
+            println!("network:     {}", r.network);
+            println!("mined:       {}", r.mined_height.map_or("not yet".into(), |h| h.to_string()));
+            println!("chain tip:   {}", r.chain_tip);
+            println!("before H:    {h}  ({label})");
+            if let Some(a) = &r.anchor {
+                println!("anchor:      {a}");
+            }
+            if let Some(e) = &r.evidence {
                 println!(
-                    "checked:     {} blocks ({h}..={tip}) = {} distinct Ironwood roots, in {:.1}s",
-                    st.blocks,
-                    r.runs.len(),
-                    st.secs
+                    "checked:     {} blocks ({h}..={}) = {} distinct Ironwood roots",
+                    e.blocks_covered, r.chain_tip, e.distinct_roots
                 );
                 println!(
                     "             {} blocks downloaded and computed, {} from cache; {} server tree checks passed",
-                    st.blocks_downloaded, st.blocks_from_cache, st.server_tree_checks
+                    e.blocks_downloaded, e.blocks_from_cache, e.server_tree_checks
                 );
             }
-            let verdict = verify::decide_runs(&iw.anchor, &r.runs);
-            out["elapsed_secs"] = ((t0.elapsed().as_secs_f64() * 1000.0).round() / 1000.0).into();
-            if json {
-                match verdict {
-                    Verdict::Pass { .. } => out["verdict"] = "PASS".into(),
-                    Verdict::Fail { matched_from, matched_to } => {
-                        out["verdict"] = "FAIL".into();
-                        out["matched_heights"] = serde_json::json!([matched_from, matched_to]);
-                        out["root_existed_before_h"] = (matched_from == h && r.size_before == r.runs[0].0.size).into();
-                    }
-                    Verdict::NotProvable { .. } => unreachable!(),
-                }
-                println!("{out:#}");
-                if !matches!(verdict, Verdict::Pass { .. }) {
-                    std::process::exit(1);
-                }
-                return Ok(());
-            }
-            if locate_back > 0 {
+            println!("time:        {:.2}s", r.elapsed_secs);
+            if locate_back > 0 && let Some(a) = &r.anchor {
                 let from = h.saturating_sub(locate_back);
                 let (below, _) = lwd::roots_in_range(&client, from, h - 1, concurrency).await?;
-                let found: Vec<u32> = below.iter().filter(|(_, r)| **r == iw.anchor).map(|(k, _)| *k).collect();
+                let found: Vec<u32> =
+                    below.iter().filter(|(_, root)| hex::encode(root) == *a).map(|(k, _)| *k).collect();
                 match (found.first(), found.last()) {
                     (Some(lo), Some(hi)) => println!("located:     anchor = Ironwood root at heights {lo}..={hi}"),
                     _ => println!("located:     anchor not within {from}..{}", h - 1),
                 }
             }
             println!();
-            match verdict {
-                Verdict::Pass { roots_checked } => {
-                    println!("PASS — all inputs existed before block {h} ({label})");
-                    println!("evidence:    anchor matched none of the {roots_checked} distinct Ironwood roots at heights {h}..={tip}; consensus requires it to be the root of an earlier block");
-                    Ok(())
-                }
-                Verdict::Fail { matched_from, matched_to } => {
-                    println!("FAIL — anchor is the Ironwood root at heights {matched_from}..={matched_to}, which is not before block {h} ({label})");
-                    if matched_from == h && r.size_before == r.runs[0].0.size {
-                        println!("note:        that same root already existed at block {} (no Ironwood notes were added in between), so the inputs may still predate H; anchoring to an earlier grid height would prove it.", h - 1);
+            match (r.verdict, r.matched_heights) {
+                ("PASS", _) => {
+                    println!("PASS — {}", r.summary);
+                    if let Some(e) = &r.evidence {
+                        println!(
+                            "evidence:    the anchor matched none of the {} distinct Ironwood roots at heights {h}..={}; consensus requires it to be the root of an earlier block",
+                            e.distinct_roots, r.chain_tip
+                        );
                     }
-                    std::process::exit(1);
                 }
-                Verdict::NotProvable { .. } => unreachable!(),
+                ("FAIL", Some([lo, hi])) => {
+                    println!("FAIL — {}", r.summary);
+                    println!("evidence:    the anchor is the Ironwood root at heights {lo}..={hi}, not before block {h}");
+                }
+                _ => println!("FAIL — not provable: {}", r.summary),
             }
+            std::process::exit(code);
         }
     }
 }

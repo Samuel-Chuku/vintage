@@ -1,0 +1,15 @@
+[package]
+name = "onehop-spike"
+description = "Feasibility spike: prove a note came from a given transaction with the existing Ironwood circuit."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+hex.workspace = true
+incrementalmerkletree = { workspace = true, features = ["legacy-api"] }
+orchard = { workspace = true, features = ["circuit"] }
+rand.workspace = true
+zcash_note_encryption = "0.5.1"

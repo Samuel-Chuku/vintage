@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["crates/vintage-core", "crates/vintage-cli"]
-# crates/vintage-api joins the workspace on Day 3.
+members = ["crates/vintage-core", "crates/vintage-verifier", "crates/vintage-cli", "crates/vintage-api", "research/onehop-spike"]
+
 
 [workspace.package]
 version = "0.1.0"
