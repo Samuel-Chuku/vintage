@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vintage · Proof of age for private money</title>
+<meta name="description" content="Prove your shielded ZEC predates a hack, a tax cutoff or any block you name, from one transaction, without unshielding anything.">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-49AJZOtmeNg6KXt47aJ9Q7rI0XaL7xuHXf9inJl2Njw='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://api.usevintage.site; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/vintage.css">
+<script>(function(){try{var t=localStorage.getItem('vt-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip tkt" href="#verify"><span class="lbl">Skip to the verifier</span><span class="stub" aria-hidden="true">↓</span></a>
+
+<nav class="nav" id="nav" aria-label="Main"><div class="wrap">
+  <a class="mark" href="#top">VINTAGE</a>
+  <div class="navlinks label">
+    <a class="hide-sm" href="#how">How it works</a><a class="hide-sm" href="#events">Events</a><a class="hide-sm" href="#privacy">Privacy</a><a class="hide-sm" href="#verify">Verify</a>
+    <button class="toggle" id="toggle" aria-label="Switch colour theme"><span data-t="light">Light</span> / <span data-t="dark">Dark</span></button>
+  </div>
+</div></nav>
+
+<main class="wrap">
+
+<!-- 01 HERO -->
+<section class="hero" id="top">
+  <div class="hero-top">
+    <span class="serial label"><b>No. 001</b><span>Zecathon 2026<span class="hide-sm"> · Core &amp; Tooling</span></span></span>
+    <span class="live label" id="live" hidden><i></i><span id="livetip">Mainnet tip</span></span>
+  </div>
+  <h1 class="mega" id="mega" aria-label="Proof of age for private money."><span class="l"><span class="w">Proof of age</span><span class="apin" aria-hidden="true"><span class="chip">Checked by consensus</span></span></span><span class="l"><span class="w">for private money.</span></span></h1>
+  <div class="hero-sub">
+    <p class="lead">Every shielded Ironwood spend names an earlier state of the note tree, and consensus checks it. Vintage turns that into a claim anyone can verify from one txid: these coins were already here before a hack, a tax cutoff, a bug window, or any block you name. Their amount, sender and history stay <em>shielded</em>.</p>
+    <div class="acts">
+      <div class="row">
+        <a class="tkt primary" href="#verify"><span class="lbl"><span class="no">01</span>Verify a deposit</span><span class="stub" aria-hidden="true">→</span></a>
+        <a class="tkt" href="#how"><span class="lbl"><span class="no">02</span>See how</span><span class="stub" aria-hidden="true">↓</span></a>
+      </div>
+      <p class="note">Covers coins received before the event you pick. Fresh coins have their own path, <a href="#events">further down</a>.</p>
+    </div>
+  </div>
+  <div class="tape" id="tape" role="img" aria-label="A real mainnet transaction whose coins were in the note tree at block 3,525,696, 13 blocks before the event at block 3,525,709.">
+    <div class="cells"></div>
+    <div class="scanl"></div>
+    <div class="seal" aria-hidden="true">
+      <svg viewBox="0 0 128 128"><defs><path id="cp2" d="M64,64 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs>
+        <text font-family="JetBrains Mono" font-size="8.5" font-weight="500" letter-spacing="1.6" fill="currentColor"><textPath href="#cp2">PROVEN OLDER THAN BLOCK 3,525,709 · MAINNET ·</textPath></text></svg>
+      <div class="c"><b>VINTAGE</b><i>MAINNET</i></div>
+    </div>
+  </div>
+  <div class="tape-cap">
+    <p>A real mainnet transaction, <span class="mono">da9017e0…7095e3a7</span>: the deposit into a NEAR Intents swap. Its coins were already in the tree 13 blocks before the event block (a staged demo event, not a real hack). That is the whole proof.</p>
+    <a class="quiet" href="https://mainnet.zcashexplorer.app/transactions/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7" rel="noopener noreferrer">Open on explorer <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a>
+  </div>
+</section>
+
+<!-- 02 VERIFY -->
+<section id="verify">
+  <div class="grid2">
+    <div>
+      <div class="label eyebrow">02 / Verify</div>
+      <h2 class="display" style="margin-bottom:var(--vt-4)">Paste a txid. Pick the event.</h2>
+      <p class="lead">The verifier reads the anchor from the transaction and walks the tree back to the event. It needs nothing but the txid.</p>
+      <p style="font-size:14px;color:var(--vt-ink-2);max-width:460px">Your txid goes to our verifier and to a public lightwalletd server. We keep no logs of either. To involve nobody, run <span class="mono">vintage verify</span> on your own machine.</p>
+    </div>
+
+    <div class="stack" style="margin:16px 0 0 16px">
+      <div class="win active">
+        <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Verify a deposit</div><div class="label" id="vnet">Mainnet</div></div>
+        <form class="body" id="vform" novalidate>
+          <label class="field"><span class="p">&gt;</span><input id="txid" placeholder="Paste a Zcash txid" spellcheck="false" autocomplete="off" aria-label="Zcash transaction id" aria-describedby="txerr"><span class="div"></span><button type="button" class="quiet" id="paste">Paste</button></label>
+          <p class="err" id="txerr" hidden>A txid is 64 characters, 0 to 9 and a to f.</p>
+          <div class="row" role="group" aria-label="Event" id="chips"><span class="label">Before</span>
+            <button type="button" class="chip" aria-pressed="false" data-before="custom" id="customchip">Custom height +</button></div>
+          <label class="field" id="customfield" hidden><span class="p">&gt;</span><input id="customh" inputmode="numeric" placeholder="Block height, e.g. 3501240" spellcheck="false" autocomplete="off" aria-label="Custom block height" aria-describedby="herr"></label>
+          <p class="err" id="herr" hidden>A block height is a whole number after Ironwood's activation at block 3,428,143.</p>
+          <noscript><p class="err">The live verifier needs JavaScript. Everything else on this page works without it, and so does <span class="mono">vintage verify</span> on your own machine.</p></noscript>
+          <div class="tape mini" id="vtape" aria-hidden="true"><div class="cells"></div><div class="scanl"></div></div>
+          <div class="ticker label" id="ticker"><span id="tk1">Roots checked 0</span><span id="tk2">Block</span></div>
+          <div class="vwrap">
+            <div class="seal" id="vseal" aria-hidden="true">
+              <svg viewBox="0 0 128 128"><defs><path id="cp3" d="M64,64 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs>
+                <text font-family="JetBrains Mono" font-size="8.5" font-weight="500" letter-spacing="1.6" fill="currentColor"><textPath href="#cp3" id="vsealtext">PROVEN OLDER THAN BLOCK · MAINNET ·</textPath></text></svg>
+              <div class="c"><b>VINTAGE</b><i>MAINNET</i></div>
+            </div>
+            <div class="v idle" id="verdict" aria-live="polite">
+              <div class="label">Awaiting txid</div>
+              <p style="font-family:var(--vt-font-mono);font-size:14px">&gt; Paste a Zcash txid. We'll check whether every coin it spends was already in the shielded pool before the event you pick.</p>
+            </div>
+          </div>
+          <div class="row" style="justify-content:space-between">
+            <div class="row">
+              <button type="submit" class="tkt primary"><span class="lbl">Verify deposit</span><span class="stub" aria-hidden="true">→</span></button>
+              <button type="button" class="quiet" id="example">Try a real example</button>
+            </div>
+            <span class="label" id="vmeta"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 USE -->
+<section class="reveal band" aria-label="Usage">
+  <div class="label" style="text-align:center">03 / Use</div>
+  <div class="counter" id="counter" style="margin-top:var(--vt-6)" aria-label="Checks run since launch"></div>
+  <p class="label" style="text-align:center;margin-top:var(--vt-6)" id="countcap">Checks run since launch</p>
+  <p style="text-align:center;font-size:14px;margin:4px 0 0">We count checks per day, by verdict and event. Nothing else: no txids, no IPs, no times of day. <a class="quiet" href="https://api.usevintage.site/stats" rel="noopener noreferrer">See the raw numbers <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></p>
+</section>
+
+<!-- 04 WHY -->
+<section class="reveal" id="why">
+  <div class="label eyebrow">04 / Why</div>
+  <h2 class="display">Proving you're clean shouldn't mean unshielding.</h2>
+  <p class="sec-lead">After the Bitget hacker moved 2,746 ZEC into Ironwood on 30 September, every large shielded deposit became suspect. Exit rails hold them, and the only proof on offer is giving up your privacy.</p>
+  <div class="two">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Today</div></div>
+      <div class="body tl-list">
+        <div class="step"><div class="ibox"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M3 17L17 3M9 3h8v8"/></svg></div><div><div class="tt">Trace to the origin</div><div class="ss">Reveal where the coins entered the pool.</div></div><span class="label">Privacy lost</span></div>
+        <div class="step"><div class="ibox"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="10" cy="7" r="3"/><path d="M4 17c1-4 11-4 12 0"/></svg></div><div><div class="tt">Find a voucher</div><div class="ss">Ask an exchange to vouch for you.</div></div><span class="label">Privacy lost</span></div>
+        <div class="step"><div class="ibox"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><circle cx="6" cy="10" r="3"/><path d="M9 10h9M15 10v3"/></svg></div><div><div class="tt">Hand over a viewing key</div><div class="ss">Your whole history, shown.</div></div><span class="label">Privacy lost</span></div>
+        <div class="step cur"><div class="ibox"><span class="mono">⧗</span></div><div><div class="tt">Wait</div><div class="ss">One forum user's $589k was still held after 50 days.</div></div><span class="label">Held</span></div>
+      </div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">With Vintage</div></div>
+      <div class="body tl-list">
+        <div class="step"><div class="ibox"><span class="mono">◆</span></div><div><div class="tt">Pick the event</div><div class="ss">The hack, cutoff or block the rail cares about.</div></div><span class="label">Nothing revealed</span></div>
+        <div class="step"><div class="ibox"><span class="mono">←</span></div><div><div class="tt">Send with an older anchor</div><div class="ss">One setting in the send. Still a shielded deposit.</div></div><span class="label">Nothing revealed</span></div>
+        <div class="step cur"><div class="ibox"><span class="mono">✓</span></div><div><div class="tt">The rail checks the txid</div><div class="ss">A verdict from public chain data, in seconds.</div></div><span class="label">Cleared</span></div>
+      </div></div>
+  </div>
+  <p style="font-size:14px;color:var(--vt-ink-2);margin-top:var(--vt-6)">Sources: <a class="quiet" href="https://forum.zcashcommunity.com/t/57497" rel="noopener noreferrer">Zcash forum, thread 57497 <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a> &nbsp; <a class="quiet" href="https://www.coindesk.com/markets/2026/09/30/bitget-hackers-move-usd4-million-into-zcash-s-private-pool-making-funds-harder-to-trace" rel="noopener noreferrer">CoinDesk, 30 Sep <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></p>
+</section>
+
+<!-- 05 HOW -->
+<section class="reveal" id="how">
+  <div class="label eyebrow">05 / Mechanism</div>
+  <h2 class="display">The chain already dates every shielded spend.</h2>
+  <div class="three">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">01 The tree</div></div>
+      <div class="body">
+        <div class="ill"><svg viewBox="0 0 300 180" aria-hidden="true">
+          <rect class="st fill-k" x="122" y="18" width="56" height="28" rx="4"/><text x="150" y="36" text-anchor="middle" style="fill:var(--vt-surface)">ROOT</text>
+          <path class="st" d="M150 46v16M80 62h140M80 62v14M220 62v14"/>
+          <rect class="st fill-s" x="56" y="76" width="48" height="24" rx="4"/><rect class="st fill-s" x="196" y="76" width="48" height="24" rx="4"/>
+          <path class="st" d="M80 100v14M50 114h60M50 114v12M110 114v12M220 100v14M190 114h60M190 114v12M250 114v12"/>
+          <rect class="st fill-s" x="36" y="126" width="28" height="20" rx="3"/><rect class="st fill-s" x="96" y="126" width="28" height="20" rx="3"/><rect class="st fill-s" x="176" y="126" width="28" height="20" rx="3"/><rect class="st fill-s" x="236" y="126" width="28" height="20" rx="3"/>
+          <text x="150" y="168" text-anchor="middle">EVERY SHIELDED COIN SO FAR</text></svg></div>
+        <h3 class="display">A fingerprint per block</h3>
+        <p>Every block ends with a root: one fingerprint of every shielded coin that exists at that moment.</p>
+      </div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">02 The anchor</div></div>
+      <div class="body">
+        <div class="ill"><svg viewBox="0 0 300 180" aria-hidden="true">
+          <rect class="st fill-s" x="24" y="56" width="70" height="44" rx="4"/><text x="59" y="82" text-anchor="middle">ROOT H−111</text>
+          <rect class="st fill-s" x="120" y="56" width="70" height="44" rx="4" stroke-dasharray="4 4"/><text x="155" y="82" text-anchor="middle">ROOT H</text>
+          <rect class="st fill-k" x="206" y="44" width="76" height="68" rx="4"/><text x="244" y="74" text-anchor="middle" style="fill:var(--vt-surface)">YOUR</text><text x="244" y="90" text-anchor="middle" style="fill:var(--vt-surface)">SPEND</text>
+          <path class="st" d="M206 130H59v-30"/><path class="fill-k" d="M53 108l6-10 6 10z"/>
+          <text x="132" y="150" text-anchor="middle">NAMES AN OLDER ROOT</text></svg></div>
+        <h3 class="display">Every spend names one</h3>
+        <p>A spend must point at one of those roots and prove its coins are inside it. Consensus rejects it otherwise.</p>
+      </div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">03 The check</div><span class="label hide-sm">Mainnet</span></div>
+      <div class="body">
+        <div class="ill"><svg viewBox="0 0 300 180" aria-hidden="true">
+          <g class="st">
+            <rect x="20" y="70" width="14" height="36" rx="2" class="fill-s"/><rect x="40" y="70" width="14" height="36" rx="2" class="fill-s"/>
+            <rect x="60" y="70" width="14" height="36" rx="2" class="fill-g"/><rect x="80" y="70" width="14" height="36" rx="2" class="fill-g"/><rect x="100" y="70" width="14" height="36" rx="2" class="fill-g"/><rect x="120" y="70" width="14" height="36" rx="2" class="fill-g"/>
+            <rect x="140" y="70" width="14" height="36" rx="2" class="fill-k"/>
+            <rect x="160" y="70" width="14" height="36" rx="2" class="fill-s"/><rect x="180" y="70" width="14" height="36" rx="2" class="fill-s"/><rect x="200" y="70" width="14" height="36" rx="2" class="fill-s"/><rect x="220" y="70" width="14" height="36" rx="2" class="fill-s"/><rect x="240" y="70" width="14" height="36" rx="2" class="fill-s"/><rect x="260" y="70" width="14" height="36" rx="2" class="fill-s"/>
+          </g>
+          <path class="fill-k" d="M61 124l6-10 6 10z"/><text x="67" y="142" text-anchor="middle">ANCHOR</text>
+          <path class="st" d="M147 70V48"/><text x="147" y="40" text-anchor="middle">EVENT</text></svg></div>
+        <h3 class="display">Older root, older coins</h3>
+        <p>If the named root is older than the event, the coins were already there. Nothing else about them is revealed.</p>
+      </div></div>
+  </div>
+  <p class="kicker">No blocklist. No new cryptography. A rule Zcash already enforces on every spend.</p>
+</section>
+
+<!-- 06 EVENTS -->
+<section class="reveal" id="events">
+  <div class="label eyebrow">06 / Events</div>
+  <h2 class="display">One proof, any dated event.</h2>
+  <p class="sec-lead">One deposit proves it predates every event after its anchor, all at once. The registry labels block heights and nothing else: no addresses, no people, and anyone can check against any height they choose.</p>
+  <div class="events">
+    <div class="ev-card"><div class="top"><span class="tag ink">Hack</span><span class="label">Live</span></div><h3>Exploit inflows</h3><p>Prove a deposit can't contain funds that entered the pool after a hack, like the Bitget inflow on 30 September.</p></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Tax cutoff</span><span class="label">Draft law</span></div><h3>31 December 2026</h3><p>A German finance ministry draft, not yet law, would end the one-year tax exemption for coins bought from 2027 and keep it for earlier ones. If it passes, prove the date without handing a platform your keys.</p></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Bug window</span><span class="label">Supply integrity</span></div><h3>Pre-bug coins</h3><p>If a counterfeiting bug is ever found, coins older than its window provably weren't minted through it.</p></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Holding</span><span class="label">From Jul 2027</span></div><h3>Held a year</h3><p>Prove the exact coins you sell are over a year old. Ironwood launched in July 2026, so full-year proofs start in July 2027.</p></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Custom</span><span class="label">Any block</span></div><h3>Your own date</h3><p>Before a contract, a job, a dispute. Any block height you name, checked the same way.</p></div>
+    <div class="ev-card weak"><div class="top"><span class="tag dash">Snapshot</span><span class="label">Already served</span></div><h3>Airdrops and votes</h3><p>Works, but ZAIR and coinholder voting already prove "unspent at the snapshot", which is what a snapshot needs. Use them.</p></div>
+  </div>
+
+  <div class="two" style="margin-top:var(--vt-12)">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Fresh coins · Payer side</div><span class="label">Nothing revealed</span></div>
+      <div class="body">
+        <h3 class="display">Ask your payer to send with Vintage</h3>
+        <p>Coins you received after an event can't be dated by age. But if the person paying you uses an older anchor, the payment itself is provably clean, and you know it the moment it lands.</p>
+        <pre class="code"><span class="m">$</span> vintage request --to &lt;your address&gt; \
+    --amount 0.5 --before bitget-2026-09</pre>
+      </div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Fresh coins · Carry it forward</div><span class="label">Optional · one key, one rail</span></div>
+      <div class="body">
+        <h3 class="display">A single-use receipt account</h3>
+        <p>Receive the Vintage payment into a fresh account with its own seed, deposit from it, and let the exit rail check the link with that account's viewing key. It is optional, and the only Vintage feature that discloses anything. What it discloses:</p>
+        <p class="mono" style="font-size:14px">The receipt account's viewing key, therefore the funding payments, the amounts received, the receipt address, and the deposit. Nothing from the user's other accounts. The viewing key cannot spend. Rotate to a fresh receipt account for every use.</p>
+        <p>The rail can run the check itself with <span class="mono">vintage link verify</span>, so the key goes to nobody else. A zero-knowledge version that discloses no key is on the roadmap.</p>
+      </div></div>
+  </div>
+</section>
+
+<!-- 07 PRIVACY -->
+<section class="reveal" id="privacy">
+  <div class="label eyebrow">07 / Privacy</div>
+  <h2 class="display">Stay shielded all the way to the exit.</h2>
+  <p class="sec-lead">Guides today tell you to unshield before depositing, because shielded deposits get frozen. Vintage lets the deposit stay shielded and still clear.</p>
+  <div class="never">
+    <div><span class="label">We never see</span><b>Your keys</b><p>Age proofs need no key of any kind, not even a viewing key.</p></div>
+    <div><span class="label">We never see</span><b>Your balance</b><p>Amounts, senders and history stay encrypted on chain.</p></div>
+    <div><span class="label">We never keep</span><b>Your txid or IP</b><p>No logs, no analytics, no cookies, no third-party requests. Fonts are served from this site.</p></div>
+    <div><span class="label">You can skip us</span><b>Run it yourself</b><p>The verifier is open source. Your machine, a public lightwalletd, nobody else.</p></div>
+  </div>
+</section>
+
+<!-- 08 EVIDENCE -->
+<section class="reveal" id="evidence">
+  <div class="label eyebrow">08 / Evidence</div>
+  <h2 class="display">Don't trust this page. Check the chain.</h2>
+  <div class="win" style="margin-bottom:var(--vt-8)"><div class="body strip-t"><span>No tracking</span><span>Fonts served from this site</span><span>Open source</span><span>Mainnet proof <a href="https://mainnet.zcashexplorer.app/transactions/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7" rel="noopener noreferrer">da9017e0…e3a7 <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></span><span>2 NEAR Intents swaps, proven</span></div></div>
+  <div class="three">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Old coins</div><span class="label">Mainnet · 23 Oct 2026</span></div>
+      <div class="body" style="padding-top:var(--vt-2)">
+        <table class="ev">
+          <tr><td class="label">Txid</td><td><a href="https://mainnet.zcashexplorer.app/transactions/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7" rel="noopener noreferrer">da9017e0…e3a7 <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></td></tr>
+          <tr><td class="label">What it is</td><td>Vintage payment = NEAR Intents deposit</td></tr>
+          <tr><td class="label">Mined at</td><td>3,527,813</td></tr>
+          <tr><td class="label">Anchor root</td><td>855ccc99…81d98502</td></tr>
+          <tr><td class="label">Anchor located</td><td>3,525,693 to 3,525,696</td></tr>
+          <tr><td class="label">Event height</td><td>3,525,709 (staged demo)</td></tr>
+          <tr><td class="label">Roots checked</td><td>1,303 · 0.06 s</td></tr>
+          <tr><td class="label">Swap</td><td><a href="https://basescan.org/tx/0xc1f7ac737d646c31d00539006887bf507488a5f9115bffe5d433eb1cdb9aa7a4" rel="noopener noreferrer">3.668896 USDC <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></td></tr>
+          <tr><td class="label">Verdict</td><td>PASS</td></tr>
+        </table>
+      </div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Fresh coins</div><span class="label">Mainnet · link</span></div>
+      <div class="body" style="padding-top:var(--vt-2)">
+        <table class="ev">
+          <tr><td class="label">Deposit</td><td><a href="https://mainnet.zcashexplorer.app/transactions/df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402" rel="noopener noreferrer">df151ee2…9402 <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></td></tr>
+          <tr><td class="label">What it is</td><td>Receipt account → NEAR Intents</td></tr>
+          <tr><td class="label">Mined at</td><td>3,527,827</td></tr>
+          <tr><td class="label">Inputs</td><td>2 of 2 from da9017e0…, outputs 1 and 2</td></tr>
+          <tr><td class="label">Funding check</td><td>PASS before 3,525,709</td></tr>
+          <tr><td class="label">Disclosed</td><td>one retired receipt account's viewing key</td></tr>
+          <tr><td class="label">Swap</td><td><a href="https://basescan.org/tx/0xf25a0201f6521cf7aca2174b6f3f30bc5cf6a45b95a96447612a95d1580ffc22" rel="noopener noreferrer">5.52164 USDC <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></td></tr>
+          <tr><td class="label">Verdict</td><td>LINK PASS</td></tr>
+        </table>
+      </div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">The control</div><span class="label">Testnet spike</span></div>
+      <div class="body" style="padding-top:var(--vt-2)">
+        <table class="ev">
+          <tr><td class="label">Txid</td><td><a href="https://blockexplorer.one/zcash/testnet/tx/18f733e2c0114fb6e21441b9a2f548e6e6e67709097988e06cec6d04e9009a73" rel="noopener noreferrer">18f733e2…9a73 <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></td></tr>
+          <tr><td class="label">Mined at</td><td>4,524,646</td></tr>
+          <tr><td class="label">Anchor root</td><td>69ee8500…05fce0b</td></tr>
+          <tr><td class="label">Anchor located</td><td>4,524,636 to 4,524,641</td></tr>
+          <tr><td class="label">Event height</td><td>4,523,439</td></tr>
+          <tr><td class="label">Roots checked</td><td>1,918 · 32.0 s</td></tr>
+          <tr><td class="label">Verdict</td><td>NOT PROVABLE</td></tr>
+        </table>
+      </div></div>
+  </div>
+</section>
+
+<!-- 09 LIMITS -->
+<section class="reveal" id="limits">
+  <div class="label eyebrow">09 / Limits</div>
+  <h2 class="display">What it proves, and what it doesn't.</h2>
+  <div class="two">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Proves</div></div>
+      <div class="body"><ul class="ticks">
+        <li data-g="✓">Every Ironwood coin the deposit spends was already in the pool before the event block.</li>
+        <li data-g="✓">It holds by consensus. Nobody can fake an older anchor.</li>
+        <li data-g="✓">It covers every event after the anchor at once.</li>
+      </ul></div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Doesn't</div></div>
+      <div class="body"><ul class="ticks">
+        <li data-g="×">Date coins received after the event. They need the payer-side path.</li>
+        <li data-g="×">Cover transparent, Sapling or Orchard inputs.</li>
+        <li data-g="×">Say who sent the coins or how much. It only rules out known events.</li>
+        <li data-g="×">Hide that you chose to prove it. An old anchor is visible on chain, so use it only when you deposit somewhere that already knows you.</li>
+        <li data-g="×">Make it mandatory. It's yours to offer, never a rail's to demand from everyone.</li>
+      </ul></div></div>
+  </div>
+</section>
+
+<!-- 10 INTEGRATE -->
+<section class="reveal" id="integrate">
+  <div class="label eyebrow">10 / Integrate</div>
+  <h2 class="display">One request before you hold a deposit.</h2>
+  <div class="two">
+    <div>
+      <p class="lead" style="margin-top:0">An exit rail calls the verifier with the deposit txid and the event. A pass means every coin in the deposit predates that event. It does not identify anyone and it is not a source-of-funds report.</p>
+      <p style="color:var(--vt-ink-2)">Run the verifier yourself, or call ours. Either way the answer comes from public chain data, so you can check it independently.</p>
+    </div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">GET /verify · trimmed</div><button class="quiet" id="copycode" type="button">Copy</button></div>
+      <div class="body"><pre class="code" id="code"><span class="m">GET</span> /verify/da9017e0…7095e3a7?before=vintage-demo-2026-10
+
+{
+  "verdict": "PASS",
+  "network": "main",
+  "provisional": false,
+  "mined_height": 3527813,
+  "before": { "height": 3525709, "event_type": "custom" },
+  "anchor": "855ccc99…81d98502",
+  "evidence": { "distinct_roots": 1303 }
+}</pre></div></div>
+  </div>
+</section>
+
+<!-- 11 NEXT -->
+<section class="reveal" id="next">
+  <div class="label eyebrow">11 / Next</div>
+  <h2 class="display">Where this goes.</h2>
+  <div class="win" style="max-width:760px"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Roadmap</div></div>
+    <div class="body tl-list">
+      <div class="step"><div class="ibox"><span class="mono">1</span></div><div><div class="tt">Zero-knowledge receipt links</div><div class="ss">Prove fresh coins came from a clean payment without showing any viewing key.</div></div><span class="label">Research</span></div>
+      <div class="step"><div class="ibox"><span class="mono">2</span></div><div><div class="tt">A clean set defined by the chain</div><div class="ss">Coins stay provable across any number of hops, with no curated list.</div></div><span class="label">Research</span></div>
+      <div class="step"><div class="ibox"><span class="mono">3</span></div><div><div class="tt">Sapling anchors</div><div class="ss">The same rule holds for Sapling, which reaches back to 2018.</div></div><span class="label">Planned</span></div>
+      <div class="step cur"><div class="ibox"><span class="mono">4</span></div><div><div class="tt">An anchor-provenance ZIP</div><div class="ss">So any wallet can offer a Vintage send.</div></div><span class="label">Drafted</span></div>
+    </div></div>
+</section>
+
+</main>
+
+<footer><div class="wrap cols">
+  <a class="mark" href="#top">VINTAGE</a>
+  <nav class="label" aria-label="Footer"><a href="#">GitHub <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a><a href="#limits">Threat model</a><span>Zecathon 2026</span></nav>
+  <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests. Fonts are served from this site.</p>
+</div></footer>
+
+<script src="js/site.js" defer></script>
+</body>
+</html>

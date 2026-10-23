@@ -1098,6 +1098,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "gate0-check"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "hex",
+ "orchard",
+ "tokio",
+ "vintage-core",
+ "vintage-verifier",
+ "zcash_keys",
+ "zcash_note_encryption",
+ "zcash_primitives",
+ "zcash_protocol",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3225,6 +3241,7 @@ dependencies = [
  "zcash_address",
  "zcash_client_backend",
  "zcash_client_sqlite",
+ "zcash_keys",
  "zcash_primitives",
  "zcash_protocol",
  "zip321",
@@ -3260,6 +3277,9 @@ dependencies = [
  "tonic",
  "vintage-core",
  "zcash_client_backend",
+ "zcash_keys",
+ "zcash_note_encryption",
+ "zcash_primitives",
  "zcash_protocol",
 ]
 

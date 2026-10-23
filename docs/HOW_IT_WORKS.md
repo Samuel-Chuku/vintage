@@ -1,7 +1,8 @@
 # How Vintage works
 
 Vintage proves one thing about a Zcash transaction: **every Ironwood note it spends already existed
-before block H.** It needs no new cryptography and no list of suspects. It reads a field that every
+before block H.** H is any dated event: a hack's first inflow, a tax cutoff, a bug window, a snapshot, or
+a block you name. It needs no new cryptography and no list of suspects. It reads a field that every
 Ironwood spend already carries, and that consensus already checks.
 
 - [The one-paragraph version](#the-one-paragraph-version)
@@ -10,8 +11,9 @@ Ironwood spend already carries, and that consensus already checks.
 - [Making a Vintage send](#making-a-vintage-send)
 - [Checking a transaction](#checking-a-transaction)
 - [The fast verifier](#the-fast-verifier)
-- [The incident registry](#the-incident-registry)
+- [The event registry](#the-event-registry)
 - [What the verdicts mean](#what-the-verdicts-mean)
+- Fresh coins (received after the event): [LINK.md](LINK.md)
 
 ## The one-paragraph version
 
@@ -70,7 +72,7 @@ timeline
     title One honest note, one hack
     block 3,525,666 : honest note created (0.015 ZEC)
     block 3,525,696 : anchor H_a (a grid height, see below)
-    block 3,525,709 : incident H (simulated hack inflow)
+    block 3,525,709 : event H (staged hack inflow)
     block 3,525,726 : tainted note arrives in the same wallet
     later : a Vintage send anchored at 3,525,696 can spend the honest note, never the tainted one
 ```
@@ -153,7 +155,7 @@ and it says so (`root_existed_before_h: true`).
 ## The fast verifier
 
 The naive check asks the server for each block's root (`GetTreeState`), at about 40 per second. Against
-the Bitget incident that is ~25,000 blocks, and on mainnet ~63% of blocks add Ironwood notes (15,685 of
+the Bitget event that is ~25,000 blocks, and on mainnet ~63% of blocks add Ironwood notes (15,685 of
 24,762). That came to 294 s.
 
 Instead, Vintage rebuilds the roots itself from compact blocks, in parallel chunks, and cross-checks
@@ -192,12 +194,13 @@ Measured on mainnet against Bitget (~25,000 blocks):
 
 Peak memory is 15–17 MB in every case.
 
-## The incident registry
+## The event registry
 
-`registry/incidents.json` labels block heights, for example "Bitget hot-wallet exploit: first
-shielding into Ironwood, block 3,501,240", with the source transactions and links. It is signed with
-ed25519 (`registry/incidents.json.sig`, public key `registry/pubkey.hex`), and every tool checks the
-signature before using it.
+`registry/events.json` labels block heights, for example "Bitget hot-wallet exploit: first shielding
+into Ironwood, block 3,501,240", with the source transactions and links. Each event has a type: `hack`,
+`tax_cutoff`, `bug_window`, `snapshot` or `custom`. It is signed with ed25519
+(`registry/events.json.sig`, public key `registry/pubkey.hex`), and every tool checks the signature
+before using it. (The first version of the file was `incidents.json`; it still loads.)
 
 The registry is a convenience, not an authority. It **names no people and no addresses**, and anyone
 can verify against any height they like (`--before 3501240` works without it). It is not a blocklist:
@@ -207,7 +210,7 @@ it never says a coin is bad, only "this is when something happened".
 
 | Verdict | Meaning | What it does **not** mean |
 |---|---|---|
-| **PASS** | Every Ironwood note this transaction spends existed before block H. | Nothing about who sent it, where the coins came from before that, or any later incident. |
+| **PASS** | Every Ironwood note this transaction spends existed before block H, and so before every later event too. | Nothing about who sent it, or where the coins came from before that. |
 | **FAIL** | Vintage can't show the inputs predate H: the anchor is a snapshot from H or later. | That the coins are stolen. Almost every ordinary transaction FAILs: in a sample of 119 recent mainnet Ironwood transactions, all 70 with Ironwood spends had anchors 1–11 blocks old. |
 | **NOT PROVABLE** | The transaction spends transparent, Sapling or Orchard coins, or no Ironwood notes. Vintage can only reason about Ironwood. | Anything about those coins. |
 

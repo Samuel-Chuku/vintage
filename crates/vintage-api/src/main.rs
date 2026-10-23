@@ -1,22 +1,26 @@
 //! vintage-api: the exchange-facing HTTP verifier.
 //!
-//! - `GET /verify/{txid}?before=<height|incident-id>`: verdict + evidence (the CLI's `--json` report)
-//! - `GET /incidents`: the registry's incidents for this network, its public key, and whether its
+//! - `GET /verify/{txid}?before=<height|event-id>`: verdict + evidence (the CLI's `--json` report)
+//! - `GET /events`: the registry's events for this network, its public key, and whether its
 //!   signature verified
-//! - `GET /registry/incidents.json`, `GET /registry/incidents.json.sig`: the exact signed bytes, so
+//! - `GET /registry/events.json`, `GET /registry/events.json.sig`: the exact signed bytes, so
 //!   anyone can check the signature themselves
 //! - `GET /health`: network, server, chain tip
-//! - `GET /stats`: anonymous daily counts of checks by verdict and incident (no txids, no IPs)
+//! - `GET /stats`: anonymous daily counts of checks by verdict and event (no txids, no IPs)
+//! - `POST /verify-link`: the receipt-account link. Stateless: the bundle (a viewing key and txids)
+//!   is held in memory for the request only and never written to disk, a log or a cache.
 //!
 //! Read-only and stateless apart from the root cache. It keeps one connection to lightwalletd, and a
-//! background task keeps roots warm from the earliest registry incident to the tip.
+//! background task keeps roots warm from the earliest registry event to the tip.
+//!
+//! Version-1 names stay as aliases: `GET /incidents`, `GET /registry/incidents.json(.sig)`.
 
 use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use axum::{
     Json, Router,
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, rejection::JsonRejection},
     http::{HeaderValue, StatusCode, header},
     middleware::map_response_with_state,
     response::{IntoResponse, Response},
@@ -30,6 +34,7 @@ use vintage_core::{VintageNetwork, registry::Registry};
 mod stats;
 
 use vintage_verifier::{
+    link::{self, LinkBundle},
     load_registry, lwd,
     report::{self, VerifyError},
     resolve_before, roots,
@@ -45,7 +50,7 @@ struct Args {
     /// lightwalletd/Zaino gRPC server host:port (TLS). Defaults to zec.rocks for the network.
     #[arg(long)]
     server: Option<String>,
-    /// Directory holding incidents.json, incidents.json.sig and pubkey.hex.
+    /// Directory holding events.json (or the older incidents.json), its .sig, and pubkey.hex.
     #[arg(long, default_value = "registry")]
     registry: PathBuf,
     /// Root cache (SQLite). Default: ~/.cache/vintage/cache.sqlite.
@@ -95,27 +100,71 @@ struct VerifyQuery {
 
 async fn verify(State(s): State<Shared>, Path(txid): Path<String>, Query(q): Query<VerifyQuery>) -> Response {
     let Some(before) = q.before else {
-        return error(StatusCode::BAD_REQUEST, "missing ?before=<height|incident-id>");
+        return error(StatusCode::BAD_REQUEST, "missing ?before=<height|event-id>");
     };
     let before = match resolve_before(|| Ok(s.registry.clone()), s.network, &before) {
         Ok(b) => b,
         Err(e) => return error(StatusCode::BAD_REQUEST, e),
     };
-    // Counted by incident id, or as "custom height" without the height itself.
-    let incident = if before.requested.parse::<u32>().is_ok() { stats::CUSTOM_HEIGHT.to_string() } else { before.requested.clone() };
+    // Counted by event id, or as "custom height" without the height itself.
+    let event = if before.requested.parse::<u32>().is_ok() { stats::CUSTOM_HEIGHT.to_string() } else { before.requested.clone() };
     let _permit = s.limit.acquire().await.expect("semaphore open");
     match report::verify(&s.client, s.network, Some(&s.cache), &txid, before, s.concurrency).await {
         Ok(r) => {
-            s.stats.count(&incident, r.verdict);
+            s.stats.count(&event, r.verdict);
             Json(r).into_response()
         }
         Err(VerifyError::BadRequest(m)) => error(StatusCode::BAD_REQUEST, m),
         Err(VerifyError::NotFound) => error(StatusCode::NOT_FOUND, "transaction not found"),
-        Err(VerifyError::Upstream(e)) => {
-            eprintln!("verify: upstream error: {e:#}");
-            error(StatusCode::BAD_GATEWAY, format!("lightwalletd: {e}"))
+        Err(VerifyError::Upstream(_)) => {
+            // The error class only: never the request or the error's details.
+            eprintln!("verify: upstream error");
+            error(StatusCode::BAD_GATEWAY, "lightwalletd request failed")
         }
     }
+}
+
+#[derive(Deserialize)]
+struct LinkRequest {
+    bundle: LinkBundle,
+    before: String,
+}
+
+/// `POST /verify-link` with `{"bundle": {...}, "before": "<height|event-id>"}`.
+///
+/// Privacy: the bundle carries a viewing key. It is only ever in this function's memory and is
+/// dropped when the response is sent: never written to disk, logged, cached or counted. Errors log
+/// their class only. A malformed body gets a generic message so nothing from it is echoed back.
+async fn verify_link(State(s): State<Shared>, body: Result<Json<LinkRequest>, JsonRejection>) -> Response {
+    let Ok(Json(req)) = body else {
+        return error(
+            StatusCode::BAD_REQUEST,
+            "body must be JSON: {\"bundle\": <link bundle from `vintage link prove`>, \"before\": \"<height|event-id>\"}",
+        );
+    };
+    let before = match resolve_before(|| Ok(s.registry.clone()), s.network, &req.before) {
+        Ok(b) => b,
+        Err(e) => return error(StatusCode::BAD_REQUEST, e),
+    };
+    let event = if before.requested.parse::<u32>().is_ok() { stats::CUSTOM_HEIGHT.to_string() } else { before.requested.clone() };
+    let _permit = s.limit.acquire().await.expect("semaphore open");
+    match link::verify_link(&s.client, s.network, Some(&s.cache), &req.bundle, before, s.concurrency).await {
+        Ok(r) => {
+            s.stats.count(&event, &format!("LINK_{}", r.verdict));
+            Json(r).into_response()
+        }
+        Err(VerifyError::BadRequest(m)) => error(StatusCode::BAD_REQUEST, m),
+        Err(VerifyError::NotFound) => error(StatusCode::NOT_FOUND, "transaction not found"),
+        Err(VerifyError::Upstream(_)) => {
+            eprintln!("verify-link: upstream error");
+            error(StatusCode::BAD_GATEWAY, "lightwalletd request failed")
+        }
+    }
+}
+
+/// CORS preflight for `POST /verify-link` (a JSON POST from a browser sends one first).
+async fn preflight() -> StatusCode {
+    StatusCode::NO_CONTENT
 }
 
 async fn get_stats(State(s): State<Shared>) -> Response {
@@ -125,17 +174,39 @@ async fn get_stats(State(s): State<Shared>) -> Response {
     }
 }
 
-async fn incidents(State(s): State<Shared>) -> Response {
-    let incidents: Vec<_> = s.registry.incidents.iter().filter(|i| i.network == s.network.name()).collect();
-    Json(json!({
+fn events_body(s: &AppState) -> serde_json::Value {
+    let events: Vec<_> = s.registry.events.iter().filter(|e| e.network == s.network.name()).collect();
+    json!({
         "network": s.network.name(),
         "signature_verified": true,
         "public_key": s.pubkey.trim(),
-        "signed_file": "/registry/incidents.json",
-        "signature_file": "/registry/incidents.json.sig",
-        "incidents": incidents,
-    }))
-    .into_response()
+        "signed_file": "/registry/events.json",
+        "signature_file": "/registry/events.json.sig",
+        "event_types": ["hack", "tax_cutoff", "bug_window", "snapshot", "custom"],
+        "events": events,
+    })
+}
+
+async fn events(State(s): State<Shared>) -> Response {
+    Json(events_body(&s)).into_response()
+}
+
+/// Version-1 alias: the same body, plus `incidents` with each entry's old `first_inflow_height`.
+async fn incidents(State(s): State<Shared>) -> Response {
+    let mut body = events_body(&s);
+    let old: Vec<_> = s
+        .registry
+        .events
+        .iter()
+        .filter(|e| e.network == s.network.name())
+        .map(|e| {
+            let mut v = serde_json::to_value(e).unwrap_or_default();
+            v["first_inflow_height"] = e.height.into();
+            v
+        })
+        .collect();
+    body["incidents"] = old.into();
+    Json(body).into_response()
 }
 
 async fn get_registry_json(State(s): State<Shared>) -> Response {
@@ -157,18 +228,19 @@ async fn health(State(s): State<Shared>) -> Response {
 async fn cors(State(origin): State<HeaderValue>, mut res: Response) -> Response {
     let h = res.headers_mut();
     h.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, origin);
-    h.insert(header::ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("GET"));
+    h.insert(header::ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("GET, POST, OPTIONS"));
+    h.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("content-type"));
     res
 }
 
-/// Keep roots computed from the earliest incident to the tip, so requests only read the cache.
+/// Keep roots computed from the earliest event to the tip, so requests only read the cache.
 async fn refresher(s: Shared, every: Duration) {
     let Some(from) = s
         .registry
-        .incidents
+        .events
         .iter()
-        .filter(|i| i.network == s.network.name())
-        .map(|i| i.first_inflow_height)
+        .filter(|e| e.network == s.network.name())
+        .map(|e| e.height)
         .min()
     else {
         return;
@@ -198,8 +270,9 @@ async fn main() -> Result<()> {
     let a = Args::parse();
     let server = a.server.unwrap_or_else(|| a.network.default_server().to_string());
     let registry = load_registry(&a.registry)?;
-    let registry_json = std::fs::read(a.registry.join("incidents.json"))?;
-    let registry_sig = std::fs::read_to_string(a.registry.join("incidents.json.sig"))?;
+    let registry_path = vintage_verifier::registry_file(&a.registry);
+    let registry_json = std::fs::read(&registry_path)?;
+    let registry_sig = std::fs::read_to_string(registry_path.with_extension("json.sig"))?;
     let pubkey = std::fs::read_to_string(a.registry.join("pubkey.hex"))?;
     let cache_path = a.cache.or_else(roots::default_cache_path).context("no cache path; pass --cache")?;
     let cache = roots::Cache::open(&cache_path, a.network)?;
@@ -227,6 +300,10 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/verify/{txid}", get(verify))
+        .route("/verify-link", axum::routing::post(verify_link).options(preflight))
+        .route("/events", get(events))
+        .route("/registry/events.json", get(get_registry_json))
+        .route("/registry/events.json.sig", get(get_registry_sig))
         .route("/incidents", get(incidents))
         .route("/registry/incidents.json", get(get_registry_json))
         .route("/registry/incidents.json.sig", get(get_registry_sig))
@@ -236,12 +313,12 @@ async fn main() -> Result<()> {
         .with_state(state.clone());
 
     eprintln!(
-        "vintage-api: {} on {}, lightwalletd {}, cache {}, {} incident(s)",
+        "vintage-api: {} on {}, lightwalletd {}, cache {}, {} event(s)",
         state.network.name(),
         a.listen,
         state.server,
         cache_path.display(),
-        state.registry.incidents.iter().filter(|i| i.network == state.network.name()).count()
+        state.registry.events.iter().filter(|e| e.network == state.network.name()).count()
     );
     let listener = tokio::net::TcpListener::bind(a.listen).await?;
     axum::serve(listener, app).await?;

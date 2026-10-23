@@ -1,7 +1,7 @@
-//! `vintage status --wallet <dir>`: for each registry incident, how much of the wallet's ZEC a Vintage
+//! `vintage status --wallet <dir>`: for each registry event, how much of the wallet's ZEC a Vintage
 //! send could prove predates it right now.
 //!
-//! A note counts for incident H when it was mined at or before H_a (the newest grid boundary below H)
+//! A note counts for event H when it was mined at or before H_a (the newest grid boundary below H)
 //! and the wallet holds a retained checkpoint at H_a to build its witness against.
 
 use std::{
@@ -44,12 +44,12 @@ pub(crate) fn run(
     println!("synced to: {}", tip.map_or("never".into(), |h| h.to_string()));
     println!("Ironwood:  {} in {} unspent note(s)\n", fmt_amount(network, total), notes.len());
 
-    let incidents: Vec<_> = registry.incidents.iter().filter(|i| i.network == network.name()).collect();
-    if incidents.is_empty() {
-        println!("no {} incidents in the registry", network.name());
+    let events: Vec<_> = registry.events.iter().filter(|e| e.network == network.name()).collect();
+    if events.is_empty() {
+        println!("no {} events in the registry", network.name());
     }
-    for inc in incidents {
-        let h = inc.first_inflow_height;
+    for inc in events {
+        let h = inc.height;
         println!("{}  (block {h})", inc.id);
         println!("  {}", inc.label);
         let Some(h_a) = grid::anchor_height_for(h) else { continue };

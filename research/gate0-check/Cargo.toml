@@ -1,0 +1,21 @@
+[package]
+name = "gate0-check"
+description = "Gate 0 for the receipt-account link: decrypt a funding tx with a UFVK and find the recomputed nullifiers in the spend tx, on real chain data."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+vintage-core = { path = "../../crates/vintage-core" }
+vintage-verifier = { path = "../../crates/vintage-verifier" }
+
+anyhow.workspace = true
+hex.workspace = true
+tokio.workspace = true
+
+orchard.workspace = true
+zcash_keys.workspace = true
+zcash_note_encryption = "0.5.1"
+zcash_primitives.workspace = true
+zcash_protocol.workspace = true

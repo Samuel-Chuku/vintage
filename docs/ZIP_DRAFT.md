@@ -31,7 +31,7 @@ privacy trade-off. It needs no consensus change.
 When stolen funds enter a shielded pool, exit rails (exchanges and bridges) can't tell whether any
 shielded deposit contains them. Today the only way for an honest holder to show otherwise is to give up
 privacy: unshield their history, or disclose a viewing key. For the large class of holders whose coins
-predate the incident, the anchor gives a narrower answer: "these coins existed before H", and nothing
+predate the event, the anchor gives a narrower answer: "these coins existed before H", and nothing
 else.
 
 # Specification

@@ -19,7 +19,7 @@ transaction. It rests on two things:
 
 | Limit | Why |
 |---|---|
-| **Coins received after H** can never PASS against H. | They aren't in any tree from before H. This is the core limit: once incident coins enter the pool, any later note could descend from them, so a proof with zero disclosure can only say "older than H". The [one-hop extension](ROADMAP.md#one-hop-provenance) addresses it with a small, targeted disclosure. |
+| **Coins received after H** can never PASS against H. | They aren't in any tree from before H. This is the core limit: once an event's coins enter the pool, any later note could descend from them, so a proof with zero disclosure can only say "older than H". Two paths cover fresh coins ([LINK.md](LINK.md)): a payer-side Vintage payment (nothing revealed), and the receipt-account link (one single-use viewing key, see below). |
 | **Transparent, Sapling or Orchard inputs** → NOT PROVABLE. | Vintage reads only the Ironwood anchor. Sapling and Orchard have their own anchors, and the same idea could apply to them later, but Ironwood is where post-2026-07-28 shielded value lives. |
 | **Someone else's old keys.** | A thief holding a victim's keys to coins from before H can make a Vintage send that PASSes. PASS is about the coins' age, not about who holds them. |
 | **The hacker's own old coins** PASS. | Correctly: those coins aren't the stolen ones. A PASS never says "this person is innocent". |
@@ -32,7 +32,7 @@ A Vintage send's anchor is old, and anyone looking at the chain can see that.
 
 - Ordinary wallets anchor a few blocks back. In 119 recent mainnet Ironwood transactions, the 70 with
   Ironwood spends had anchors **1–11 blocks old** (median 4).
-- A Vintage send anchored before an incident is hundreds to thousands of blocks old. Our testnet send was
+- A Vintage send anchored before an event is hundreds to thousands of blocks old. Our testnet send was
   ~3,245 blocks old.
 - [ZIP 318](https://zips.z.cash/zip-0318) migration transfers also use older anchors (1–4 grid steps,
   roughly 12 hours at most), but they spend Orchard notes, not Ironwood, so a Vintage send is still
@@ -51,11 +51,11 @@ the depositor is. **Wallets should never use it by default**, and `vintage send`
 
 - It's **opt-in** and **marks no one**. No coin is ever labelled bad, and no list of addresses or people
   exists anywhere.
-- It replaces something worse. Today, after an incident, the only "proof of innocence" available is to
+- It replaces something worse. Today, after a hack, the only "proof of innocence" available is to
   unshield your history or hand over a viewing key (see the Zcash forum thread on a $589k NEAR Intents
   hold). Or rails screen everyone with blanket suspicion. A one-transaction proof that reveals only "older
   than H" is less invasive than either.
-- Coverage is highest right after an incident, which is exactly when exits get frozen.
+- Coverage is highest right after an event, which is exactly when exits get frozen.
 
 **The counter-argument, stated fairly.** An opt-in signal can become a de facto requirement. If a rail
 starts to *require* Vintage, then holders of new coins, people who received a payment after H, are
@@ -63,12 +63,35 @@ disadvantaged through no fault of their own. Vintage should be one way to clear 
 one. We recommend rails use a PASS to **skip** extra review, and never treat a FAIL as evidence of
 anything.
 
+## The receipt-account link discloses one viewing key
+
+The link ([LINK.md](LINK.md)) is the only Vintage feature that discloses anything, and it is optional.
+Age proofs never ask for a key. What the holder gives the verifier, stated verbatim everywhere it is
+offered:
+
+> The receipt account's viewing key, therefore the funding payments, the amounts received, the receipt
+> address, and the deposit. Nothing from the user's other accounts. The viewing key cannot spend. Rotate
+> to a fresh receipt account for every use.
+
+- **The key is permanent.** It can't be revoked, and it shows that account's future activity too. Hence
+  single-use accounts, and never a diversified address of a main account (one account, one viewing key).
+- **Keep it local if you can.** A rail that runs `vintage link verify` itself sends the key to nobody.
+  `POST /verify-link` holds the bundle in memory for one request and never writes it to disk, a log, a
+  cache or a queue; errors log their class only. A malformed body is answered with a generic message, so
+  nothing from it is echoed back. We checked the API's files after a test: neither the key nor the txids
+  were in them.
+- **Dummy inputs.** A deposit that spends one note carries a wallet dummy input that can't be linked, so
+  it FAILs. That fails safe: the limit can make an honest deposit unprovable, never a dishonest one
+  provable.
+- **The published demo bundle** (`demo/mainnet-link-bundle.json`) discloses one retired demo account:
+  two 0.003 ZEC notes in, one deposit out, 0.00135 ZEC of change.
+
 ## Dusting doesn't work against it
 
 Taint-based screening can be gamed by sending a victim a few stolen coins ("dusting"). With Vintage
 that does nothing. Any note received after H is automatically excluded from a Vintage send against H,
 and the victim's old coins still PASS. We observed this on mainnet: the wallet held a tainted 0.005 ZEC
-note from after the incident, and Vintage refused to spend it but spent the old 0.015 note.
+note from after the event, and Vintage refused to spend it but spent the old 0.015 note.
 
 ## The registry
 
@@ -78,7 +101,7 @@ note from after the incident, and Vintage refused to spend it but spent the old 
   bytes so anyone can check it independently.
 - **Key compromise:** someone with the signing key could publish a wrong height. That can't turn a FAIL
   into a PASS for the true height. Anyone can verify against any height directly, and should for anything
-  high-stakes, using a height they've checked against the incident's transactions themselves.
+  high-stakes, using a height they've checked against the event's transactions themselves.
 
 ## Who you trust
 
@@ -97,7 +120,7 @@ the caller's IP address. What matters is what gets kept. The public instance kee
 
 - **no request log**: no access log on HTTPS or plain HTTP (the reverse proxy is configured to skip this
   host), and `vintage-api` never logs transaction ids;
-- **only anonymous counts** (`GET /stats`): daily totals of completed checks by verdict and by incident.
+- **only anonymous counts** (`GET /stats`): daily totals of completed checks by verdict and by event.
   No transaction ids, IP addresses, times of day or custom heights.
 
 You still have to trust the operator to run it as described. If that matters, self-host `vintage-api`: it

@@ -1,11 +1,12 @@
 {
-  "version": 1,
-  "incidents": [
+  "version": 2,
+  "events": [
     {
       "id": "bitget-2026-09",
+      "type": "hack",
       "label": "Bitget hot-wallet exploit: first shielding into Ironwood",
       "network": "main",
-      "first_inflow_height": 3501240,
+      "height": 3501240,
       "txids": [
         "9bf8d13474eff83ee9fcb214a3df7e1d1acbb745a0f820c837c08eb35e1e4e1a",
         "64e5a66cce034745dfe1447b4779ce37b910d99365d0583cef65eb0504b573a2",
@@ -20,9 +21,10 @@
     },
     {
       "id": "vintage-demo-2026-10",
-      "label": "Vintage demo: simulated incident (not a real hack)",
+      "type": "custom",
+      "label": "Vintage demo: simulated event (not a real hack)",
       "network": "main",
-      "first_inflow_height": 3525709,
+      "height": 3525709,
       "txids": [
         "e66bb554e869a376e56753c03ba3637ec08a439fe409ac53600d9473e68d3577"
       ],

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "network": "main",
+  "ufvk": "uview1rq8lu4gf209vsql7hgg7menlqrgg7484j379y3dw6n2cx2657cdcnwjmj5fm5d0culxwqql3gr76e5fm5uv0m9zn9xa27f0lvvl068g60ghq7jp5a6j6dm8zgug9d37yr3vt55lcaduz65ga0vg2aeuny04utdn9jk7yjdhuv380xlla7drzd3q2m0ewfum59chneqrmje06h3vfv6736ykvy57q2wqe6rhks88mve7uacak45l8c9kzmz3zstftaplc36mqx9vnmq9hpupq7x6t4t5p6n656yymkdsr5w2xqx9v770jj5lelxnltskahgtp6979zlx6aw7zfph9auexvpgrmek22f98g33q8nqkzt8hckswdpwqvndpv96na2r4h8xt44dlsj4ag253vt8su3f2ttqk4zrhrmdxqcdahymwvyt9sl3l7tw07ufmxkukguw9lvdhfyzznqf2ahusku85ueyycy094shd6unjh99xecqfp4y3",
+  "deposit": "df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402",
+  "funding": [
+    {
+      "txid": "da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7",
+      "outputs": [
+        1,
+        2
+      ]
+    }
+  ]
+}

@@ -17,8 +17,12 @@ use crate::{lwd, roots};
 pub struct Before {
     pub height: u32,
     pub label: String,
-    /// What the caller asked for: a height or an incident id.
+    /// What the caller asked for: a height or an event id.
     pub requested: String,
+    /// The registry event's type (`hack`, `tax_cutoff`, `bug_window`, `snapshot`, `custom`), when
+    /// `requested` named an event.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_type: Option<vintage_core::registry::EventType>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -72,7 +76,7 @@ pub enum VerifyError {
     Upstream(#[from] anyhow::Error),
 }
 
-fn is_not_found(e: &anyhow::Error) -> bool {
+pub(crate) fn is_not_found(e: &anyhow::Error) -> bool {
     e.chain()
         .filter_map(|c| c.downcast_ref::<tonic::Status>())
         .any(|s| s.code() == tonic::Code::NotFound)

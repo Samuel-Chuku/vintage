@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/vintage-core", "crates/vintage-verifier", "crates/vintage-cli", "crates/vintage-api", "research/onehop-spike"]
+members = ["crates/vintage-core", "crates/vintage-verifier", "crates/vintage-cli", "crates/vintage-api", "research/onehop-spike", "research/gate0-check"]
 
 
 [workspace.package]
@@ -30,6 +30,7 @@ zcash_address = "=0.14.0-pre.2"
 rusqlite = { version = "0.37", features = ["bundled", "time"] }
 zcash_client_backend = { version = "=0.25.0-pre.2", features = ["lightwalletd-tonic-tls-webpki-roots", "orchard"] }
 zcash_client_sqlite = { version = "=0.23.0-pre.2", features = ["transparent-inputs", "unstable", "orchard", "serde", "test-dependencies"] }
+zcash_keys = { version = "=0.17.0-pre.2", features = ["orchard"] }
 zcash_primitives = "=0.31.0-pre.2"
 zcash_protocol = "=0.11.0-pre.1"
 zip321 = "=0.10.0-pre.2"

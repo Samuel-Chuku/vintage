@@ -8,7 +8,7 @@
 
 ### The problem
 
-Vintage's core limit is mathematical: once an incident's coins enter the pool, any later note *could*
+Vintage's core limit is mathematical: once an event's coins enter the pool, any later note *could*
 descend from them. So with zero disclosure, a transaction can only prove "my inputs are older than H".
 Someone who received a payment *after* H can't prove anything, even if the payer's coins were old.
 
@@ -27,6 +27,10 @@ to let Bob prove the link **T2 spent an output of T1**, while revealing as littl
 |---|---|---|
 | [ZIP 311](https://zips.z.cash/zip-0311), Zcash Payment Disclosures | Sender discloses outputs (via `ock`) and spends. A spend disclosure re-proves the spend against **the transaction's own anchor** and signs a challenge: it proves who *authored* a spend, not *which earlier output* was spent. | Draft. Sapling only ("TODO: Add support for Orchard"). Reference implementation "TBD". |
 | [zeceipt](https://github.com/beautifulrem/zeceipt) | Source-of-funds dossiers. Its **Path** claim links a spend to an earlier output: the holder discloses the note opening and the **nullifier key `nk`**, and the reviewer recomputes the nullifier and finds it in the spending transaction. Also checks value coverage (`undisclosed_input_min_zat`). | Apache-2.0 hackathon project, archived 2026-10-01, testnet only, refuses post-NU7 transactions. |
+
+**Built since (Oct 23):** the disclosed-viewing-key version, `vintage link` and `POST /verify-link`
+([LINK.md](LINK.md)), proven on mainnet with a NEAR Intents deposit. It discloses one single-use
+receipt account's viewing key. What follows is the zero-knowledge version, which discloses no key.
 
 So the link *can* be shown today, zeceipt-style, but only by disclosing `nk`. That has a lasting cost:
 anyone who knows one of your note openings (for example, everyone who ever paid you) can use `nk` to
@@ -112,7 +116,7 @@ Run it: `cargo run --release -p onehop-spike`.
      for example by recording the transaction builder's RNG seed.
 2. **The payer has to opt in.** T1 must itself PASS, so Alice must pay with a Vintage send. Ordinary
    anchors are 1–11 blocks old. The realistic case is payouts from holders of old coins: treasuries,
-   payroll, or exchanges paying out pre-incident reserves.
+   payroll, or exchanges paying out pre-event reserves.
 3. **Privacy cost.** The verifier learns that T2 spent an output of T1, and possibly the value. That
    reveals much less than zeceipt's `nk` route or a viewing key, but it isn't nothing.
 4. **Spec and review.** This needs a written statement, likely an extension of ZIP 311 for Ironwood
@@ -143,5 +147,5 @@ Run it: `cargo run --release -p onehop-spike`.
   because that's where shielded value lives after 2026-07-28.
 - **Wallet integration.** A "prove my coins predate…" option in consumer wallets, off by default, that
   explains the visibility cost.
-- **Registry governance.** Several signers (threshold), and a public process for adding incidents with
+- **Registry governance.** Several signers (threshold), and a public process for adding events with
   primary-source transaction ids.

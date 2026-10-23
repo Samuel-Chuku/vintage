@@ -1,4 +1,4 @@
-//! `vintage send --wallet <dir> --identity <age file> --to <addr> --value <zat> --before <H|incident>`
+//! `vintage send --wallet <dir> --identity <age file> --to <addr> --value <zat> --before <H|event>`
 //!
 //! A send whose Ironwood anchor is the newest ZIP-318 grid boundary below `H`, so the transaction
 //! itself proves every input existed before `H`.
@@ -51,14 +51,18 @@ use zip321::{Payment, TransactionRequest};
 const TARGET_NOTE_COUNT: usize = 4;
 const MIN_SPLIT_OUTPUT_VALUE: u64 = 10_000_000;
 
+/// What to pay: one recipient, or a ZIP-321 payment request with any number of payments.
+pub(crate) enum Pay {
+    One { to: String, value: u64, memo: Option<String> },
+    Uri(String),
+}
+
 pub(crate) struct Args {
     pub wallet: PathBuf,
     pub identity: Option<PathBuf>,
-    pub to: String,
-    pub value: u64,
-    pub memo: Option<String>,
+    pub pay: Pay,
     pub before: u32,
-    /// What the user passed to --before (a height or an incident id), echoed in the verify hint.
+    /// What the user passed to --before (a height or an event id), echoed in the verify hint.
     pub before_arg: String,
     pub label: String,
     pub devtool: Option<PathBuf>,
@@ -202,21 +206,36 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     };
 
     // 4. Propose (read-only: no keys involved).
-    let payment = Payment::new(
-        ZcashAddress::from_str(&a.to).map_err(|e| anyhow!("invalid --to address: {e}"))?,
-        Some(Zatoshis::from_u64(a.value).map_err(|_| anyhow!("invalid --value"))?),
-        a.memo
-            .as_deref()
-            .map(Memo::from_str)
-            .transpose()
-            .map_err(|e| anyhow!("invalid memo: {e:?}"))?
-            .map(MemoBytes::from),
-        None,
-        None,
-        vec![],
-    )
-    .map_err(|e| anyhow!("{e:?}"))?;
-    let request = TransactionRequest::new(vec![payment]).map_err(|e| anyhow!("{e:?}"))?;
+    let request = match &a.pay {
+        Pay::One { to, value, memo } => {
+            let payment = Payment::new(
+                ZcashAddress::from_str(to).map_err(|e| anyhow!("invalid --to address: {e}"))?,
+                Some(Zatoshis::from_u64(*value).map_err(|_| anyhow!("invalid --value"))?),
+                memo.as_deref()
+                    .map(Memo::from_str)
+                    .transpose()
+                    .map_err(|e| anyhow!("invalid memo: {e:?}"))?
+                    .map(MemoBytes::from),
+                None,
+                None,
+                vec![],
+            )
+            .map_err(|e| anyhow!("{e:?}"))?;
+            TransactionRequest::new(vec![payment]).map_err(|e| anyhow!("{e:?}"))?
+        }
+        Pay::Uri(uri) => TransactionRequest::from_uri(uri).map_err(|e| anyhow!("invalid --uri: {e:?}"))?,
+    };
+    let payments: Vec<(String, u64, Option<String>)> = request
+        .payments()
+        .values()
+        .map(|p| {
+            let memo = p.memo().and_then(|m| match Memo::try_from(m) {
+                Ok(Memo::Text(t)) => Some(t.to_string()),
+                _ => None,
+            });
+            (p.recipient_address().encode(), p.amount().map_or(0, |z| z.into_u64()), memo)
+        })
+        .collect();
     let change_strategy = MultiOutputChangeStrategy::new(
         StandardFeeRule::Zip317,
         None,
@@ -268,14 +287,16 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
             note.output_index()
         );
     }
-    println!("  pay     {:>17}  to {}", zec(a.value), a.to);
+    for (to, value, memo) in &payments {
+        println!("  pay     {:>17}  to {to}", zec(*value));
+        if let Some(m) = memo {
+            println!("          memo {m:?}");
+        }
+    }
     for change in step.balance().proposed_change() {
         println!("  change  {:>17}  back to this wallet", zec(change.value().into_u64()));
     }
     println!("  fee     {:>17}", zec(fee));
-    if let Some(m) = &a.memo {
-        println!("  memo    {m:?}");
-    }
 
     println!(
         "\nheads-up: this transaction will carry an anchor {age} blocks old. Ordinary wallets use an \
@@ -290,7 +311,7 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     }
     let identity = a.identity.as_ref().ok_or_else(|| anyhow!("--identity is required to sign"))?;
     if !a.yes {
-        print!("\nSign and broadcast to {} on {}? Type yes: ", a.to, network.name());
+        print!("\nSign and broadcast these {} payment(s) on {}? Type yes: ", payments.len(), network.name());
         std::io::stdout().flush()?;
         let mut line = String::new();
         std::io::stdin().read_line(&mut line)?;
@@ -302,20 +323,28 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     drop(db);
 
     // 5. Sign and broadcast with devtool, from the same wallet state (no sync in between).
-    println!("\nzcash-devtool wallet send --min-confirmations {n} …");
     let mut cmd = devtool(&devtool_bin, &a.wallet);
-    cmd.arg("send")
-        .arg("-i")
+    match &a.pay {
+        Pay::One { to, value, memo } => {
+            println!("\nzcash-devtool wallet send --min-confirmations {n} …");
+            cmd.arg("send").args(["--address", to, "--value", &value.to_string()]);
+            if let Some(m) = memo {
+                cmd.args(["--memo", m]);
+            }
+        }
+        Pay::Uri(uri) => {
+            // `pay --min-confirmations`: patches/zcash-devtool-pay-min-confirmations.patch.
+            println!("\nzcash-devtool wallet pay --min-confirmations {n} …");
+            cmd.arg("pay").args(["--payment-uri", uri, "--disable-confirmation"]);
+        }
+    }
+    cmd.arg("-i")
         .arg(identity)
-        .args(["--address", &a.to, "--value", &a.value.to_string()])
         .args(["--min-confirmations", &n.to_string()])
         .args(["--target-note-count", &TARGET_NOTE_COUNT.to_string()])
         .args(["--min-split-output-value", &MIN_SPLIT_OUTPUT_VALUE.to_string()])
         .args(["-s", server]);
-    if let Some(m) = &a.memo {
-        cmd.args(["--memo", m]);
-    }
-    let mut child = cmd.stdout(Stdio::piped()).spawn().context("running zcash-devtool send")?;
+    let mut child = cmd.stdout(Stdio::piped()).spawn().context("running zcash-devtool")?;
     let mut txid = None;
     let mut devtool_anchor = None;
     for line in BufReader::new(child.stdout.take().unwrap()).lines() {
@@ -331,9 +360,9 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     }
     let status = child.wait()?;
     if !status.success() {
-        bail!("zcash-devtool send failed ({status})");
+        bail!("zcash-devtool failed ({status})");
     }
-    let txid = txid.ok_or_else(|| anyhow!("zcash-devtool send printed no txid"))?;
+    let txid = txid.ok_or_else(|| anyhow!("zcash-devtool printed no txid"))?;
     if devtool_anchor != Some(h_a) {
         println!("WARNING: devtool reported anchor {devtool_anchor:?}, expected {h_a}");
     }

@@ -1,8 +1,8 @@
 //! Anonymous usage counts for `GET /stats`.
 //!
-//! Each completed verification adds 1 to a single counter keyed by (UTC date, incident, verdict).
+//! Each completed verification adds 1 to a single counter keyed by (UTC date, event, verdict).
 //! Nothing else is stored: no transaction id, no IP address, no time of day, no request details. A check
-//! against a height that isn't a registry incident is counted as "custom height", without the height.
+//! against a height that isn't a registry event is counted as "custom height", without the height.
 
 use std::{
     collections::BTreeMap,
@@ -16,7 +16,7 @@ use rusqlite::{Connection, params};
 use serde_json::{Value, json};
 
 pub const CUSTOM_HEIGHT: &str = "custom height";
-pub const WHAT_IS_COUNTED: &str = "Only daily totals of completed checks, by verdict and by incident. \
+pub const WHAT_IS_COUNTED: &str = "Only daily totals of completed checks, by verdict and by event. \
      No transaction ids, IP addresses, times of day or other request details are recorded.";
 
 pub struct Stats {
@@ -43,18 +43,27 @@ impl Stats {
         let conn = Connection::open(path).with_context(|| format!("opening stats {}", path.display()))?;
         conn.execute_batch(
             "CREATE TABLE IF NOT EXISTS daily_checks (
-                 day TEXT NOT NULL, incident TEXT NOT NULL, verdict TEXT NOT NULL, count INTEGER NOT NULL,
-                 PRIMARY KEY (day, incident, verdict));",
+                 day TEXT NOT NULL, event TEXT NOT NULL, verdict TEXT NOT NULL, count INTEGER NOT NULL,
+                 PRIMARY KEY (day, event, verdict));",
         )?;
+        // Files created before the rename have an `incident` column: rename it in place.
+        let old: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM pragma_table_info('daily_checks') WHERE name = 'incident')",
+            [],
+            |r| r.get(0),
+        )?;
+        if old {
+            conn.execute_batch("ALTER TABLE daily_checks RENAME COLUMN incident TO event;")?;
+        }
         Ok(Stats { conn: Mutex::new(conn) })
     }
 
     /// Count one completed check. Errors are swallowed: counting must never fail a verification.
-    pub fn count(&self, incident: &str, verdict: &str) {
+    pub fn count(&self, event: &str, verdict: &str) {
         let r = self.conn.lock().unwrap().execute(
-            "INSERT INTO daily_checks (day, incident, verdict, count) VALUES (?1, ?2, ?3, 1)
-             ON CONFLICT (day, incident, verdict) DO UPDATE SET count = count + 1",
-            params![utc_day(), incident, verdict],
+            "INSERT INTO daily_checks (day, event, verdict, count) VALUES (?1, ?2, ?3, 1)
+             ON CONFLICT (day, event, verdict) DO UPDATE SET count = count + 1",
+            params![utc_day(), event, verdict],
         );
         if let Err(e) = r {
             eprintln!("stats: {e}");
@@ -63,18 +72,18 @@ impl Stats {
 
     pub fn summary(&self) -> Result<Value> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT day, incident, verdict, count FROM daily_checks ORDER BY day")?;
+        let mut stmt = conn.prepare("SELECT day, event, verdict, count FROM daily_checks ORDER BY day")?;
         let rows: Vec<(String, String, String, u64)> = stmt
             .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
             .collect::<Result<_, _>>()?;
         let mut total = 0;
         let mut by_verdict: BTreeMap<&str, u64> = BTreeMap::new();
-        let mut by_incident: BTreeMap<&str, u64> = BTreeMap::new();
+        let mut by_event: BTreeMap<&str, u64> = BTreeMap::new();
         let mut days: BTreeMap<&str, BTreeMap<&str, u64>> = BTreeMap::new();
-        for (day, incident, verdict, n) in &rows {
+        for (day, event, verdict, n) in &rows {
             total += n;
             *by_verdict.entry(verdict).or_default() += n;
-            *by_incident.entry(incident).or_default() += n;
+            *by_event.entry(event).or_default() += n;
             let d = days.entry(day).or_default();
             *d.entry("total").or_default() += n;
             *d.entry(verdict).or_default() += n;
@@ -84,7 +93,8 @@ impl Stats {
             "since": rows.first().map(|r| r.0.clone()),
             "total_checks": total,
             "by_verdict": by_verdict,
-            "by_incident": by_incident,
+            "by_event": &by_event,
+            "by_incident": &by_event,
             "days": days.into_iter().map(|(day, c)| json!({ "day": day, "counts": c })).collect::<Vec<_>>(),
         }))
     }

@@ -14,12 +14,12 @@ pub enum RegistryCmd {
         #[arg(long, default_value = "secrets/registry-signing.key")]
         key: PathBuf,
     },
-    /// Sign incidents.json with the private key, writing incidents.json.sig.
+    /// Sign events.json with the private key, writing events.json.sig.
     Sign {
         #[arg(long, default_value = "secrets/registry-signing.key")]
         key: PathBuf,
     },
-    /// Verify the signature and print the incidents.
+    /// Verify the signature and print the events.
     Check,
 }
 
@@ -58,19 +58,20 @@ pub fn run(cmd: RegistryCmd, dir: &Path) -> Result<()> {
         }
         RegistryCmd::Sign { key } => {
             let sk = read_key(&key)?;
-            let bytes = std::fs::read(dir.join("incidents.json"))?;
+            let file = vintage_verifier::registry_file(dir);
+            let bytes = std::fs::read(&file)?;
             // Refuse to sign something the verifier couldn't parse.
             let _: vintage_core::registry::Registry = serde_json::from_slice(&bytes)?;
             let sig = sk.sign(&bytes);
-            std::fs::write(dir.join("incidents.json.sig"), format!("{}\n", hex::encode(sig.to_bytes())))?;
-            println!("signed {} bytes → {}", bytes.len(), dir.join("incidents.json.sig").display());
+            std::fs::write(file.with_extension("json.sig"), format!("{}\n", hex::encode(sig.to_bytes())))?;
+            println!("signed {} bytes → {}", bytes.len(), file.with_extension("json.sig").display());
             Ok(())
         }
         RegistryCmd::Check => {
             let reg = vintage_verifier::load_registry(dir)?;
-            println!("signature OK ({} incident(s))", reg.incidents.len());
-            for i in &reg.incidents {
-                println!("- {} [{}] first inflow height {}: {}", i.id, i.network, i.first_inflow_height, i.label);
+            println!("signature OK ({} event(s))", reg.events.len());
+            for i in &reg.events {
+                println!("- {} [{}, {:?}] before block {}: {}", i.id, i.network, i.kind, i.height, i.label);
             }
             Ok(())
         }
