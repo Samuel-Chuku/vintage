@@ -105,5 +105,6 @@ would remove this limit.
 ### Not covered yet
 
 - Multi-hop chains.
-- A zero-knowledge version that proves the same statement **without** disclosing the viewing key. Our
-  spike shows it needs no new circuit: see [ROADMAP.md](ROADMAP.md#one-hop-provenance).
+- A zero-knowledge version that proves the same statement **without** disclosing the viewing key. It
+  needs no new circuit, and a research prototype already passes on this mainnet deposit:
+  [research/zk-link](../research/zk-link/README.md). Unreviewed, not in the CLI or API yet.

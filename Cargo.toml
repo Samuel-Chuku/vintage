@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/vintage-core", "crates/vintage-verifier", "crates/vintage-cli", "crates/vintage-api", "research/onehop-spike", "research/gate0-check"]
+members = ["crates/vintage-core", "crates/vintage-verifier", "crates/vintage-cli", "crates/vintage-api", "research/onehop-spike", "research/gate0-check", "research/zk-link"]
 
 
 [workspace.package]

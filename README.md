@@ -179,8 +179,9 @@ Peak memory is 15–17 MB. The cache is about 2 MB.
 ## Roadmap
 
 A zero-knowledge version of the link, which proves the same thing **without** disclosing any viewing
-key, is buildable with the existing Ironwood circuit: see the working spike in
-`research/onehop-spike` and **[docs/ROADMAP.md](docs/ROADMAP.md)**. A draft ZIP describing the
+key, works as a research prototype on the mainnet deposit, using the existing Ironwood circuit:
+**[research/zk-link](research/zk-link/README.md)** (proof file `demo/mainnet-zk-link.json`, six
+forgeries rejected). It is unreviewed. Plan: **[docs/ROADMAP.md](docs/ROADMAP.md)**. A draft ZIP describing the
 property is in **[docs/ZIP_DRAFT.md](docs/ZIP_DRAFT.md)**.
 
 ## Repository
@@ -192,7 +193,7 @@ crates/vintage-cli        `vintage`: verify, send, request, link, status, tx, wi
 crates/vintage-api        `vintage-api`: the HTTP verifier
 registry/                 events.json + ed25519 signature + public key
 demo/                     the mainnet demo: how to reproduce it, and the published link bundle
-research/                 one-hop zero-knowledge spike; Gate 0 check for the link
+research/                 zk-link (the link without a viewing key, on mainnet data); one-hop spike; Gate 0
 patches/                  zcash-devtool patches (`propose` and `pay` with --min-confirmations)
 deploy/                   API service + reverse proxy; Cloudflare Pages guide for the website
 web/                      the website: pages/ (one file per page), shared/ design system, static/ per site

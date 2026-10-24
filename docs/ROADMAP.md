@@ -1,7 +1,7 @@
 # Roadmap
 
 - [One-hop provenance](#one-hop-provenance): proving that newer coins came from a payment whose inputs
-  predate H. Researched, with a working feasibility spike.
+  predate H, with no key disclosed. **Prototype working on mainnet data**: `research/zk-link`.
 - [Other items](#other-items)
 
 ## One-hop provenance
@@ -103,6 +103,20 @@ total wall 14.42s, peak RAM 86160KB
 
 Run it: `cargo run --release -p onehop-spike`.
 
+### Prototype on mainnet data (`research/zk-link`, Oct 24)
+
+The same construction on the real mainnet pair: deposit `df151ee2…9402` spends two notes from the
+Vintage payment `da9017e0…e3a7`. `zk-link prove` reads the receipt wallet's key locally and writes one
+proof per input; `zk-link verify` checks them with no key and runs the age check on the payment.
+Proving took 4 s, verifying 8 s. Result: `ZK LINK PASS`, 2 of 2 inputs, 600,000 zat. Six forgeries
+(tampered proof, another payment, another deposit, a missing input, a duplicate, an event before the
+payment) are each rejected. Details and output: [research/zk-link/README.md](../research/zk-link/README.md);
+the proof file: [demo/mainnet-zk-link.json](../demo/mainnet-zk-link.json).
+
+Two choices differ from the plan below: the value is proven by the bundle's **binding signature** over
+its value balance (no separate opening of the value commitment), and the challenge is a hash of the
+deposit and payment txids, so proofs can't be reused for another pair.
+
 ### Open problems
 
 1. **Value coverage and dummy inputs.** Because the circuit skips the Merkle check for zero-value
@@ -130,8 +144,9 @@ Run it: `cargo run --release -p onehop-spike`.
 | Phase | What | Estimate |
 |---|---|---|
 | ✅ 0 | Feasibility spike (above) | done |
-| 1 | `vintage disclose`: build a disclosure from a devtool wallet for a real T1 → T2 pair; `vintage verify-hop`; `GET /verify-hop` in the API. Testnet, then a tiny mainnet demo. | 1–2 weeks |
-| 2 | Value coverage with the *coverage* policy; disclosure file format; challenge binding | with phase 1 |
+| ✅ 1a | Prototype prover and verifier on a real mainnet T1 → T2 pair, *strict* policy, challenge binding, file format (`research/zk-link`) | done Oct 24 |
+| 1b | Move it into `vintage link` and add `POST /verify-zk-link` to the API | days |
+| 2 | Value coverage with the *coverage* policy, for deposits with dummy inputs | with 1b |
 | 3 | Written spec (ZIP 311 extension draft), review, *strict* policy with wallet support | after the hackathon |
 
 ## Other items
