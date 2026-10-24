@@ -1,30 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vintage · Proof of age for private money</title>
-<meta name="description" content="Prove your shielded ZEC predates a hack, a tax cutoff or any block you name, from one transaction, without unshielding anything.">
-<meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-49AJZOtmeNg6KXt47aJ9Q7rI0XaL7xuHXf9inJl2Njw='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://api.usevintage.site; base-uri 'none'; form-action 'none'">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/tokens.css">
-<link rel="stylesheet" href="css/vintage.css">
-<script>(function(){try{var t=localStorage.getItem('vt-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
-</head>
-<body>
-<a class="skip tkt" href="https://app.usevintage.site"><span class="lbl">Open the verifier</span><span class="stub" aria-hidden="true">→</span></a>
-
-<nav class="nav" id="nav" aria-label="Main"><div class="wrap">
-  <a class="mark" href="#top">VINTAGE</a>
-  <div class="navlinks label">
-    <a class="hide-sm" href="#how">How it works</a><a class="hide-sm" href="#events">Events</a><a class="hide-sm" href="#privacy">Privacy</a><a class="hide-sm" href="https://app.usevintage.site">Verify</a>
-    <button class="toggle" id="toggle" aria-label="Switch colour theme"><span data-t="light">Light</span> / <span data-t="dark">Dark</span></button>
-  </div>
-</div></nav>
-
-<main class="wrap">
-
 <!-- 01 HERO -->
 <section class="hero" id="top">
   <div class="hero-top">
@@ -37,9 +10,9 @@
     <div class="acts">
       <div class="row">
         <a class="tkt primary" href="https://app.usevintage.site"><span class="lbl"><span class="no">01</span>Verify a deposit</span><span class="stub" aria-hidden="true">→</span></a>
-        <a class="tkt" href="#how"><span class="lbl"><span class="no">02</span>See how</span><span class="stub" aria-hidden="true">↓</span></a>
+        <a class="tkt" href="/simulate/"><span class="lbl"><span class="no">02</span>See it run</span><span class="stub" aria-hidden="true">→</span></a>
       </div>
-      <p class="note">Covers coins received before the event you pick. Fresh coins have their own path, <a href="#events">further down</a>.</p>
+      <p class="note">Covers coins received before the event you pick. Fresh coins have their own path, <a href="/how-it-works/#fresh">explained here</a>.</p>
     </div>
   </div>
   <div class="tape" id="tape" role="img" aria-label="A real mainnet transaction whose coins were in the note tree at block 3,525,696, 13 blocks before the event at block 3,525,709.">
@@ -76,6 +49,7 @@
             <div class="row">
               <a class="tkt primary" href="https://app.usevintage.site"><span class="lbl">Open the verifier</span><span class="stub" aria-hidden="true">→</span></a>
               <a class="quiet" href="https://app.usevintage.site/#tx=da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7&amp;before=vintage-demo-2026-10">Try the mainnet example</a>
+              <a class="quiet" href="/simulate/">Step through a demo</a>
             </div>
           </div>
         </div>
@@ -116,7 +90,7 @@
 </section>
 
 <!-- 05 HOW -->
-<section class="reveal" id="how">
+<section class="reveal" id="how" data-spy="how">
   <div class="label eyebrow">05 / Mechanism</div>
   <h2 class="display">The chain already dates every shielded spend.</h2>
   <div class="three">
@@ -135,7 +109,7 @@
     <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">02 The anchor</div></div>
       <div class="body">
         <div class="ill"><svg viewBox="0 0 300 180" aria-hidden="true">
-          <rect class="st fill-s" x="24" y="56" width="70" height="44" rx="4"/><text x="59" y="82" text-anchor="middle">ROOT H−111</text>
+          <rect class="st fill-s" x="15" y="56" width="88" height="44" rx="4"/><text x="59" y="82" text-anchor="middle">ROOT H−111</text>
           <rect class="st fill-s" x="120" y="56" width="70" height="44" rx="4" stroke-dasharray="4 4"/><text x="155" y="82" text-anchor="middle">ROOT H</text>
           <rect class="st fill-k" x="206" y="44" width="76" height="68" rx="4"/><text x="244" y="74" text-anchor="middle" style="fill:var(--vt-surface)">YOUR</text><text x="244" y="90" text-anchor="middle" style="fill:var(--vt-surface)">SPEND</text>
           <path class="st" d="M206 130H59v-30"/><path class="fill-k" d="M53 108l6-10 6 10z"/>
@@ -159,10 +133,11 @@
       </div></div>
   </div>
   <p class="kicker">No blocklist. No new cryptography. A rule Zcash already enforces on every spend.</p>
+  <p class="more"><a class="tkt" href="/how-it-works/"><span class="lbl">How it works, in depth</span><span class="stub" aria-hidden="true">→</span></a></p>
 </section>
 
 <!-- 06 EVENTS -->
-<section class="reveal" id="events">
+<section class="reveal" id="events" data-spy="events">
   <div class="label eyebrow">06 / Events</div>
   <h2 class="display">One proof, any dated event.</h2>
   <p class="sec-lead">One deposit proves it predates every event after its anchor, all at once. The registry labels block heights and nothing else: no addresses, no people, and anyone can check against any height they choose.</p>
@@ -191,10 +166,11 @@
         <p>The rail can run the check itself with <span class="mono">vintage link verify</span>, so the key goes to nobody else. A zero-knowledge version that discloses no key is on the roadmap.</p>
       </div></div>
   </div>
+  <p class="more"><a class="tkt" href="/events/"><span class="lbl">All events and the registry</span><span class="stub" aria-hidden="true">→</span></a></p>
 </section>
 
 <!-- 07 PRIVACY -->
-<section class="reveal" id="privacy">
+<section class="reveal" id="privacy" data-spy="privacy">
   <div class="label eyebrow">07 / Privacy</div>
   <h2 class="display">Stay shielded all the way to the exit.</h2>
   <p class="sec-lead">Guides today tell you to unshield before depositing, because shielded deposits get frozen. Vintage lets the deposit stay shielded and still clear.</p>
@@ -204,6 +180,7 @@
     <div><span class="label">We never keep</span><b>Your txid or IP</b><p>No logs, no analytics, no cookies, no third-party requests. Fonts are served from this site.</p></div>
     <div><span class="label">You can skip us</span><b>Run it yourself</b><p>The verifier is open source. Your machine, a public lightwalletd, nobody else.</p></div>
   </div>
+  <p class="more"><a class="tkt" href="/privacy/"><span class="lbl">Who sees what</span><span class="stub" aria-hidden="true">→</span></a></p>
 </section>
 
 <!-- 08 EVIDENCE -->
@@ -285,7 +262,7 @@
       <p class="lead" style="margin-top:0">An exit rail calls the verifier with the deposit txid and the event. A pass means every coin in the deposit predates that event. It does not identify anyone and it is not a source-of-funds report.</p>
       <p style="color:var(--vt-ink-2)">Run the verifier yourself, or call ours. Either way the answer comes from public chain data, so you can check it independently.</p>
     </div>
-    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">GET /verify · trimmed</div><button class="quiet" id="copycode" type="button">Copy</button></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">GET /verify · trimmed</div><button class="quiet" type="button" data-copy="code">Copy</button></div>
       <div class="body"><pre class="code" id="code"><span class="m">GET</span> /verify/da9017e0…7095e3a7?before=vintage-demo-2026-10
 
 {
@@ -298,6 +275,7 @@
   "evidence": { "distinct_roots": 1303 }
 }</pre></div></div>
   </div>
+  <p class="more"><a class="tkt" href="/how-it-works/#integrate"><span class="lbl">Integration guide</span><span class="stub" aria-hidden="true">→</span></a></p>
 </section>
 
 <!-- 11 NEXT -->
@@ -312,15 +290,3 @@
       <div class="step cur"><div class="ibox"><span class="mono">4</span></div><div><div class="tt">An anchor-provenance ZIP</div><div class="ss">So any wallet can offer a Vintage send.</div></div><span class="label">Drafted</span></div>
     </div></div>
 </section>
-
-</main>
-
-<footer><div class="wrap cols">
-  <a class="mark" href="#top">VINTAGE</a>
-  <nav class="label" aria-label="Footer"><a href="https://github.com/Samuel-Chuku/vintage" rel="noopener noreferrer">GitHub <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a><a href="#limits">Threat model</a><span>Zecathon 2026</span></nav>
-  <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests. Fonts are served from this site. Static site served by Cloudflare. Your txid goes from your browser straight to our verifier, which keeps no logs.</p>
-</div></footer>
-
-<script src="js/site.js" defer></script>
-</body>
-</html>

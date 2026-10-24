@@ -1,0 +1,56 @@
+<section class="page-head">
+  <div class="label eyebrow">Simulate</div>
+  <h1 class="display">See it run.</h1>
+  <p class="lead">Four short walkthroughs of what Vintage does, each a few steps. The check steps are live: they ask our verifier about real Zcash mainnet transactions while you watch. The rest replays our mainnet demo of 21 to 23 October 2026, with real transactions you can open on an explorer.</p>
+  <div class="toc" role="group" aria-label="Scenarios">
+    <a href="#exchange">Exchange deposit</a><a href="#near">NEAR Intents swap</a><a href="#fresh">Fresh coins</a><a href="#tainted">Tainted coins</a>
+  </div>
+</section>
+
+<section id="sim" tabindex="-1" aria-label="Simulation">
+  <div class="sim-tabs" id="simtabs" role="group" aria-label="Scenario">
+    <button type="button" class="chip" data-sc="exchange" aria-pressed="true">01 Exchange deposit</button>
+    <button type="button" class="chip" data-sc="near" aria-pressed="false">02 NEAR Intents swap</button>
+    <button type="button" class="chip" data-sc="fresh" aria-pressed="false">03 Fresh coins</button>
+    <button type="button" class="chip" data-sc="tainted" aria-pressed="false">04 Tainted coins</button>
+  </div>
+
+  <div class="stack" style="margin:16px 0 0 16px">
+    <div class="win active">
+      <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t" id="simtitle">Exchange deposit</div><div class="label" id="simstep">Step 1 of 5</div></div>
+      <div class="body">
+        <div class="actors" id="actors" aria-live="polite"></div>
+        <div class="flow" id="flow"></div>
+        <div class="narr" id="narr" aria-live="polite"></div>
+        <div class="ctrls">
+          <div class="rail" id="rail" role="group" aria-label="Steps"></div>
+          <div class="row">
+            <button type="button" class="quiet" id="back">Back</button>
+            <button type="button" class="quiet" id="restart">Restart</button>
+            <button type="button" class="quiet" id="play" aria-pressed="false"><span class="lbl">Autoplay</span></button>
+            <button type="button" class="tkt primary" id="next"><span class="lbl">Next step</span><span class="stub" aria-hidden="true">→</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <noscript><p class="err">The simulation needs JavaScript. The same four flows, with every transaction, are written up in the repository's demo/README.md.</p></noscript>
+
+  <div class="learn" style="margin-top:var(--vt-12)">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">What the other side learns</div></div>
+      <div class="body"><ul id="knows"></ul></div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">What stays private</div></div>
+      <div class="body"><ul id="hidden"></ul></div></div>
+  </div>
+  <p class="ref" style="margin-top:var(--vt-6)">Labels on each step: <b>Live</b> means a real request to api.usevintage.site, made now. <b>Replay</b> means real mainnet data recorded during our demo. <b>Simulated party</b> means an illustrative exchange acting on that real data. Keys: ← and → move between steps.</p>
+</section>
+
+<section class="reveal">
+  <div class="label eyebrow">Run it yourself</div>
+  <h2 class="display">Every step, from your terminal.</h2>
+  <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Reproduce the demo</div><button class="quiet" type="button" data-copy="code-repro">Copy</button></div>
+    <div class="body"><pre class="code" id="code-repro"><span class="m">$</span> vintage verify da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7 --before vintage-demo-2026-10
+<span class="m">$</span> vintage link verify demo/mainnet-link-bundle.json --before vintage-demo-2026-10
+<span class="m">$</span> vintage verify a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143 --before vintage-demo-2026-10</pre></div></div>
+  <p class="ref" style="margin-top:var(--vt-4)">Expected: PASS, LINK PASS and FAIL. Source and build steps: <a href="https://github.com/Samuel-Chuku/vintage" rel="noopener noreferrer">github.com/Samuel-Chuku/vintage</a>.</p>
+</section>

@@ -16,7 +16,7 @@ mod status;
 mod witness;
 
 #[derive(Parser)]
-#[command(name = "vintage", about = "Prove your ZEC isn't the hacker's: with time, not a blocklist.")]
+#[command(name = "vintage", about = "Proof of age for private money: prove the shielded Zcash coins a transaction spends existed before a block.")]
 struct Cli {
     /// Network: main or test.
     #[arg(long, global = true, default_value = "main")]
@@ -358,7 +358,7 @@ async fn main() -> Result<()> {
             println!();
             match (r.verdict, r.matched_heights) {
                 ("PASS", _) => {
-                    println!("PASS — {}", r.summary);
+                    println!("PASS: {}", r.summary);
                     if let Some(e) = &r.evidence {
                         println!(
                             "evidence:    the anchor matched none of the {} distinct Ironwood roots at heights {h}..={}; consensus requires it to be the root of an earlier block",
@@ -367,10 +367,10 @@ async fn main() -> Result<()> {
                     }
                 }
                 ("FAIL", Some([lo, hi])) => {
-                    println!("FAIL — {}", r.summary);
+                    println!("FAIL: {}", r.summary);
                     println!("evidence:    the anchor is the Ironwood root at heights {lo}..={hi}, not before block {h}");
                 }
-                _ => println!("FAIL — not provable: {}", r.summary),
+                _ => println!("{}: {}", r.verdict, r.summary),
             }
             std::process::exit(code);
         }

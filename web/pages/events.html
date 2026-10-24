@@ -1,0 +1,91 @@
+<section class="page-head">
+  <div class="label eyebrow">Events</div>
+  <h1 class="display">Pick a date. Prove your coins are older.</h1>
+  <p class="lead">An event is a block height that matters: where a hack's coins first arrived, a tax cutoff, the start of a bug. A Vintage proof says one thing about it: every coin in this transaction was already in the shielded pool before that block.</p>
+  <div class="toc" role="group" aria-label="On this page">
+    <a href="#how-events">How it works</a><a href="#timeline">Timeline</a><a href="#registry-sec">Live registry</a><a href="#types">Event types</a>
+  </div>
+</section>
+
+<section id="how-events" class="reveal">
+  <div class="label eyebrow">01 / How an event works</div>
+  <h2 class="display">Three steps, one block height.</h2>
+  <div class="steps3">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">01 Something happens</div></div>
+      <div class="body">
+        <div class="ill"><svg viewBox="0 0 300 140" aria-hidden="true">
+          <g class="st"><rect x="20" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="48" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="76" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="104" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="132" y="50" width="20" height="36" rx="2" class="fill-k"/><rect x="160" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="188" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="216" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="244" y="50" width="20" height="36" rx="2" class="fill-s"/><path d="M142 50V26"/></g>
+          <text x="142" y="18" text-anchor="middle">BLOCK H</text><text x="150" y="116" text-anchor="middle">A HACK, A CUTOFF, A BUG</text></svg></div>
+        <p>An event gets a block height H: the first block where it matters. The Bitget hack's coins first entered the shielded pool at block 3,501,240.</p></div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">02 Your coins were there</div></div>
+      <div class="body">
+        <div class="ill"><svg viewBox="0 0 300 140" aria-hidden="true">
+          <g class="st"><rect x="20" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="48" y="50" width="20" height="36" rx="2" class="fill-k"/><rect x="76" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="104" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="132" y="50" width="20" height="36" rx="2" class="fill-s" stroke-dasharray="4 4"/><rect x="160" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="188" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="216" y="50" width="20" height="36" rx="2" class="fill-s"/><rect x="244" y="50" width="20" height="36" rx="2" class="fill-s"/><path d="M142 50V26"/></g>
+          <path class="fill-k" d="M52 104l6-10 6 10z"/><text x="142" y="18" text-anchor="middle">H</text><text x="58" y="124" text-anchor="middle">YOUR ANCHOR</text></svg></div>
+        <p>You send with an anchor from before H. Coins that arrived after H aren't in that snapshot, so your wallet can't include them, and consensus checks it.</p></div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">03 Anyone checks</div></div>
+      <div class="body">
+        <div class="ill"><svg viewBox="0 0 300 140" aria-hidden="true">
+          <g class="st"><rect x="40" y="30" width="220" height="80" rx="6" class="fill-s"/><path d="M40 52H260"/><rect x="60" y="66" width="120" height="24" rx="3" class="fill-k"/></g>
+          <text x="62" y="46">VERIFY · TXID + H</text><text x="120" y="82" text-anchor="middle" class="inv">PASS</text><text x="222" y="82" text-anchor="middle">~1 S</text></svg></div>
+        <p>The txid and H are all a checker needs: <a href="https://app.usevintage.site/">our verifier</a>, the API, or <span class="mono">vintage verify</span> on their own machine.</p></div></div>
+  </div>
+</section>
+
+<section id="timeline" class="reveal">
+  <div class="label eyebrow">02 / Timeline</div>
+  <h2 class="display">Ironwood so far.</h2>
+  <div class="diagram" role="img" aria-label="A timeline from Ironwood's activation at block 3,428,143 on 28 July 2026, to the Bitget event at block 3,501,240 on 30 September, the demo event at block 3,525,709 on 21 October, then future dates: a possible tax cutoff on 31 December 2026 and full-year holding proofs from July 2027.">
+    <svg viewBox="0 0 960 200" aria-hidden="true">
+      <g class="st"><path d="M40 100H700"/><path class="dash" d="M700 100H930"/>
+        <rect x="34" y="88" width="12" height="24" class="fill-k"/><rect x="288" y="88" width="12" height="24" class="fill-k"/><rect x="474" y="88" width="12" height="24" class="fill-s"/>
+        <rect x="624" y="92" width="16" height="16" rx="8" class="fill-s"/><rect x="744" y="88" width="12" height="24" class="fill-s" stroke-dasharray="4 4"/><rect x="884" y="88" width="12" height="24" class="fill-s" stroke-dasharray="4 4"/>
+        <path d="M40 112V140M294 88V60M480 112V140M632 92V60M750 112V140M890 88V60"/></g>
+      <text x="40" y="156" class="b">IRONWOOD LAUNCHES</text><text x="40" y="170" class="s">BLOCK 3,428,143 · 28 JUL</text>
+      <text x="294" y="44" class="b" text-anchor="middle">BITGET HACK INFLOW</text><text x="294" y="58" class="s" text-anchor="middle">BLOCK 3,501,240 · 30 SEP</text>
+      <text x="480" y="156" class="b" text-anchor="middle">DEMO EVENT (STAGED)</text><text x="480" y="170" class="s" text-anchor="middle">BLOCK 3,525,709 · 21 OCT</text>
+      <text x="632" y="44" class="b" text-anchor="middle">TODAY</text>
+      <text x="750" y="156" class="b" text-anchor="middle">TAX CUTOFF?</text><text x="750" y="170" class="s" text-anchor="middle">31 DEC 2026 · DRAFT LAW</text>
+      <text x="890" y="44" class="b" text-anchor="end">ONE-YEAR HOLDS</text><text x="890" y="58" class="s" text-anchor="end">FROM JUL 2027</text>
+    </svg>
+  </div>
+  <p class="cap">Not to scale. Coins untouched since before an event clear it, and every later event, with one proof.</p>
+</section>
+
+<section id="registry-sec" class="reveal">
+  <div class="label eyebrow">03 / Live registry</div>
+  <h2 class="display">The signed list of dates.</h2>
+  <p class="sec-lead">The registry labels block heights, with the transactions and public sources behind each. It names no people and no addresses, and nothing in it marks a coin as bad. You can always check against a height of your own.</p>
+  <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">registry/events.json</div><span class="label">Mainnet</span></div>
+    <div class="body tblwrap">
+      <table class="reg" id="registry">
+        <thead><tr><th>Type</th><th>Event</th><th>Block</th><th>ID</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag ink">hack</span></td><td>Bitget hot-wallet exploit: first shielding into Ironwood</td><td class="num">3,501,240</td><td class="num">bitget-2026-09</td><td class="num"><a href="https://app.usevintage.site/#before=bitget-2026-09">Check a deposit</a></td></tr>
+          <tr><td><span class="tag ink">custom</span></td><td>Vintage demo: simulated event (not a real hack)</td><td class="num">3,525,709</td><td class="num">vintage-demo-2026-10</td><td class="num"><a href="https://app.usevintage.site/#before=vintage-demo-2026-10">Check a deposit</a></td></tr>
+        </tbody>
+      </table>
+      <p class="ref" id="regmeta">ed25519-signed · public key d36b99d8…4376</p>
+    </div></div>
+  <p class="ref" style="margin-top:var(--vt-4)">New events are added only with primary-source transaction ids. Propose one on <a href="https://github.com/Samuel-Chuku/vintage/issues" rel="noopener noreferrer">GitHub</a>.</p>
+</section>
+
+<section id="types" class="reveal">
+  <div class="label eyebrow">04 / Event types</div>
+  <h2 class="display">One proof, any dated event.</h2>
+  <div class="events">
+    <div class="ev-card"><div class="top"><span class="tag ink">Hack</span><span class="label">Live</span></div><h3>Exploit inflows</h3>
+      <dl><dt>When</dt><dd>Stolen coins first enter the shielded pool.</dd><dt>You prove</dt><dd>Your deposit can't contain them.</dd><dt>Who asks</dt><dd>Exchanges, bridges, swap services.</dd></dl></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Tax cutoff</span><span class="label">Draft law</span></div><h3>Bought before a date</h3>
+      <dl><dt>When</dt><dd>A legal cutoff. A German draft, not yet law, would keep the one-year exemption only for coins bought before 2027.</dd><dt>You prove</dt><dd>You've held these exact coins since before the cutoff: a coin can't change hands without being spent.</dd><dt>Who asks</dt><dd>You, your accountant, a platform.</dd></dl></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Bug window</span><span class="label">Ready</span></div><h3>Pre-bug coins</h3>
+      <dl><dt>When</dt><dd>A bug that could create or move coins becomes possible.</dd><dt>You prove</dt><dd>Your coins are older than the window, so they weren't made through it.</dd><dt>Who asks</dt><dd>Exchanges, auditors.</dd></dl></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Holding</span><span class="label">From Jul 2027</span></div><h3>Held a year</h3>
+      <dl><dt>When</dt><dd>One year before you sell.</dd><dt>You prove</dt><dd>The exact coins you sell are over a year old. Ironwood launched in July 2026, so full-year proofs start in July 2027.</dd><dt>Who asks</dt><dd>Tax rules with a holding period.</dd></dl></div>
+    <div class="ev-card"><div class="top"><span class="tag ink">Custom</span><span class="label">Any block</span></div><h3>Your own date</h3>
+      <dl><dt>When</dt><dd>Any block you name: before a contract, a job, a dispute.</dd><dt>You prove</dt><dd>Your coins existed before it.</dd><dt>Who asks</dt><dd>Whoever you're dealing with. Use Custom height in the verifier.</dd></dl></div>
+    <div class="ev-card weak"><div class="top"><span class="tag dash">Snapshot</span><span class="label">Already served</span></div><h3>Airdrops and votes</h3>
+      <dl><dt>When</dt><dd>A balance snapshot for an airdrop or a vote.</dd><dt>You prove</dt><dd>It works, but snapshots need "unspent at the snapshot", which ZAIR and coinholder voting prove directly. Use them.</dd></dl></div>
+  </div>
+  <p class="more"><a class="tkt primary" href="https://app.usevintage.site/"><span class="lbl">Check a deposit</span><span class="stub" aria-hidden="true">→</span></a></p>
+</section>

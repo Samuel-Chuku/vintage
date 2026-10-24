@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ hashFiles('Cargo.lock') }}
+      - name: Build
+        run: cargo build --release --workspace --locked
+      - name: Test
+        run: cargo test --release --workspace --locked
+
+  website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build both sites
+        run: bash scripts/build-web.sh
+      - name: No em dashes in the built pages
+        run: "! grep -rl $'\\u2014' dist --include='*.html'"

@@ -1,0 +1,111 @@
+<section class="page-head">
+  <div class="label eyebrow">Privacy</div>
+  <h1 class="display">Stay shielded all the way to the exit.</h1>
+  <p class="lead">Guides today tell you to unshield before depositing, because shielded deposits get frozen. A Vintage proof lets the deposit stay shielded and still clear. This page lists exactly what each party sees when you use it.</p>
+  <div class="toc" role="group" aria-label="On this page">
+    <a href="#flow">Where your txid goes</a><a href="#who">Who sees what</a><a href="#kept">What we keep</a><a href="#tradeoffs">Trade-offs</a><a href="#self">Use nobody</a>
+  </div>
+</section>
+
+<section id="flow" class="reveal">
+  <div class="label eyebrow">01 / Where your txid goes</div>
+  <h2 class="display">One txid, three hops, no logs.</h2>
+  <div class="diagram" role="img" aria-label="Your browser loads the static site from Cloudflare, which never receives your txid. The txid goes from your browser straight to api.usevintage.site, which keeps no logs. The API asks a public lightwalletd server, zec.rocks, for the transaction and public block data, from the API's own address, not yours.">
+    <svg viewBox="0 0 960 230" aria-hidden="true">
+      <g class="st">
+        <rect x="20" y="90" width="200" height="64" rx="4" class="fill-s"/><rect x="380" y="90" width="200" height="64" rx="4" class="fill-k"/><rect x="740" y="90" width="200" height="64" rx="4" class="fill-s"/>
+        <rect x="20" y="10" width="200" height="44" rx="4" class="fill-s" stroke-dasharray="4 4"/>
+        <path d="M220 122H372"/><path d="M580 122H732"/><path class="dash" d="M120 54V90"/>
+      </g>
+      <path class="fill-k" d="M372 116l10 6-10 6zM732 116l10 6-10 6zM114 62l6-10 6 10z"/>
+      <text x="120" y="36" text-anchor="middle" class="s">CLOUDFLARE · STATIC PAGES</text>
+      <text x="120" y="118" text-anchor="middle" class="b">YOUR BROWSER</text><text x="120" y="136" text-anchor="middle" class="s">TXID + EVENT</text>
+      <text x="480" y="118" text-anchor="middle" class="b inv">API.USEVINTAGE.SITE</text><text x="480" y="136" text-anchor="middle" class="inv">NO LOGS</text>
+      <text x="840" y="118" text-anchor="middle" class="b">ZEC.ROCKS</text><text x="840" y="136" text-anchor="middle" class="s">PUBLIC LIGHTWALLETD</text>
+      <text x="300" y="110" text-anchor="middle">TXID</text><text x="660" y="110" text-anchor="middle">TXID + BLOCKS</text>
+      <text x="300" y="184" text-anchor="middle" class="s">SEES YOUR IP</text><text x="660" y="184" text-anchor="middle" class="s">SEES OUR SERVER, NOT YOU</text>
+      <text x="480" y="216" text-anchor="middle">THE PAGES NEVER SEE THE TXID: IT GOES STRAIGHT FROM YOUR BROWSER TO THE API</text>
+    </svg>
+  </div>
+  <p class="cap">The API's domain is not proxied through Cloudflare, so Cloudflare serves the pages but never carries a check.</p>
+</section>
+
+<section id="who" class="reveal">
+  <div class="label eyebrow">02 / Who sees what</div>
+  <h2 class="display">Each party, line by line.</h2>
+  <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Disclosure table</div><span class="label">Age proof</span></div>
+    <div class="body tblwrap">
+      <table class="reg">
+        <thead><tr><th>Party</th><th>Sees</th><th>Never sees</th></tr></thead>
+        <tbody>
+          <tr><td><b>The exchange or rail</b></td><td>The deposit txid it already has, the event, and the verdict: these coins predate that block.</td><td>Your amount history, other accounts, senders, any key.</td></tr>
+          <tr><td><b>Our verifier</b></td><td>The txid and event, for the length of the request. Your IP, at the connection level.</td><td>Any key. It writes none of it down: no access log, no request log.</td></tr>
+          <tr><td><b>zec.rocks</b></td><td>The txid and the block ranges our server asks for, from our server's address.</td><td>Your IP or who asked.</td></tr>
+          <tr><td><b>Cloudflare</b></td><td>That you loaded a page of this site.</td><td>The txid, the verdict. No analytics script is allowed to run.</td></tr>
+          <tr><td><b>Anyone on chain</b></td><td>That the transaction used an older anchor than most wallets would.</td><td>Amounts, senders, receivers, history: all stay shielded.</td></tr>
+        </tbody>
+      </table>
+    </div></div>
+  <div class="never" style="margin-top:var(--vt-8)">
+    <div><span class="label">We never see</span><b>Your keys</b><p>Age proofs need no key of any kind, not even a viewing key.</p></div>
+    <div><span class="label">We never see</span><b>Your balance</b><p>Amounts, senders and history stay encrypted on chain.</p></div>
+    <div><span class="label">We never keep</span><b>Your txid or IP</b><p>No logs, no analytics, no cookies, no third-party requests. Fonts are served from this site.</p></div>
+    <div><span class="label">You can skip us</span><b>Run it yourself</b><p>The verifier is open source. Your machine, a public lightwalletd, nobody else.</p></div>
+  </div>
+</section>
+
+<section id="kept" class="reveal">
+  <div class="label eyebrow">03 / What we keep</div>
+  <h2 class="display">One counter. Nothing else.</h2>
+  <div class="two">
+    <div class="prose">
+      <p>Each finished check adds 1 to a daily total, keyed by the UTC date, the event and the verdict. A check against your own height is counted as "custom height", without the height. That is the whole record.</p>
+      <p>No transaction ids, no IP addresses, no times of day, no user agents. The web server in front of the API has access logging turned off, for plain HTTP as well as HTTPS. The totals are public, so you can see exactly what is stored.</p>
+      <p><a href="https://api.usevintage.site/stats" rel="noopener noreferrer">See the raw numbers <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></p>
+    </div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">GET /stats · trimmed</div></div>
+      <div class="body"><pre class="code">{
+  "since": "2026-10-23",
+  "days": [
+    { "day": "2026-10-23",
+      "counts": {
+        "PASS": 5,
+        "LINK_PASS": 1,
+        "total": 6 } }
+  ],
+  "by_event": { "vintage-demo-2026-10": 6 }
+}</pre></div></div>
+  </div>
+  <p class="ref" style="margin-top:var(--vt-4)">Theme choice (light or dark) is saved in your own browser's storage, and passed between this site and the app in the part of the address after <span class="mono">#</span>, which browsers never send to a server. No cookies.</p>
+</section>
+
+<section id="tradeoffs" class="reveal">
+  <div class="label eyebrow">04 / Trade-offs</div>
+  <h2 class="display">What a proof does give away.</h2>
+  <div class="two">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">An old anchor is visible</div><span class="label">Every Vintage send</span></div>
+      <div class="body">
+        <p>Most wallets anchor a few blocks back. A Vintage send anchors further back, and anyone reading the chain can see that. It says nothing about who you are or how much you sent, but it does mark the transaction as one that chose to prove its age.</p>
+        <p class="ref">Use it when you deposit somewhere that already knows you, such as an exchange account.</p>
+      </div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">The receipt-account link</div><span class="label">Optional · discloses a key</span></div>
+      <div class="body">
+        <p>For coins received after an event, the link check shows the rail one single-use receipt account's viewing key. That reveals the funding payments, the amounts received, the receipt address and the deposit. Nothing from your other accounts. The viewing key cannot spend.</p>
+        <p class="ref">Our API drops the key when it answers: never written to disk, a log or a cache. Better still, the rail runs <span class="mono">vintage link verify</span> itself, so the key goes to nobody else. Rotate to a fresh receipt account for every use.</p>
+      </div></div>
+  </div>
+</section>
+
+<section id="self" class="reveal">
+  <div class="label eyebrow">05 / Use nobody</div>
+  <h2 class="display">Check without us.</h2>
+  <div class="two">
+    <div class="prose">
+      <p>The verifier is the same code as the API. Run it on your machine and the only other party is the lightwalletd server you choose. Point it at your own Zcash node and there is no other party at all.</p>
+      <p>Exchanges can run <span class="mono">vintage-api</span> next to their own node, so nobody, including us, learns which deposits they check. See the <a href="/how-it-works/#integrate">integration section</a>.</p>
+    </div>
+    <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Your machine only</div><button class="quiet" type="button" data-copy="code-self">Copy</button></div>
+      <div class="body"><pre class="code" id="code-self"><span class="m">$</span> vintage verify &lt;txid&gt; --before bitget-2026-09 \
+    --server your-node.example:443</pre></div></div>
+  </div>
+</section>

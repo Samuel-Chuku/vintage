@@ -97,7 +97,7 @@ pub(crate) async fn run(network: VintageNetwork, server: &str, registry: &std::p
             println!("covered:     {}", zec(r.covered_value_zat));
             println!("disclosed:   {}", r.disclosed);
             println!("time:        {:.2}s\n", r.elapsed_secs);
-            println!("{} — {}", r.verdict, r.summary);
+            println!("{}: {}", r.verdict, r.summary);
             std::process::exit(code);
         }
     }

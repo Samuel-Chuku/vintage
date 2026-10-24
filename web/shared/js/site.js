@@ -1,21 +1,25 @@
-/* Vintage site script, shared by the landing page and the app. No dependencies. The only network
-   calls go to the Vintage API. Each part runs only if its elements are on the page. */
+/* Vintage site script, on every page. No dependencies. The only network calls go to the Vintage API.
+   Each part runs only if its elements are on the page. Shared helpers are exposed as window.VT for
+   verify.js (the app) and sim.js (the simulation). */
 (function () {
   'use strict';
   var root = document.documentElement;
   var RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var API = 'https://api.usevintage.site';
-  var IRONWOOD = 3428143; /* NU6.3 activation on mainnet: nothing in Ironwood predates it */
+  var SITES = ['https://usevintage.site', 'https://app.usevintage.site'];
   function $(s, c) { return (c || document).querySelector(s); }
   function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
   function fmt(n) { return Math.round(n).toLocaleString('en-US'); }
   function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   /* Every API call: no cookies, no referrer, no cache. Resolves to {ok, status, body}; status 0 = unreachable. */
-  function api(path) {
-    return fetch(API + path, { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store' }).then(function (r) {
+  function api(path, opts) {
+    var o = { credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store' };
+    if (opts && opts.body) { o.method = 'POST'; o.headers = { 'content-type': 'application/json' }; o.body = JSON.stringify(opts.body); }
+    return fetch(API + path, o).then(function (r) {
       return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }, function () { return { ok: false, status: r.status, body: null }; });
     }, function () { return { ok: false, status: 0, body: null }; });
   }
+  function savedTheme() { try { return localStorage.getItem('vt-theme'); } catch (e) { return null; } }
 
   /* ---- theme ---- */
   var tg = $('#toggle');
@@ -28,20 +32,45 @@
   function sbw() { root.style.setProperty('--vt-sbw', Math.max(0, innerWidth - root.clientWidth) + 'px'); }
   sbw(); addEventListener('resize', sbw);
 
-  /* ---- nav border after scroll ---- */
+  /* ---- nav: border after scroll, mobile menu ---- */
   var nav = $('#nav');
   function onScroll() { nav.classList.toggle('scrolled', scrollY > 8); }
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  var mb = $('#menubtn'), mn = $('#mnav');
+  function menu(open) { mb.setAttribute('aria-expanded', open ? 'true' : 'false'); mn.hidden = !open; }
+  mb.addEventListener('click', function () { menu(mn.hidden); });
+  addEventListener('keydown', function (e) { if (e.key === 'Escape' && !mn.hidden) { menu(false); mb.focus(); } });
+
+  /* ---- navigation: carry the theme across our two sites, and fade out before leaving ----
+     usevintage.site and app.usevintage.site keep separate browser storage, so a chosen theme travels in
+     the URL fragment (#theme=dark), which is never sent to a server; the next page applies and removes it. */
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[href]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank' || a.hasAttribute('download')) return;
+    var u;
+    try { u = new URL(a.href, location.href); } catch (err) { return; }
+    if (!/^https?:$/.test(u.protocol)) return;
+    if (u.origin === location.origin && u.pathname === location.pathname && u.hash) return; /* in-page jump */
+    var t = savedTheme();
+    if (t && u.origin !== location.origin && SITES.indexOf(u.origin) >= 0) u.hash = (u.hash ? u.hash + '&' : '#') + 'theme=' + t;
+    e.preventDefault();
+    if (!mn.hidden) menu(false);
+    if (RM) { location.href = u.href; return; }
+    root.classList.add('leaving');
+    setTimeout(function () { location.href = u.href; }, 200);
+  });
+  /* Coming back through the browser cache: undo the fade. */
+  addEventListener('pageshow', function () { root.classList.remove('leaving'); });
 
   /* ---- headline: release the rise mask once done ---- */
   var mega = $('#mega');
   if (mega) setTimeout(function () { mega.classList.add('done'); }, RM ? 0 : 1300);
 
-  /* ---- tape builder (hero and verifier share it) ---- */
-  /* It draws the real mainnet demo payment da9017e0…: anchor 3,525,696, event 3,525,709, mined 3,527,813. */
-  var A = 3525696, E = 3525709;
+  /* ---- tape builder (hero, verifier) ---- */
+  /* By default it draws the real mainnet demo payment da9017e0…: anchor 3,525,696, event 3,525,709. */
   function buildTape(tape, o) {
     o = o || {};
+    var A = o.anchor || 3525696, E = o.event || 3525709;
     var box = $('.cells', tape), w = tape.clientWidth - (o.mini ? 24 : 48);
     var mob = innerWidth < 768, cw = o.mini ? 16 : (mob ? 16 : 28);
     var n = Math.max(12, Math.min(o.mini ? 32 : 56, Math.floor(w / cw)));
@@ -95,7 +124,7 @@
     };
   }
 
-  /* ---- hero tape (landing) ---- */
+  /* ---- hero tape (home) ---- */
   var heroTape = $('#tape');
   if (heroTape) {
     var heroSeal = $('.seal', heroTape), hero = buildTape(heroTape);
@@ -110,171 +139,63 @@
   }
 
   /* ---- live chain tip ---- */
-  var liveTip = null, onTip = null;
+  var tipWaiters = [];
+  var VT = window.VT = { api: api, fmt: fmt, esc: esc, $: $, $$: $$, RM: RM, buildTape: buildTape, tip: null,
+    onTip: function (f) { if (VT.tip) f(VT.tip); else tipWaiters.push(f); } };
   api('/health').then(function (r) {
     if (!r.ok || !r.body || !r.body.chain_tip) return;
-    liveTip = r.body.chain_tip;
+    VT.tip = r.body.chain_tip;
     var lt = $('#livetip');
-    if (lt) { lt.textContent = 'Mainnet tip ' + fmt(liveTip); $('#live').hidden = false; }
-    if (onTip) onTip();
+    if (lt) { lt.textContent = 'Mainnet tip ' + fmt(VT.tip); $('#live').hidden = false; }
+    tipWaiters.forEach(function (f) { f(VT.tip); });
   });
 
-  /* ---- verifier (app): live, against the Vintage API ---- */
-  var form = $('#vform');
-  if (form) (function () {
-    var EXAMPLE_TX = 'da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7'; /* the mainnet demo deposit */
-    var EXAMPLE_EVENT = 'vintage-demo-2026-10';
-    var input = $('#txid'), err = $('#txerr'), verdict = $('#verdict'), vseal = $('#vseal');
-    var tk1 = $('#tk1'), tk2 = $('#tk2'), vmeta = $('#vmeta'), chips = $('#chips'), custom = $('#customchip');
-    var cfield = $('#customfield'), cinput = $('#customh'), herr = $('#herr');
-    var vt = buildTape($('#vtape'), { mini: true }); vt.show(true);
-    var busy = false;
-    onTip = function () { if (!busy) tk2.textContent = 'Block ' + fmt(liveTip); };
-    if (liveTip) onTip();
-
-    function selectChip(c) {
-      $$('.chip[aria-pressed]', chips).forEach(function (o) { o.setAttribute('aria-pressed', o === c ? 'true' : 'false'); });
-      cfield.hidden = c !== custom;
-      if (c === custom) cinput.focus(); else herr.hidden = true;
-    }
-    chips.addEventListener('click', function (e) { var c = e.target.closest('.chip[aria-pressed]'); if (c) selectChip(c); });
-    /* A short name for a registry event: the label before any colon, or its first word if that is long. */
-    function shortName(label) { var s = String(label).split(':')[0]; return s.length > 20 ? s.split(' ')[0] : s; }
-
-    var pasteBtn = $('#paste');
-    if (!navigator.clipboard || !navigator.clipboard.readText) pasteBtn.hidden = true;
-    else pasteBtn.addEventListener('click', function () { navigator.clipboard.readText().then(function (t) { input.value = t.trim(); input.focus(); }).catch(function () {}); });
-
-    function setVerdict(kind, label, title, body) {
-      verdict.className = 'v ' + kind;
-      verdict.innerHTML = '<div class="label">' + esc(label) + '</div>' + (title ? '<h3 class="display">' + esc(title) + '</h3>' : '') + (body ? '<p' + (kind === 'idle' ? ' style="font-family:var(--vt-font-mono);font-size:14px"' : '') + '>' + esc(body) + '</p>' : '');
-    }
-    function bar() { var b = document.createElement('div'); b.className = 'seg-bar'; for (var i = 0; i < 24; i++) b.appendChild(document.createElement('i')); verdict.appendChild(b); return $$('i', b); }
-
-    /* What the user picked: { before, h, name } or null (with the error shown). */
-    function picked() {
-      var c = $('.chip[aria-pressed="true"]', chips);
-      if (!c) return null;
-      if (c !== custom) return { before: c.dataset.before, h: +c.dataset.h, name: c.dataset.name };
-      var v = cinput.value.trim().replace(/[,\s]/g, '');
-      if (!/^[0-9]+$/.test(v) || +v <= IRONWOOD) { herr.hidden = false; cinput.setAttribute('aria-invalid', 'true'); cinput.focus(); return null; }
-      herr.hidden = true; cinput.removeAttribute('aria-invalid');
-      return { before: v, h: +v, name: null };
-    }
-    function eventPhrase(ev) { return ev.name ? ev.name + ' at block ' + fmt(ev.h) : 'block ' + fmt(ev.h); }
-
-    /* Back to the empty state: an old verdict (above all a gold one) must never sit next to new input. */
-    function idle() {
-      setVerdict('idle', 'Awaiting txid', '', "> Paste a Zcash txid. We'll check whether every coin it spends was already in the shielded pool before the event you pick.");
-      tk1.textContent = 'Roots checked 0';
-      if (liveTip) tk2.textContent = 'Block ' + fmt(liveTip);
-    }
-
-    function run(tx) {
-      if (busy) return;
-      vseal.classList.remove('go'); vseal.style.opacity = 0; vt.reset(); vmeta.textContent = '';
-      if (!/^[0-9a-f]{64}$/i.test(tx)) { idle(); err.hidden = false; input.setAttribute('aria-invalid', 'true'); input.focus(); return; }
-      err.hidden = true; input.removeAttribute('aria-invalid');
-      var ev = picked();
-      if (!ev) { idle(); return; }
-      busy = true;
-      setVerdict('check', 'Checking', 'Reading the tree, block by block.');
-      var cells = bar(), k = 0, resp = null, scanned = false;
-      tk1.textContent = 'Roots checked …';
-      /* The seg-bar is the one thing that loops, and only while the request is pending. */
-      var loop = setInterval(function () { k = (k + 1) % (cells.length + 1); cells.forEach(function (c, i) { c.classList.toggle('f', i < k); }); }, RM ? 1000 : 80);
-      vt.scan(RM ? 0 : 1600, function (p) {
-        if (liveTip) tk2.textContent = 'Block ' + fmt(liveTip - (liveTip - ev.h) * p);
-      }, function () { scanned = true; finish(); });
-      api('/verify/' + tx + '?before=' + encodeURIComponent(ev.before)).then(function (r) { resp = r; finish(); });
-
-      function finish() {
-        if (!scanned || !resp) return;
-        clearInterval(loop);
-        cells.forEach(function (c) { c.classList.add('f'); });
-        var d = resp.body;
-        if (!resp.ok) {
-          vt.reset();
-          if (resp.status === 0) setVerdict('idle', 'Not checked', '', "Couldn't reach the verifier. Try again in a minute, or run vintage verify on your own machine to involve nobody.");
-          else if (resp.status === 404) setVerdict('idle', 'Not found', '', "No mainnet transaction with that txid, or it hasn't reached the server yet. Testnet transactions aren't checked here.");
-          else setVerdict('idle', 'Not checked', '', (d && d.error) || 'The verifier could not check this transaction.');
-          if (liveTip) tk2.textContent = 'Block ' + fmt(liveTip);
-          busy = false; return;
-        }
-        var roots = d.evidence ? d.evidence.distinct_roots : 0;
-        tk1.textContent = 'Roots checked ' + fmt(roots) + ' / ' + fmt(roots);
-        tk2.textContent = 'Block ' + fmt(d.chain_tip);
-        vmeta.textContent = (roots ? fmt(roots) + ' roots · ' : '') + d.elapsed_secs.toFixed(2) + ' s · mainnet · live';
-        if (d.provisional) {
-          vt.reset();
-          setVerdict('idle', 'Not mined yet', '', "This transaction isn't in a block yet, so its anchor could still change. Check again once it's mined.");
-          busy = false; return;
-        }
-        if (d.verdict === 'PASS') {
-          vt.pass(function () {
-            setVerdict('pass', 'Pass', 'These coins existed before ' + eventPhrase(ev) + '.', 'This proves nothing about who sent them or how much, only when they last moved.');
-            $('#vsealtext').textContent = 'PROVEN OLDER THAN BLOCK ' + fmt(ev.h) + ' · MAINNET ·';
-            vseal.style.opacity = ''; if (RM) vseal.style.opacity = 1; else vseal.classList.add('go');
-            busy = false;
-          });
-          return;
-        }
-        if (d.verdict === 'FAIL' && d.matched_heights) {
-          var after = Math.min(vt.n - 2, vt.ii + 6);
-          vt.els[after].classList.add('anc');
-          for (var j = vt.ii + 1; j < after; j++) vt.els[j].classList.add('past');
-          var lo = d.matched_heights[0];
-          setVerdict('fail', 'Not provable', "This deposit can't be dated before " + eventPhrase(ev) + '.',
-            d.root_existed_before_h
-              ? 'Its anchor is the state of the pool at block ' + fmt(lo) + ", which hadn't changed since before the event, so its coins may still predate it. A spend anchored earlier would prove it."
-              : 'Its anchor is the state of the pool at block ' + fmt(lo) + ', after the event, so its coins were last moved after it.');
-        } else {
-          vt.reset();
-          var reasons = (d.reasons || []).join(', ');
-          setVerdict('fail', 'Not provable', "This deposit can't be dated.", 'It has ' + (reasons || 'inputs Vintage cannot read') + '. Vintage can only date shielded Ironwood coins.');
-        }
-        busy = false;
-      }
-    }
-    form.addEventListener('submit', function (e) { e.preventDefault(); run(input.value.trim().toLowerCase()); });
-
-    function example(tx, eventId) {
-      var c = $('.chip[data-before="' + eventId + '"]', chips);
-      if (!c) { setVerdict('idle', 'Events unavailable', '', "Couldn't load the event list, so the example can't run. Try again in a minute."); return; }
-      input.value = tx;
-      selectChip(c);
-      run(tx);
-    }
-    $('#example').addEventListener('click', function () { example(EXAMPLE_TX, EXAMPLE_EVENT); });
-
-    api('/events').then(function (r) {
-      var events = r.ok && r.body && r.body.events ? r.body.events : [];
-      events.forEach(function (ev, i) {
-        var c = document.createElement('button');
-        c.type = 'button'; c.className = 'chip';
-        c.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
-        c.dataset.before = ev.id; c.dataset.h = ev.height; c.dataset.name = shortName(ev.label);
-        c.title = ev.label;
-        c.textContent = shortName(ev.label) + ' · ' + fmt(ev.height);
-        chips.insertBefore(c, custom);
+  /* ---- home: mark the nav item whose section is on screen ---- */
+  if (document.body.dataset.page === 'home' && 'IntersectionObserver' in window) {
+    var spy = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        var key = e.target.dataset.spy;
+        $$('[data-nav="' + key + '"]').forEach(function (a) { a.classList.toggle('here', e.isIntersecting); });
       });
-      if (!events.length) {
-        selectChip(custom);
-        setVerdict('idle', 'Events unavailable', '', "Couldn't load the event list from the verifier. You can still check against a custom block height.");
-      }
-      /* A link like app.usevintage.site/#tx=<txid>&before=<event-id> runs that check. The fragment is
-         never sent to any server; it is cleared from the address bar once read. */
-      var m = /^#tx=([0-9a-f]{64})&before=([a-z0-9-]+)$/i.exec(location.hash);
-      if (m) {
-        history.replaceState(null, '', location.pathname);
-        example(m[1].toLowerCase(), m[2]);
-      }
-    });
-  })();
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    $$('[data-spy]').forEach(function (s) { spy.observe(s); });
+  }
 
-  /* ---- copy code ---- */
-  var cc = $('#copycode');
-  if (cc && navigator.clipboard) cc.addEventListener('click', function () { navigator.clipboard.writeText($('#code').textContent).then(function () { cc.textContent = 'Copied'; setTimeout(function () { cc.textContent = 'Copy'; }, 1600); }); });
+  /* ---- copy buttons: data-copy="<id of the element to copy>" ---- */
+  $$('[data-copy]').forEach(function (b) {
+    if (!navigator.clipboard) { b.hidden = true; return; }
+    b.addEventListener('click', function () {
+      navigator.clipboard.writeText($('#' + b.dataset.copy).textContent).then(function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1600); });
+    });
+  });
+
+  /* ---- code tabs: buttons [data-tab] in a .tabs group switch [data-panel] siblings ---- */
+  $$('.tabs').forEach(function (g) {
+    var box = g.parentElement;
+    $$('[data-tab]', g).forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$('[data-tab]', g).forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+        $$('[data-panel]', box).forEach(function (p) { p.hidden = p.dataset.panel !== b.dataset.tab; });
+        var c = $('[data-copy]', box); if (c) c.dataset.copy = 'code-' + b.dataset.tab;
+      });
+    });
+  });
+
+  /* ---- events page: the live, signed registry ---- */
+  var reg = $('#registry');
+  if (reg) api('/events').then(function (r) {
+    var evs = r.ok && r.body && r.body.events ? r.body.events : [];
+    var tb = $('tbody', reg);
+    if (!evs.length) { tb.innerHTML = '<tr><td colspan="5">Couldn\'t load the registry right now. The signed file is in the repository: registry/events.json.</td></tr>'; return; }
+    tb.innerHTML = evs.map(function (ev) {
+      var src = (ev.sources || []).filter(function (s) { return /^https:\/\//.test(s); }).map(function (s, i) { return '<a href="' + esc(s) + '" rel="noopener noreferrer">source ' + (i + 1) + '</a>'; }).join(' ');
+      var check = 'https://app.usevintage.site/#before=' + encodeURIComponent(ev.id);
+      return '<tr><td><span class="tag ink">' + esc(String(ev.type).replace('_', ' ')) + '</span></td><td>' + esc(ev.label) + (src ? '<br>' + src : '') +
+        '</td><td class="num">' + fmt(ev.height) + '</td><td class="num">' + esc(ev.id) + '</td><td class="num"><a href="' + check + '">Check a deposit</a></td></tr>';
+    }).join('');
+    var meta = $('#regmeta');
+    if (meta) meta.textContent = 'Signature verified by the API · public key ' + esc(String(r.body.public_key).slice(0, 8)) + '…' + esc(String(r.body.public_key).slice(-4));
+  });
 
   /* ---- counter: the API's anonymous total of checks ---- */
   var box = $('#counter'), bandIn = false, counted = false;

@@ -1,0 +1,253 @@
+<section class="page-head">
+  <div class="label eyebrow">How it works</div>
+  <h1 class="display">Proof of age, from one txid.</h1>
+  <p class="lead">Every shielded Ironwood spend names an earlier snapshot of the shielded pool, and consensus checks that its coins are inside it. Vintage lets a sender pick a snapshot from before a dated event, and lets anyone check it in about a second. No keys, no blocklist, no new cryptography.</p>
+  <div class="toc" role="group" aria-label="On this page">
+    <a href="#problem">The problem</a><a href="#mechanism">The mechanism</a><a href="#holders">For holders</a><a href="#integrate">For exchanges</a><a href="#fresh">Fresh coins</a><a href="#limits">Limits</a><a href="#faq">FAQ</a>
+  </div>
+</section>
+
+<!-- THE PROBLEM -->
+<section id="problem" class="reveal">
+  <div class="label eyebrow">01 / The problem</div>
+  <h2 class="display">One hack makes every shielded deposit suspect.</h2>
+  <div class="facts">
+    <div class="fact"><b>2,746 ZEC</b><span>moved from the Bitget hack into the shielded Ironwood pool on 30 Sep 2026, in three transactions from block 3,501,240.</span></div>
+    <div class="fact"><b>50 days</b><span>one user's $589k exit was still held for review, with no release date (Zcash forum, thread 57497).</span></div>
+    <div class="fact"><b>$50M+</b><span>of attempted Bitget-linked swaps blocked by NEAR Intents' screening, by its own account. Once the coins are shielded, screening can't tell them apart from anyone else's.</span></div>
+  </div>
+  <div class="prose">
+    <p>Exit rails (exchanges, bridges, swap services) see a shielded deposit and can't know whether it carries stolen coins. The only answers on offer today cost the user their privacy: trace the coins to their origin, find someone to vouch, or hand over a viewing key that shows their whole history. The forum author volunteered addresses, transaction hashes and swap history, and the funds were still held. Most honest holders hold coins that are simply older than the hack. Vintage lets them prove exactly that, and nothing more.</p>
+  </div>
+</section>
+
+<!-- MECHANISM -->
+<section id="mechanism" class="reveal">
+  <div class="label eyebrow">02 / The mechanism</div>
+  <h2 class="display">The chain already dates every shielded spend.</h2>
+  <div class="diagram" role="img" aria-label="A row of blocks. The deposit's anchor is the pool at block 3,525,696; the event is at block 3,525,709. The verifier checks every pool state from the event to the chain tip and none matches the anchor, so the coins were in the pool before the event.">
+    <svg viewBox="0 0 960 230" aria-hidden="true">
+      <g class="st">
+        <rect x="40" y="96" width="28" height="44" rx="3" class="fill-s"/><rect x="80" y="96" width="28" height="44" rx="3" class="fill-s"/><rect x="120" y="96" width="28" height="44" rx="3" class="fill-s"/><rect x="160" y="96" width="28" height="44" rx="3" class="fill-s"/><rect x="200" y="96" width="28" height="44" rx="3" class="fill-s"/>
+        <rect x="240" y="96" width="28" height="44" rx="3" class="fill-g"/><rect x="280" y="96" width="28" height="44" rx="3" class="fill-g"/><rect x="320" y="96" width="28" height="44" rx="3" class="fill-g"/><rect x="360" y="96" width="28" height="44" rx="3" class="fill-g"/><rect x="400" y="96" width="28" height="44" rx="3" class="fill-g"/><rect x="440" y="96" width="28" height="44" rx="3" class="fill-g"/>
+        <rect x="480" y="96" width="28" height="44" rx="3" class="fill-k"/>
+        <rect x="520" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="560" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="600" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="640" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="680" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="720" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="760" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="800" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="840" y="96" width="28" height="44" rx="3" class="fill-u"/><rect x="880" y="96" width="28" height="44" rx="3" class="fill-u"/>
+        <path d="M494 96V60"/><path d="M254 150v20"/>
+        <path class="dash" d="M494 196H894"/><path d="M494 188v16M894 188v16"/>
+      </g>
+      <path class="fill-k" d="M248 158l6-10 6 10z"/>
+      <rect x="380" y="34" width="230" height="26" rx="4" class="st fill-s"/><text x="495" y="51" text-anchor="middle" class="b">◆ EVENT · BLOCK 3,525,709</text>
+      <text x="254" y="186" text-anchor="middle" class="b">ANCHOR · POOL AT 3,525,696</text>
+      <text x="254" y="202" text-anchor="middle" class="s">THE DEPOSIT NAMES THIS SNAPSHOT</text>
+      <text x="694" y="222" text-anchor="middle" class="s">VERIFIER: EVERY POOL STATE FROM THE EVENT TO THE TIP. NONE MATCHES.</text>
+      <text x="894" y="88" text-anchor="end" class="s">▸ TIP</text>
+    </svg>
+  </div>
+  <p class="cap">Real mainnet data: deposit da9017e0…e3a7, anchored at block 3,525,696, checked against the event at block 3,525,709. Gold marks what the chain proved.</p>
+  <div class="three" style="margin-top:var(--vt-10)">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">01 Snapshots</div></div><div class="body">
+      <p>After every block, the shielded pool has a root: one 32-byte fingerprint of every shielded coin that exists at that moment.</p></div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">02 The anchor</div></div><div class="body">
+      <p>Every Ironwood spend names one of those roots, its anchor, and proves its coins are in it. Consensus rejects any anchor that isn't a real earlier root.</p></div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">03 The check</div></div><div class="body">
+      <p>If the anchor matches none of the roots from the event to the tip, it must be from before the event. So every coin it spends was already there.</p></div></div>
+  </div>
+  <p class="kicker">No blocklist. No new cryptography. A rule Zcash already enforces on every spend.</p>
+</section>
+
+<!-- HOLDERS -->
+<section id="holders" class="reveal">
+  <div class="label eyebrow">03 / For holders</div>
+  <h2 class="display">Three commands.</h2>
+  <div class="two">
+    <div class="prose">
+      <p><b>Check what you can prove.</b> <span class="mono">vintage status</span> lists, for each event, how much of your shielded ZEC is older than it.</p>
+      <p><b>Send with an older anchor.</b> <span class="mono">vintage send --before &lt;event&gt;</span> builds the deposit on a snapshot from just before the event. Your wallet can only spend coins that are in that snapshot, so newer coins are refused, not hidden. Always run it with <span class="mono">--dry-run</span> first.</p>
+      <p><b>Share the txid.</b> The exchange, or anyone, checks it in the <a href="https://app.usevintage.site/">verifier</a> or with <span class="mono">vintage verify</span>.</p>
+      <p class="ref">The cost: an old anchor is visible on chain, so the deposit shows you chose to prove its age. That's fine where the recipient already knows you, such as an exchange. Wallets should never do it by default.</p>
+    </div>
+    <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Terminal</div><button class="quiet" type="button" data-copy="code-holder">Copy</button></div>
+      <div class="body"><pre class="code" id="code-holder"><span class="m">$</span> vintage status --wallet ~/wallet --sync
+<span class="m">$</span> vintage send --wallet ~/wallet -i key.txt \
+    --to &lt;deposit address&gt; --value 300000 \
+    --before bitget-2026-09 --dry-run
+<span class="m">$</span> vintage verify &lt;txid&gt; --before bitget-2026-09</pre></div></div>
+  </div>
+</section>
+
+<!-- INTEGRATE -->
+<section id="integrate" class="reveal">
+  <div class="label eyebrow">04 / For exchanges and bridges</div>
+  <h2 class="display">One request before you hold a deposit.</h2>
+  <p class="sec-lead">Vintage gives an exit rail a fast, privacy-preserving way to clear honest shielded deposits after an incident: a consensus-backed answer in about a second, with no keys exchanged, no lists to maintain, and nothing for you to store.</p>
+  <div class="diagram" role="img" aria-label="Sequence: the user's wallet sends a deposit anchored before the event; the chain confirms it; the exchange asks the Vintage API with the txid and the event; the API answers PASS with evidence; the exchange credits the deposit.">
+    <svg viewBox="0 0 960 360" aria-hidden="true">
+      <g class="st">
+        <rect x="30" y="16" width="180" height="36" rx="4" class="fill-s"/><rect x="270" y="16" width="180" height="36" rx="4" class="fill-s"/><rect x="510" y="16" width="180" height="36" rx="4" class="fill-s"/><rect x="750" y="16" width="180" height="36" rx="4" class="fill-k"/>
+        <path class="dash" d="M120 52V340M360 52V340M600 52V340M840 52V340"/>
+        <path d="M120 100H352"/><path d="M360 150H592"/><path d="M600 200H832"/><path class="dash" d="M840 250H608"/><path d="M600 300H128"/>
+      </g>
+      <text x="120" y="39" text-anchor="middle" class="b">USER WALLET</text><text x="360" y="39" text-anchor="middle" class="b">ZCASH MAINNET</text><text x="600" y="39" text-anchor="middle" class="b">YOUR EXCHANGE</text><text x="840" y="39" text-anchor="middle" class="b inv">VINTAGE API</text>
+      <path class="fill-k" d="M352 94l10 6-10 6zM592 144l10 6-10 6zM832 194l10 6-10 6zM608 244l-10 6 10 6zM128 294l-10 6 10 6z"/>
+      <text x="236" y="90" text-anchor="middle" class="msg">1 DEPOSIT, ANCHORED BEFORE THE EVENT</text>
+      <text x="476" y="140" text-anchor="middle" class="msg">2 DEPOSIT CONFIRMED</text>
+      <text x="716" y="190" text-anchor="middle" class="msg">3 GET /VERIFY/{TXID}?BEFORE={EVENT}</text>
+      <text x="716" y="240" text-anchor="middle" class="msg">4 PASS + EVIDENCE</text>
+      <text x="360" y="290" text-anchor="middle" class="msg">5 CREDIT. SKIP EVENT-RELATED REVIEW.</text>
+    </svg>
+  </div>
+
+  <h3 class="display" style="font-size:var(--vt-text-2xl);margin:var(--vt-12) 0 var(--vt-4)">What to do with each answer</h3>
+  <div class="tblwrap"><table class="decide">
+    <thead><tr><th>Answer</th><th>What it means</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>PASS</td><td>Every shielded coin the deposit spends existed before the event, so none of it can be the event's coins.</td><td>Skip review related to that event. Keep your usual checks for everything else.</td></tr>
+      <tr><td>FAIL</td><td>The anchor is a pool state from the event or later. Nearly every ordinary deposit looks like this.</td><td>No information. Apply your normal process. Never treat it as a flag.</td></tr>
+      <tr><td>NOT_PROVABLE</td><td>The deposit spends transparent, Sapling or Orchard coins. Vintage only reads Ironwood.</td><td>No information. Apply your normal process.</td></tr>
+      <tr><td>provisional: true</td><td>The deposit isn't mined yet; until it is, the same txid could be mined with a different anchor.</td><td>Act only after confirmation, which you wait for anyway.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3 class="display" style="font-size:var(--vt-text-2xl);margin:var(--vt-12) 0 var(--vt-4)">The request</h3>
+  <div class="two">
+    <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Call the verifier</div><button class="quiet" type="button" data-copy="code-curl">Copy</button></div>
+      <div class="body">
+        <div class="tabs" role="group" aria-label="Language">
+          <button type="button" class="chip" data-tab="curl" aria-pressed="true">curl</button>
+          <button type="button" class="chip" data-tab="js" aria-pressed="false">JavaScript</button>
+          <button type="button" class="chip" data-tab="py" aria-pressed="false">Python</button>
+        </div>
+<pre class="code" data-panel="curl" id="code-curl"><span class="m">$</span> curl 'https://api.usevintage.site/verify/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7?before=vintage-demo-2026-10'</pre>
+<pre class="code" data-panel="js" id="code-js" hidden>const res = await fetch(
+  `https://api.usevintage.site/verify/${txid}?before=bitget-2026-09`);
+const v = await res.json();
+if (res.ok &amp;&amp; v.verdict === "PASS" &amp;&amp; !v.provisional) {
+  skipEventReview(deposit);   // the coins predate the event
+} else {
+  normalProcess(deposit);     // FAIL is not a flag
+}</pre>
+<pre class="code" data-panel="py" id="code-py" hidden>import requests
+
+r = requests.get(f"https://api.usevintage.site/verify/{txid}",
+                 params={"before": "bitget-2026-09"}, timeout=30)
+v = r.json()
+if r.ok and v["verdict"] == "PASS" and not v["provisional"]:
+    skip_event_review(deposit)   # the coins predate the event
+else:
+    normal_process(deposit)      # FAIL is not a flag</pre>
+      </div></div>
+    <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">The answer · real, trimmed</div><button class="quiet" type="button" data-copy="code-resp">Copy</button></div>
+      <div class="body"><pre class="code" id="code-resp">{
+  "verdict": "PASS",
+  "summary": "These coins existed before block 3525709 (…).",
+  "provisional": false,
+  "mined_height": 3527813,
+  "before": { "height": 3525709, "event_type": "custom",
+              "requested": "vintage-demo-2026-10" },
+  "anchor": "855ccc99…81d98502",
+  "evidence": { "distinct_roots": 1303, "blocks_covered": 2105 },
+  "elapsed_secs": 0.056
+}</pre></div></div>
+  </div>
+
+  <h3 class="display" style="font-size:var(--vt-text-2xl);margin:var(--vt-12) 0 var(--vt-4)">Why rails use it</h3>
+  <div class="facts">
+    <div class="fact"><b>~1 second</b><span>Our server keeps registered events warm: a check takes about 0.06 s there. A first check against a new height takes up to about a minute, then it's cached.</span></div>
+    <div class="fact"><b>No keys</b><span>The user shares a txid, nothing else. You never handle viewing keys or customer histories.</span></div>
+    <div class="fact"><b>No list</b><span>Events are dated block heights. There is no blocklist of people or addresses to maintain or defend.</span></div>
+    <div class="fact"><b>Consensus</b><span>The answer rests on a rule every Zcash node enforces, not on our word. Run the verifier yourself and get the same answer.</span></div>
+  </div>
+
+  <h3 class="display" style="font-size:var(--vt-text-2xl);margin:var(--vt-12) 0 var(--vt-4)">Run it yourself</h3>
+  <div class="diagram" role="img" aria-label="Your backend calls the Vintage API, which reads public chain data from a lightwalletd server. You can run both the API and the node yourself.">
+    <svg viewBox="0 0 960 170" aria-hidden="true">
+      <g class="st">
+        <rect x="30" y="40" width="220" height="64" rx="4" class="fill-s"/><rect x="370" y="40" width="220" height="64" rx="4" class="fill-k"/><rect x="710" y="40" width="220" height="64" rx="4" class="fill-s"/>
+        <path d="M250 72H362"/><path d="M590 72H702"/>
+        <rect x="350" y="20" width="600" height="104" rx="8" class="dash"/>
+      </g>
+      <path class="fill-k" d="M362 66l10 6-10 6zM702 66l10 6-10 6z"/>
+      <text x="140" y="68" text-anchor="middle" class="b">YOUR BACKEND</text><text x="140" y="86" text-anchor="middle" class="s">TXID + EVENT</text>
+      <text x="480" y="68" text-anchor="middle" class="b inv">VINTAGE-API</text><text x="480" y="86" text-anchor="middle" class="inv">NO LOGS · ~16 MB RAM</text>
+      <text x="820" y="68" text-anchor="middle" class="b">LIGHTWALLETD</text><text x="820" y="86" text-anchor="middle" class="s">PUBLIC CHAIN DATA</text>
+      <text x="650" y="150" text-anchor="middle" class="s">INSIDE THE DASHED LINE: YOURS TO RUN, AGAINST YOUR OWN NODE</text>
+    </svg>
+  </div>
+  <div class="prose">
+    <p>For production, run <span class="mono">vintage-api</span> next to your own Zcash node: one binary, about 16 MB of memory, any core count. Then nobody, including us, learns which deposits you check, and the answer depends only on your node. Setup, flags and the full response reference are in the <a href="https://github.com/Samuel-Chuku/vintage/blob/main/docs/INTEGRATION.md" rel="noopener noreferrer">integration guide</a> and <a href="https://github.com/Samuel-Chuku/vintage/blob/main/docs/API.md" rel="noopener noreferrer">API reference</a>.</p>
+    <p class="ref">Make it opt-in, never a gate: a pass is something an honest user offers to get through faster, not a new requirement for every depositor.</p>
+  </div>
+</section>
+
+<!-- FRESH -->
+<section id="fresh" class="reveal">
+  <div class="label eyebrow">05 / Fresh coins</div>
+  <h2 class="display">Coins received after the event.</h2>
+  <div class="diagram" role="img" aria-label="A payer with old coins sends a Vintage payment to the user's single-use receipt account. The receipt account deposits to the exit rail. The link check confirms the payment passes and every input of the deposit is one of its outputs.">
+    <svg viewBox="0 0 960 190" aria-hidden="true">
+      <g class="st">
+        <rect x="20" y="40" width="200" height="60" rx="4" class="fill-s"/><rect x="380" y="40" width="200" height="60" rx="4" class="fill-s"/><rect x="740" y="40" width="200" height="60" rx="4" class="fill-s"/>
+        <path d="M220 70H372"/><path d="M580 70H732"/>
+        <path class="dash" d="M840 100V150H120V100"/>
+      </g>
+      <path class="fill-k" d="M372 64l10 6-10 6zM732 64l10 6-10 6zM114 108l6-10 6 10z"/>
+      <text x="120" y="66" text-anchor="middle" class="b">PAYER</text><text x="120" y="84" text-anchor="middle" class="s">OLD COINS</text>
+      <text x="480" y="66" text-anchor="middle" class="b">RECEIPT ACCOUNT</text><text x="480" y="84" text-anchor="middle" class="s">SINGLE USE · OWN SEED</text>
+      <text x="840" y="66" text-anchor="middle" class="b">EXIT RAIL</text><text x="840" y="84" text-anchor="middle" class="s">THE DEPOSIT</text>
+      <text x="300" y="60" text-anchor="middle">VINTAGE PAYMENT</text><text x="660" y="60" text-anchor="middle">DEPOSIT</text>
+      <text x="480" y="174" text-anchor="middle">LINK CHECK: THE PAYMENT PASSES, AND EVERY INPUT OF THE DEPOSIT IS ONE OF ITS OUTPUTS</text>
+    </svg>
+  </div>
+  <div class="two" style="margin-top:var(--vt-8)">
+    <div class="prose">
+      <h3>Payer side: nothing revealed</h3>
+      <p>Ask the person paying you for a Vintage payment: <span class="mono">vintage request</span> makes a ZIP-321 payment link whose memo says VINTAGE before=&lt;block&gt;. Their payment then proves its own coins predate the event.</p>
+    </div>
+    <div class="prose">
+      <h3>Receipt account: one viewing key, optional</h3>
+      <p>Receive into a fresh single-use account and deposit from it. The rail checks the link with that account's viewing key: it sees the funding payment, the amounts, the receipt address and the deposit. Nothing from your other accounts, and the key cannot spend. Spend at least two receipt notes in the deposit, so the wallet adds no dummy input.</p>
+    </div>
+  </div>
+  <p class="more"><a class="tkt" href="/simulate/#fresh"><span class="lbl">Watch it run</span><span class="stub" aria-hidden="true">→</span></a></p>
+</section>
+
+<!-- LIMITS -->
+<section id="limits" class="reveal">
+  <div class="label eyebrow">06 / Limits</div>
+  <h2 class="display">What it proves, and what it doesn't.</h2>
+  <div class="two">
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Proves</div></div>
+      <div class="body"><ul class="ticks">
+        <li data-g="✓">Every Ironwood coin the deposit spends existed before the event block.</li>
+        <li data-g="✓">It holds by consensus. Nobody can fake an older anchor.</li>
+        <li data-g="✓">It covers every later event at once.</li>
+      </ul></div></div>
+    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Doesn't</div></div>
+      <div class="body"><ul class="ticks">
+        <li data-g="×">Date coins received after the event, without the payer side or a receipt account.</li>
+        <li data-g="×">Cover transparent, Sapling or Orchard inputs.</li>
+        <li data-g="×">Say who sent the coins or how much.</li>
+        <li data-g="×">Hide that you chose to prove it: an old anchor is visible on chain.</li>
+        <li data-g="×">Clear coins of earlier events: check against each date you care about.</li>
+      </ul></div></div>
+  </div>
+  <p class="ref" style="margin-top:var(--vt-6)">The full analysis is in the <a href="https://github.com/Samuel-Chuku/vintage/blob/main/docs/THREAT_MODEL.md" rel="noopener noreferrer">threat model</a>.</p>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="reveal">
+  <div class="label eyebrow">07 / FAQ</div>
+  <h2 class="display">Questions.</h2>
+  <div class="prose">
+    <h3>Can a hacker fake a pass?</h3>
+    <p>No. An anchor must be a real earlier root, and the spend proof must show every coin is in it. Coins that arrived after the event aren't in any earlier root, so no valid transaction can spend them under it. Our wallet test shows it: asked to include a coin from after the event, it refused to build the transaction.</p>
+    <h3>Does Vintage keep a list of bad coins or bad people?</h3>
+    <p>No. The registry only labels block heights ("Bitget hack, block 3,501,240"), and anyone can check against any height of their own. Nothing is ever marked bad.</p>
+    <h3>What does the verifier learn about me?</h3>
+    <p>The txid you check, while it answers. It keeps no logs; the only record is an anonymous daily count of checks. To involve nobody, run <span class="mono">vintage verify</span> yourself.</p>
+    <h3>Why does a normal deposit fail?</h3>
+    <p>Wallets anchor to a snapshot a few blocks old: in 119 recent mainnet transactions we checked, 1 to 11 blocks. That is after any event worth checking, so ordinary deposits say nothing either way. That is why a fail is never a flag.</p>
+    <h3>Has it run on mainnet?</h3>
+    <p>Yes. On 23 Oct 2026 a Vintage payment was the deposit into a NEAR Intents swap and passed; a receipt-account deposit passed the link check; both swaps delivered USDC on Base. Every transaction is in the <a href="/simulate/">simulation</a> and the repository.</p>
+  </div>
+</section>

@@ -42,7 +42,7 @@ body{margin:0;color:var(--vt-ink);font:400 var(--vt-text-md)/var(--vt-leading-bo
 
 /* ticket buttons: a label and a perforated stub, punched at the perforation */
 .tkt{--n:var(--vt-ground);position:relative;display:inline-flex;align-items:stretch;height:52px;padding:0;border:var(--vt-edge);border-radius:var(--vt-radius-sm);
-  background:var(--vt-surface);color:var(--vt-ink);box-shadow:var(--vt-shadow-hard);cursor:pointer;font:700 var(--vt-text-sm)/1 var(--vt-font-mono);letter-spacing:.08em;text-transform:uppercase;
+  background:var(--vt-surface);color:var(--vt-ink);box-shadow:var(--vt-shadow-hard);cursor:pointer;font:700 var(--vt-text-sm)/1 var(--vt-font-mono);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;
   transition:transform var(--vt-dur-1) var(--vt-ease),box-shadow var(--vt-dur-1) var(--vt-ease)}
 .win .tkt,.v .tkt{--n:var(--vt-surface)}
 .tkt .lbl{display:flex;align-items:center;gap:var(--vt-3);padding:0 var(--vt-5);border-radius:6px 0 0 6px}
@@ -237,6 +237,7 @@ section{padding:var(--vt-16) 0 0}
 .grid3{display:grid;gap:var(--vt-8)}@media(min-width:900px){.grid3{grid-template-columns:repeat(3,1fr)}}
 h1.display{font-size:clamp(2.75rem,6vw,var(--vt-text-4xl));line-height:.9;margin:var(--vt-4) 0}
 h2.display{font-size:clamp(2.5rem,5vw,3.75rem);line-height:.92;margin:var(--vt-3) 0 var(--vt-8)}
+h3.display{line-height:.95}
 .lead{font-size:var(--vt-text-lg);color:var(--vt-ink-2);max-width:520px}
 .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:var(--vt-4)}
 .sw{border:var(--vt-edge);border-radius:var(--vt-radius-sm);overflow:hidden;box-shadow:var(--vt-shadow-small);background:var(--vt-surface)}
@@ -290,6 +291,7 @@ section{scroll-margin-top:80px}
 .ill .st{fill:none;stroke:var(--vt-ink);stroke-width:2;stroke-linecap:square;stroke-linejoin:miter}
 .ill .fill-s{fill:var(--vt-surface)}.ill .fill-k{fill:var(--vt-ink)}.ill .fill-g{fill:var(--vt-gold)}
 .ill text{font-family:var(--vt-font-mono);font-size:10px;letter-spacing:.12em;fill:var(--vt-ink)}
+.ill text.inv{fill:var(--vt-surface);font-weight:700}
 .win h3.display{font-size:1.75rem;line-height:.95;margin:0}
 .win p{margin:0}
 .kicker{font-family:var(--vt-font-display);font-weight:800;text-transform:uppercase;font-size:clamp(1.75rem,3vw,2.5rem);line-height:.95;margin:var(--vt-12) 0 0;max-width:900px}
@@ -354,3 +356,133 @@ html{overflow-x:clip}
 .ne{display:inline-block;vertical-align:-1px;margin-left:var(--vt-1)}
 /* With JavaScript off nothing adds .in, so the sections would stay invisible: show them. */
 @media(scripting:none){.reveal{opacity:1;transform:none}}
+
+/* ==== multi-page site (round 2) ==== */
+
+/* Links must read as links, never as plain text: bold, a heavy underline, and an ink-inverted hover.
+   Ink only, never gold (law 1). Tickets, chips, nav and the wordmark keep their own styles. */
+main :is(p,li,td,dd,pre) a:not(.tkt):not(.quiet), .strip-t a, footer p a{
+  color:var(--vt-ink);font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;border-radius:2px}
+main :is(p,li,td,dd,pre) a:not(.tkt):not(.quiet):hover, .strip-t a:hover, footer p a:hover{background:var(--vt-ink);color:var(--vt-surface);text-decoration-color:var(--vt-ink)}
+.quiet{text-decoration-thickness:2px;text-underline-offset:4px}
+.quiet:hover{background:var(--vt-ink);color:var(--vt-surface)}
+.band a:hover{background:var(--vt-ground);color:var(--vt-ink)}
+/* Table labels are labels: quieter than the values, so the bold links stand out. */
+.ev td:first-child{color:var(--vt-ink-2)}
+
+/* Current page in the nav: the same 2px ink underline as the active theme. On the home page the
+   section in view gets it too. */
+.navlinks a{padding-bottom:4px;border-bottom:2px solid transparent}
+.navlinks a[aria-current="page"],.navlinks a.here{border-bottom-color:var(--vt-ink)}
+.navlinks a[aria-current="page"]:hover,.navlinks a.here:hover{text-decoration:none}
+.navlinks{gap:var(--vt-5)}
+
+/* Page transitions: arrive with a short rise, leave with a fade. Durations are tokens, so reduced
+   motion zeroes them. */
+@keyframes vt-arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+main,footer{animation:vt-arrive var(--vt-dur-3) var(--vt-ease) both}
+html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);transition:opacity var(--vt-dur-2) var(--vt-ease),transform var(--vt-dur-2) var(--vt-ease)}
+@media(prefers-reduced-motion:reduce){main,footer{animation:none}html.leaving main,html.leaving footer{transition:none}}
+
+/* Dedicated pages */
+.page-head{padding:var(--vt-20) 0 var(--vt-4)}
+.page-head .lead{max-width:720px;color:var(--vt-ink)}
+.page-head h1.display{font-size:clamp(3rem,7vw,var(--vt-text-4xl))}
+.toc{display:flex;flex-wrap:wrap;gap:var(--vt-2);margin-top:var(--vt-8)}
+.toc a{height:32px;padding:0 var(--vt-3);display:inline-flex;align-items:center;border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);color:var(--vt-ink);box-shadow:var(--vt-shadow-small);font:500 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;text-decoration:none}
+.toc a:hover{background:var(--vt-ink);color:var(--vt-surface)}
+.more{margin-top:var(--vt-8)}
+.prose{max-width:720px}
+.prose p,.prose li{color:var(--vt-ink)}
+.prose h3{font-family:var(--vt-font-display);font-weight:800;text-transform:uppercase;font-size:var(--vt-text-xl);line-height:1;margin:var(--vt-8) 0 var(--vt-3)}
+.facts{display:grid;gap:var(--vt-4);grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:var(--vt-8) 0}
+.fact{background:var(--vt-surface);border:var(--vt-edge);border-radius:var(--vt-radius);box-shadow:var(--vt-shadow-small);padding:var(--vt-5);display:grid;gap:var(--vt-2);align-content:start}
+.fact b{font:800 var(--vt-text-2xl)/1 var(--vt-font-display);text-transform:uppercase}
+.fact span{font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
+.ref{font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
+
+/* Diagrams: inline SVG in ink, 2px strokes, square caps (law 6). Gold only where a real result is shown. */
+.diagram{background:var(--vt-tex-grid),var(--vt-sunk);border:var(--vt-edge);border-radius:var(--vt-radius-sm);padding:var(--vt-4);overflow-x:auto}
+.diagram svg{display:block;width:100%;min-width:720px;height:auto}
+.diagram .st{fill:none;stroke:var(--vt-ink);stroke-width:2;stroke-linecap:square;stroke-linejoin:miter}
+.diagram .dash{stroke-dasharray:6 6}
+.diagram .fill-s{fill:var(--vt-surface)}.diagram .fill-k{fill:var(--vt-ink)}.diagram .fill-g{fill:var(--vt-gold)}.diagram .fill-u{fill:var(--vt-sunk)}
+.diagram text{font-family:var(--vt-font-mono);font-size:11px;letter-spacing:.1em;fill:var(--vt-ink);text-transform:uppercase}
+.diagram text.inv{fill:var(--vt-surface)}
+.diagram text.b{font-weight:700}
+.diagram text.s{font-size:10px;fill:var(--vt-ink-2)}
+/* Labels that sit on lines: a halo in the diagram ground colour so the line passes behind the words. */
+.diagram text.msg{paint-order:stroke;stroke:var(--vt-sunk);stroke-width:6px;stroke-linejoin:round}
+.cap{font-size:var(--vt-text-sm);color:var(--vt-ink-2);margin:var(--vt-3) 0 0}
+
+/* Decision table */
+.decide{width:100%;border-collapse:collapse;font-size:var(--vt-text-sm)}
+.decide th,.decide td{border-bottom:var(--vt-rule);padding:var(--vt-3) var(--vt-2);text-align:left;vertical-align:top}
+.decide th{font:500 var(--vt-text-xs)/1.4 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;color:var(--vt-ink-2)}
+.decide td:first-child{font:700 var(--vt-text-sm)/1.4 var(--vt-font-mono);white-space:nowrap}
+/* Phones: each answer becomes a small card, with the column names as labels. */
+@media(max-width:767px){
+  .decide thead{display:none}
+  .decide tr{display:block;border-bottom:var(--vt-rule);padding:var(--vt-3) 0}
+  .decide td{display:block;border:0;padding:var(--vt-1) 0}
+  .decide td:nth-child(2)::before,.decide td:nth-child(3)::before{display:block;font:500 var(--vt-text-xs)/1.4 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;color:var(--vt-ink-2)}
+  .decide td:nth-child(2)::before{content:"What it means"}
+  .decide td:nth-child(3)::before{content:"What to do"}
+}
+.tblwrap{overflow-x:auto}
+
+/* Code samples with language tabs */
+.tabs{display:flex;flex-wrap:wrap;gap:var(--vt-2);margin-bottom:var(--vt-3)}
+.codewin .body{gap:var(--vt-3)}
+
+/* Events: live registry and the block timeline */
+.reg{width:100%;border-collapse:collapse;font:400 var(--vt-text-sm)/1.4 var(--vt-font-mono)}
+.reg th,.reg td{border-bottom:var(--vt-rule);padding:var(--vt-3) var(--vt-2);text-align:left;vertical-align:top}
+.reg th{font-weight:500;font-size:var(--vt-text-xs);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;color:var(--vt-ink-2)}
+.reg td.num{white-space:nowrap}
+.steps3{display:grid;gap:var(--vt-6);counter-reset:s}@media(min-width:900px){.steps3{grid-template-columns:repeat(3,1fr)}}
+.steps3 .win .body{min-height:100%}
+.ev-card dl{margin:0;display:grid;gap:var(--vt-2)}
+.ev-card dt{font:500 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;color:var(--vt-ink-2)}
+.ev-card dd{margin:0 0 var(--vt-1);font-size:var(--vt-text-sm);color:var(--vt-ink)}
+
+/* Simulation */
+.sim-tabs{display:flex;flex-wrap:wrap;gap:var(--vt-2);margin:var(--vt-8) 0 var(--vt-6)}
+.actors{display:grid;gap:var(--vt-3);grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:900px){.actors{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.actor{border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);padding:var(--vt-3);display:grid;gap:var(--vt-1);min-height:96px;align-content:start;transition:transform var(--vt-dur-2) var(--vt-ease),box-shadow var(--vt-dur-2) var(--vt-ease)}
+.actor .nm{font:700 var(--vt-text-xs)/1.2 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase}
+.actor .st8{font-size:var(--vt-text-sm);color:var(--vt-ink-2);line-height:1.35;overflow-wrap:anywhere}
+.actor.on{box-shadow:var(--vt-shadow-hard);transform:translate(-2px,-2px)}
+.actor.on .nm::after{content:" ●"}
+.flow{font:500 var(--vt-text-xs)/1.4 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;color:var(--vt-ink);min-height:20px}
+.rail{display:flex;gap:var(--vt-2);align-items:center;flex-wrap:wrap}
+.rail button{width:32px;height:32px;border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);color:var(--vt-ink);font:700 var(--vt-text-xs)/1 var(--vt-font-mono);cursor:pointer;box-shadow:var(--vt-shadow-small)}
+.rail button.done{background:var(--vt-sunk)}
+.rail button[aria-current="step"]{background:var(--vt-ink);color:var(--vt-surface);box-shadow:none;transform:translate(2px,2px)}
+.narr{display:grid;gap:var(--vt-3)}
+.narr h3.display{font-size:var(--vt-text-2xl);line-height:.95;margin:0}
+.narr p{margin:0;max-width:680px}
+.badge{display:inline-flex;align-items:center;gap:var(--vt-2);height:24px;padding:0 var(--vt-2);border:2px solid var(--vt-line);border-radius:4px;font:700 11px/1 var(--vt-font-mono);letter-spacing:.12em;text-transform:uppercase;width:max-content}
+.badge.live{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
+.badge.replay{border-style:dashed;color:var(--vt-ink-2)}
+.evid{background:var(--vt-sunk);border:var(--vt-edge);border-radius:var(--vt-radius-sm);padding:var(--vt-4);font:400 var(--vt-text-sm)/1.6 var(--vt-font-mono);overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.ctrls{display:flex;flex-wrap:wrap;gap:var(--vt-3);align-items:center;justify-content:space-between}
+.ctrls .row{gap:var(--vt-3)}
+.learn{display:grid;gap:var(--vt-3)}@media(min-width:900px){.learn{grid-template-columns:1fr 1fr}}
+.learn .win .body{gap:var(--vt-2)}
+.learn ul{margin:0;padding-left:var(--vt-5);font-size:var(--vt-text-sm)}
+
+/* Mobile menu: below 768px the nav links live in a panel under the bar. */
+.menu-btn{display:inline-flex;align-items:center;height:32px;padding:0 var(--vt-3);border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);color:var(--vt-ink);font:500 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;cursor:pointer;box-shadow:var(--vt-shadow-small)}
+.menu-btn[aria-expanded="true"]{background:var(--vt-ink);color:var(--vt-surface);box-shadow:none;transform:translate(2px,2px)}
+@media(min-width:768px){.menu-btn{display:none}}
+.mnav{display:grid;padding:var(--vt-2) var(--vt-gutter) var(--vt-4);border-top:var(--vt-edge);background:var(--vt-ground)}
+.mnav[hidden]{display:none}
+@media(min-width:768px){.mnav{display:none}}
+.mnav a{display:flex;align-items:center;min-height:44px;border-bottom:var(--vt-rule);color:var(--vt-ink);text-decoration:none}
+.mnav a[aria-current="page"]{font-weight:700}
+.mnav a[aria-current="page"]::before{content:"▸";margin-right:var(--vt-2)}
+/* No JavaScript on a phone: the menu button can't open anything, so show the page list instead. */
+@media(scripting:none) and (max-width:767px){.menu-btn{display:none}.mnav[hidden]{display:grid!important}}
+@media(scripting:none){.toggle{display:none}}

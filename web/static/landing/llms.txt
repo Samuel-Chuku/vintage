@@ -1,0 +1,40 @@
+# Vintage
+
+> Proof of age for private money. Vintage proves that every shielded Ironwood coin a Zcash transaction spends
+> already existed before a chosen block: a hack inflow, a tax cutoff, a bug window, or any height you name.
+> The proof is the transaction's anchor, which Zcash consensus checks on every spend. Anyone can verify it
+> from the txid and public chain data. No keys, amounts, senders or history are revealed.
+
+Built for ZECATHON 2026 (Core & Tooling). Open source, MIT OR Apache-2.0. Live on Zcash mainnet.
+
+## Pages
+
+- [Home](https://usevintage.site/): the claim, live mainnet evidence, limits
+- [How it works](https://usevintage.site/how-it-works/): the problem, the anchor mechanism, exchange integration with the API, fresh coins, limits, FAQ
+- [Events](https://usevintage.site/events/): what an event is, the signed registry, event types
+- [Privacy](https://usevintage.site/privacy/): what each party sees, what the service keeps (anonymous daily counts only)
+- [Simulate](https://usevintage.site/simulate/): step-by-step exchange deposit, NEAR Intents swap, fresh coins and tainted coins, with live checks
+- [Verifier](https://app.usevintage.site/): paste a txid, pick an event, get a verdict
+
+## API
+
+- `GET https://api.usevintage.site/verify/{txid}?before={event-id|height}`: verdict (PASS, FAIL, NOT_PROVABLE) and evidence
+- `POST https://api.usevintage.site/verify-link`: receipt-account link check for coins received after an event
+- `GET https://api.usevintage.site/events`: the signed event registry
+- `GET https://api.usevintage.site/stats`: anonymous daily counts
+- `GET https://api.usevintage.site/health`: network and chain tip
+
+## Source and docs
+
+- [Repository](https://github.com/Samuel-Chuku/vintage)
+- [How it works](https://github.com/Samuel-Chuku/vintage/blob/main/docs/HOW_IT_WORKS.md)
+- [Integration guide](https://github.com/Samuel-Chuku/vintage/blob/main/docs/INTEGRATION.md)
+- [API reference](https://github.com/Samuel-Chuku/vintage/blob/main/docs/API.md)
+- [Threat model](https://github.com/Samuel-Chuku/vintage/blob/main/docs/THREAT_MODEL.md)
+- [Mainnet demo](https://github.com/Samuel-Chuku/vintage/blob/main/demo/README.md)
+
+## Mainnet evidence
+
+- PASS: deposit `da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7`, anchored at block 3,525,696, before event block 3,525,709 (a staged demo event)
+- LINK PASS: deposit `df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402`, funded by the PASS transaction
+- FAIL: `a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143`, which spends coins received after the event

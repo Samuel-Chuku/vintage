@@ -11,16 +11,24 @@ window, a snapshot, or any block you name. Amounts, senders and history stay shi
 - No list of people or addresses: the registry only labels block heights
 - Anyone can check any transaction against any height, from public chain data
 
-ZECATHON 2026, Core & Tooling track.
+ZECATHON 2026, Core & Tooling track. Live on Zcash mainnet:
+
+| | |
+|---|---|
+| Website | [usevintage.site](https://usevintage.site) ([how it works](https://usevintage.site/how-it-works/), [simulation](https://usevintage.site/simulate/)) |
+| Verifier | [app.usevintage.site](https://app.usevintage.site) |
+| API | `https://api.usevintage.site` ([reference](docs/API.md), [integration guide](docs/INTEGRATION.md)) |
+| Mainnet proof | [`da9017e0…e3a7`](https://mainnet.zcashexplorer.app/transactions/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7): a Vintage payment that funded a NEAR Intents swap, verified `PASS` |
 
 ## Why
 
 - When stolen funds enter the shielded pool, exit rails can't tell whether a shielded deposit contains
-  them. NEAR Intents' SHIELD screening rejected more than $50M of Bitget-linked swaps. Since the
+  them. NEAR Intents says its SHIELD screening blocked more than $50M of attempted Bitget-linked swaps. Since the
   2026-09-30 Bitget inflow into Ironwood, it can't tell whether any shielded deposit contains those coins.
 - A Zcash forum thread (*"My experience exiting shielded ZEC from Zodl to NEAR Intents: $589k USDT still
   held 50 days…"*, forum.zcashcommunity.com/t/57497) shows the cost. The only "proof of innocence"
-  available was to give up privacy, which the author called "unshielding on request".
+  available was to give up privacy: the author volunteered addresses, transaction hashes and swap history, and
+  the funds were still held.
 - Honest framing: Vintage would **not** have helped that author, whose swap predates Ironwood and whose
   review wasn't tied to a specific event. Vintage rules out **known events** for coins that predate
   them. It is not a full source-of-funds answer.
@@ -135,6 +143,9 @@ GET /verify/{deposit_txid}?before={event}
   as a flag, and never require Vintage from every depositor: it's the user's to offer.
 - Act only on mined transactions (`"provisional": false`), and run the verifier against your own node.
 
+The full guide, with code in three languages, self-hosting and mainnet test fixtures:
+[docs/INTEGRATION.md](docs/INTEGRATION.md).
+
 Full reference, including `POST /verify-link`: **[docs/API.md](docs/API.md)**.
 
 ## More evidence
@@ -184,11 +195,11 @@ demo/                     the mainnet demo: how to reproduce it, and the publish
 research/                 one-hop zero-knowledge spike; Gate 0 check for the link
 patches/                  zcash-devtool patches (`propose` and `pay` with --min-confirmations)
 deploy/                   API service + reverse proxy; Cloudflare Pages guide for the website
-web/                      the website: shared/ design system, landing/ (usevintage.site), app/ (app.usevintage.site)
-scripts/                  build-web.sh, and the site checks (requests, overflow, em dashes, screenshots)
-docs/                     HOW_IT_WORKS, LINK, THREAT_MODEL, API, ROADMAP, ZIP_DRAFT
+web/                      the website: pages/ (one file per page), shared/ design system, static/ per site
+scripts/                  build-web.sh + build-pages.py (static site generator), site checks, og-card.html
+docs/                     HOW_IT_WORKS, INTEGRATION, API, LINK, THREAT_MODEL, ROADMAP, ZIP_DRAFT
 ```
 
 ## License
 
-MIT OR Apache-2.0.
+MIT OR Apache-2.0, at your option: [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE). Security reports: [SECURITY.md](SECURITY.md).

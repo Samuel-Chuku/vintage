@@ -1,6 +1,9 @@
 # Hosting the website on Cloudflare Pages
 
-Two static sites, built from `web/` by `scripts/build-web.sh`:
+Two static sites, built from `web/` by `scripts/build-web.sh`, which runs `scripts/build-pages.py`
+(Python 3 standard library only; Cloudflare's build image already has Python). Each page in
+`web/pages/` is wrapped in the shared head, nav and footer; the script also writes `_headers`,
+`sitemap.xml` and a `404.html` for each site:
 
 | Pages project | Output directory | Domain | What it is |
 |---|---|---|---|

@@ -1,30 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vintage · Verify a deposit</title>
-<meta name="description" content="Check whether every coin a Zcash transaction spends existed before a hack, a cutoff or any block you name. Live, from public chain data.">
-<meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-49AJZOtmeNg6KXt47aJ9Q7rI0XaL7xuHXf9inJl2Njw='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://api.usevintage.site; base-uri 'none'; form-action 'none'">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/tokens.css">
-<link rel="stylesheet" href="css/vintage.css">
-<script>(function(){try{var t=localStorage.getItem('vt-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
-</head>
-<body>
-<a class="skip tkt" href="#verify"><span class="lbl">Skip to the verifier</span><span class="stub" aria-hidden="true">↓</span></a>
-
-<nav class="nav" id="nav" aria-label="Main"><div class="wrap">
-  <a class="mark" href="https://usevintage.site">VINTAGE</a>
-  <div class="navlinks label">
-    <a class="hide-sm" href="https://usevintage.site/#how">How it works</a><a class="hide-sm" href="https://usevintage.site/#events">Events</a><a class="hide-sm" href="https://usevintage.site/#privacy">Privacy</a><a class="hide-sm" href="#verify" aria-current="page">Verify</a>
-    <button class="toggle" id="toggle" aria-label="Switch colour theme"><span data-t="light">Light</span> / <span data-t="dark">Dark</span></button>
-  </div>
-</div></nav>
-
-<main class="wrap">
-
 <!-- 02 VERIFY -->
 <section id="verify">
   <div class="grid2">
@@ -79,15 +52,3 @@
   <p class="label" style="text-align:center;margin-top:var(--vt-6)" id="countcap">Checks run since launch</p>
   <p style="text-align:center;font-size:14px;margin:4px 0 0">We count checks per day, by verdict and event. Nothing else: no txids, no IPs, no times of day. <a class="quiet" href="https://api.usevintage.site/stats" rel="noopener noreferrer">See the raw numbers <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a></p>
 </section>
-
-</main>
-
-<footer><div class="wrap cols">
-  <a class="mark" href="https://usevintage.site">VINTAGE</a>
-  <nav class="label" aria-label="Footer"><a href="https://github.com/Samuel-Chuku/vintage" rel="noopener noreferrer">GitHub <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a><a href="https://usevintage.site/#limits">Threat model</a><span>Zecathon 2026</span></nav>
-  <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests. Fonts are served from this site. Static site served by Cloudflare. Your txid goes from your browser straight to our verifier, which keeps no logs.</p>
-</div></footer>
-
-<script src="js/site.js" defer></script>
-</body>
-</html>
