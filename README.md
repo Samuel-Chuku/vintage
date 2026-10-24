@@ -183,7 +183,9 @@ registry/                 events.json + ed25519 signature + public key
 demo/                     the mainnet demo: how to reproduce it, and the published link bundle
 research/                 one-hop zero-knowledge spike; Gate 0 check for the link
 patches/                  zcash-devtool patches (`propose` and `pay` with --min-confirmations)
-deploy/                   service and reverse-proxy configuration
+deploy/                   API service + reverse proxy; Cloudflare Pages guide for the website
+web/                      the website: shared/ design system, landing/ (usevintage.site), app/ (app.usevintage.site)
+scripts/                  build-web.sh, and the site checks (requests, overflow, em dashes, screenshots)
 docs/                     HOW_IT_WORKS, LINK, THREAT_MODEL, API, ROADMAP, ZIP_DRAFT
 ```
 

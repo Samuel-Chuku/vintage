@@ -1,0 +1,11 @@
+# Cloudflare Pages response headers (app.usevintage.site). Same policy as the page's CSP meta tag, plus
+# frame-ancestors, which only works as a header. The only network origin besides this site is the API.
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-49AJZOtmeNg6KXt47aJ9Q7rI0XaL7xuHXf9inJl2Njw='; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src https://api.usevintage.site; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

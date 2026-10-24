@@ -6,3 +6,6 @@ target/
 /wallets/
 *.age
 *-key.txt
+
+# Built sites (scripts/build-web.sh)
+/dist/

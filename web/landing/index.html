@@ -13,12 +13,12 @@
 <script>(function(){try{var t=localStorage.getItem('vt-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
 </head>
 <body>
-<a class="skip tkt" href="#verify"><span class="lbl">Skip to the verifier</span><span class="stub" aria-hidden="true">↓</span></a>
+<a class="skip tkt" href="https://app.usevintage.site"><span class="lbl">Open the verifier</span><span class="stub" aria-hidden="true">→</span></a>
 
 <nav class="nav" id="nav" aria-label="Main"><div class="wrap">
   <a class="mark" href="#top">VINTAGE</a>
   <div class="navlinks label">
-    <a class="hide-sm" href="#how">How it works</a><a class="hide-sm" href="#events">Events</a><a class="hide-sm" href="#privacy">Privacy</a><a class="hide-sm" href="#verify">Verify</a>
+    <a class="hide-sm" href="#how">How it works</a><a class="hide-sm" href="#events">Events</a><a class="hide-sm" href="#privacy">Privacy</a><a class="hide-sm" href="https://app.usevintage.site">Verify</a>
     <button class="toggle" id="toggle" aria-label="Switch colour theme"><span data-t="light">Light</span> / <span data-t="dark">Dark</span></button>
   </div>
 </div></nav>
@@ -36,7 +36,7 @@
     <p class="lead">Every shielded Ironwood spend names an earlier state of the note tree, and consensus checks it. Vintage turns that into a claim anyone can verify from one txid: these coins were already here before a hack, a tax cutoff, a bug window, or any block you name. Their amount, sender and history stay <em>shielded</em>.</p>
     <div class="acts">
       <div class="row">
-        <a class="tkt primary" href="#verify"><span class="lbl"><span class="no">01</span>Verify a deposit</span><span class="stub" aria-hidden="true">→</span></a>
+        <a class="tkt primary" href="https://app.usevintage.site"><span class="lbl"><span class="no">01</span>Verify a deposit</span><span class="stub" aria-hidden="true">→</span></a>
         <a class="tkt" href="#how"><span class="lbl"><span class="no">02</span>See how</span><span class="stub" aria-hidden="true">↓</span></a>
       </div>
       <p class="note">Covers coins received before the event you pick. Fresh coins have their own path, <a href="#events">further down</a>.</p>
@@ -69,36 +69,16 @@
 
     <div class="stack" style="margin:16px 0 0 16px">
       <div class="win active">
-        <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Verify a deposit</div><div class="label" id="vnet">Mainnet</div></div>
-        <form class="body" id="vform" novalidate>
-          <label class="field"><span class="p">&gt;</span><input id="txid" placeholder="Paste a Zcash txid" spellcheck="false" autocomplete="off" aria-label="Zcash transaction id" aria-describedby="txerr"><span class="div"></span><button type="button" class="quiet" id="paste">Paste</button></label>
-          <p class="err" id="txerr" hidden>A txid is 64 characters, 0 to 9 and a to f.</p>
-          <div class="row" role="group" aria-label="Event" id="chips"><span class="label">Before</span>
-            <button type="button" class="chip" aria-pressed="false" data-before="custom" id="customchip">Custom height +</button></div>
-          <label class="field" id="customfield" hidden><span class="p">&gt;</span><input id="customh" inputmode="numeric" placeholder="Block height, e.g. 3501240" spellcheck="false" autocomplete="off" aria-label="Custom block height" aria-describedby="herr"></label>
-          <p class="err" id="herr" hidden>A block height is a whole number after Ironwood's activation at block 3,428,143.</p>
-          <noscript><p class="err">The live verifier needs JavaScript. Everything else on this page works without it, and so does <span class="mono">vintage verify</span> on your own machine.</p></noscript>
-          <div class="tape mini" id="vtape" aria-hidden="true"><div class="cells"></div><div class="scanl"></div></div>
-          <div class="ticker label" id="ticker"><span id="tk1">Roots checked 0</span><span id="tk2">Block</span></div>
-          <div class="vwrap">
-            <div class="seal" id="vseal" aria-hidden="true">
-              <svg viewBox="0 0 128 128"><defs><path id="cp3" d="M64,64 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs>
-                <text font-family="JetBrains Mono" font-size="8.5" font-weight="500" letter-spacing="1.6" fill="currentColor"><textPath href="#cp3" id="vsealtext">PROVEN OLDER THAN BLOCK · MAINNET ·</textPath></text></svg>
-              <div class="c"><b>VINTAGE</b><i>MAINNET</i></div>
-            </div>
-            <div class="v idle" id="verdict" aria-live="polite">
-              <div class="label">Awaiting txid</div>
-              <p style="font-family:var(--vt-font-mono);font-size:14px">&gt; Paste a Zcash txid. We'll check whether every coin it spends was already in the shielded pool before the event you pick.</p>
-            </div>
-          </div>
+        <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Verify a deposit</div><div class="label">Mainnet</div></div>
+        <div class="body">
+          <p style="font-family:var(--vt-font-mono);font-size:14px;margin:0">&gt; Paste a Zcash txid, pick the event, get a verdict from public chain data in seconds. The verifier lives in the app.</p>
           <div class="row" style="justify-content:space-between">
             <div class="row">
-              <button type="submit" class="tkt primary"><span class="lbl">Verify deposit</span><span class="stub" aria-hidden="true">→</span></button>
-              <button type="button" class="quiet" id="example">Try a real example</button>
+              <a class="tkt primary" href="https://app.usevintage.site"><span class="lbl">Open the verifier</span><span class="stub" aria-hidden="true">→</span></a>
+              <a class="quiet" href="https://app.usevintage.site/#tx=da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7&amp;before=vintage-demo-2026-10">Try the mainnet example</a>
             </div>
-            <span class="label" id="vmeta"></span>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>
@@ -338,7 +318,7 @@
 <footer><div class="wrap cols">
   <a class="mark" href="#top">VINTAGE</a>
   <nav class="label" aria-label="Footer"><a href="#">GitHub <svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg></a><a href="#limits">Threat model</a><span>Zecathon 2026</span></nav>
-  <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests. Fonts are served from this site.</p>
+  <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests. Fonts are served from this site. Static site served by Cloudflare. Your txid goes from your browser straight to our verifier, which keeps no logs.</p>
 </div></footer>
 
 <script src="js/site.js" defer></script>
