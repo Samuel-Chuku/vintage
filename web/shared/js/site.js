@@ -22,10 +22,26 @@
   function savedTheme() { try { return localStorage.getItem('vt-theme'); } catch (e) { return null; } }
 
   /* ---- theme ---- */
-  var tg = $('#toggle');
-  function cur() { var a = root.getAttribute('data-theme'); return a || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
-  function paint() { $$('span', tg).forEach(function (s) { s.classList.toggle('on', s.dataset.t === cur()); }); }
-  tg.addEventListener('click', function () { var n = cur() === 'dark' ? 'light' : 'dark'; root.setAttribute('data-theme', n); try { localStorage.setItem('vt-theme', n); } catch (e) {} paint(); });
+  /* One button. It shows a sun on a dark page and a half moon on a light one, and each click flips the
+     page. A flip that lands on the device's own preference becomes "auto" (no data-theme: the CSS follows
+     the device from then on), marked with a small A. */
+  var tg = $('#toggle'), osDark = matchMedia('(prefers-color-scheme: dark)');
+  function sys() { return osDark.matches ? 'dark' : 'light'; }
+  function cur() { return root.getAttribute('data-theme') || sys(); }
+  function paint() {
+    var c = cur(), auto = !root.hasAttribute('data-theme'), next = c === 'dark' ? 'light' : 'dark';
+    tg.dataset.show = c === 'dark' ? 'sun' : 'moon';
+    tg.dataset.mode = auto ? 'auto' : c;
+    var label = 'Switch to the ' + next + ' theme. Now ' + c + (auto ? ', following your device' : '') + '.';
+    tg.setAttribute('aria-label', label); tg.title = label;
+  }
+  tg.addEventListener('click', function () {
+    var n = cur() === 'dark' ? 'light' : 'dark', mode = n === sys() ? 'auto' : n;
+    if (mode === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', n);
+    try { localStorage.setItem('vt-theme', mode); } catch (e) {}
+    paint();
+  });
+  if (osDark.addEventListener) osDark.addEventListener('change', paint);
   paint();
 
   /* ---- full-bleed bands end at the scrollbar, not under it (vintage.css uses --vt-sbw) ---- */

@@ -23,9 +23,16 @@ body{margin:0;color:var(--vt-ink);font:400 var(--vt-text-md)/var(--vt-leading-bo
 .navlinks{display:flex;gap:var(--vt-6);align-items:center}
 .navlinks a{color:var(--vt-ink);text-decoration:none}
 .navlinks .hide-sm{display:none}@media(min-width:768px){.navlinks .hide-sm{display:inline}}
-.toggle{background:none;border:0;padding:var(--vt-2) 0;cursor:pointer;font:500 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);color:var(--vt-ink-2)}
-.toggle span{padding-bottom:4px}
-.toggle span.on{color:var(--vt-ink);border-bottom:2px solid var(--vt-ink)}
+/* Theme: one icon button, the same box as the Menu button. Sun on dark pages, half moon on light ones;
+   the A badge means "following your device". Ink only, 2px square-capped strokes. */
+.toggle{position:relative;width:36px;height:32px;display:inline-grid;place-items:center;padding:0;border:var(--vt-edge);border-radius:var(--vt-radius-sm);
+  background:var(--vt-surface);color:var(--vt-ink);box-shadow:var(--vt-shadow-small);cursor:pointer;transition:transform var(--vt-dur-1) var(--vt-ease),box-shadow var(--vt-dur-1) var(--vt-ease)}
+.toggle:active{transform:translate(2px,2px);box-shadow:none}
+.toggle svg{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:square;stroke-linejoin:miter}
+.toggle[data-show="sun"] .moon,.toggle[data-show="moon"] .sun,.toggle:not([data-show]) .sun{display:none}
+.toggle .auto{position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;display:none;place-items:center;border-radius:4px;background:var(--vt-ink);color:var(--vt-surface);
+  font:700 9px/1 var(--vt-font-mono)}
+.toggle[data-mode="auto"] .auto{display:grid}
 
 /* window */
 .win{background:var(--vt-surface);border:var(--vt-edge);border-radius:var(--vt-radius);box-shadow:var(--vt-shadow-hard);overflow:hidden;position:relative}
@@ -253,7 +260,6 @@ footer{margin-top:var(--vt-24);border-top:var(--vt-edge);padding:var(--vt-8) 0}
 .skip{position:absolute;left:-999px;top:8px;z-index:70}.skip:focus{left:16px}
 .nav{border-bottom:2px solid transparent;transition:border-color var(--vt-dur-2) var(--vt-ease)}
 .nav.scrolled{border-bottom-color:var(--vt-line)}
-.toggle{text-transform:uppercase}
 .mega.done .l{overflow:visible}
 .navlinks a:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
 

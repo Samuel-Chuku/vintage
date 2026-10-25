@@ -45,11 +45,12 @@ PAGES = {
 
 # Applies a theme passed in the URL fragment (#theme=dark, set when moving between usevintage.site and
 # app.usevintage.site, whose browser storage is separate), remembers it, removes it from the address
-# bar, then applies the saved theme before first paint. No cookies.
-THEME_JS = ("(function(){var d=document.documentElement,m=/[#&]theme=(light|dark)/.exec(location.hash);"
-            "if(m){d.setAttribute('data-theme',m[1]);var h=location.hash.replace(/[#&]theme=(light|dark)/,'').replace(/^&/,'');"
+# bar, then applies the saved theme before first paint. "auto" (or nothing saved) follows the device:
+# no data-theme attribute, so the CSS prefers-color-scheme rules apply. No cookies.
+THEME_JS = ("(function(){var d=document.documentElement,m=/[#&]theme=(light|dark|auto)/.exec(location.hash);"
+            "if(m){if(m[1]!=='auto')d.setAttribute('data-theme',m[1]);var h=location.hash.replace(/[#&]theme=(light|dark|auto)/,'').replace(/^&/,'');"
             "try{history.replaceState(null,'',location.pathname+location.search+(h?(h.charAt(0)==='#'?h:'#'+h):''))}catch(e){}}"
-            "try{if(m)localStorage.setItem('vt-theme',m[1]);var t=localStorage.getItem('vt-theme');if(t)d.setAttribute('data-theme',t)}catch(e){}})();")
+            "try{if(m)localStorage.setItem('vt-theme',m[1]);var t=localStorage.getItem('vt-theme');if(t==='light'||t==='dark')d.setAttribute('data-theme',t)}catch(e){}})();")
 THEME_HASH = "sha256-" + base64.b64encode(hashlib.sha256(THEME_JS.encode()).digest()).decode()
 CSP = (f"default-src 'none'; script-src 'self' '{THEME_HASH}'; style-src 'self' 'unsafe-inline'; font-src 'self'; "
        f"img-src 'self' data:; connect-src {API}; base-uri 'none'; form-action 'none'")
@@ -78,7 +79,7 @@ def nav(site, current):
   <a class="mark" href="{home or ''}/">VINTAGE</a>
   <div class="navlinks label">
     {full}
-    <button class="toggle" id="toggle" aria-label="Switch colour theme"><span data-t="light">Light</span> / <span data-t="dark">Dark</span></button>
+    <button type="button" class="toggle" id="toggle" aria-label="Switch colour theme"><svg class="sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><svg class="moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><b class="auto" aria-hidden="true">A</b></button>
     <button class="menu-btn" id="menubtn" aria-expanded="false" aria-controls="mnav">Menu</button>
   </div>
 </div>
