@@ -222,3 +222,17 @@
     <a href="/privacy/"><span class="label">No logs, no keys</span><b>Privacy</b><span>What each party sees, what we keep, and how to check without us.</span><i aria-hidden="true">→</i></a>
   </div>
 </section>
+
+<section class="reveal" id="faq">
+  <div class="label eyebrow">09 / Questions</div>
+  <h2 class="display">Questions, answered.</h2>
+  <div class="faq">
+    <details><summary>What does Vintage prove?</summary><p>That every shielded coin a transaction spends was already in Zcash's Ironwood pool before a block you choose. It says nothing about who sent the coins or how many.</p></details>
+    <details><summary>Why would anyone need that?</summary><p>After a hack, exchanges hold shielded deposits, because stolen coins look like everyone else's. A Vintage proof shows your coins were there before the hack, so they can't be the stolen ones.</p></details>
+    <details><summary>Can a proof be faked?</summary><p>No. Zcash consensus checks every spend's anchor. Coins that arrived after the event aren't in any earlier state of the pool, so no valid transaction can spend them under an earlier anchor.</p></details>
+    <details><summary>What do I give up?</summary><p>No keys, amounts or history. The one visible trace: your transaction uses an older anchor than most, so use it where you're already known, like an exchange account.</p></details>
+    <details><summary>What if I received my coins after the event?</summary><p>Ask the person paying you to send a Vintage payment. You can then link your deposit to it with one single-use account's viewing key. A zero-knowledge version that shows no key exists as a research prototype.</p></details>
+    <details><summary>Is there a blocklist?</summary><p>No. The registry only labels block heights, like the Bitget hack's. Nothing marks a coin or a person as bad, and a failed check is not a flag.</p></details>
+    <details><summary>Do I have to trust you?</summary><p>No. The verifier is open source and reads public chain data. Run <span class="mono">vintage verify</span> against your own node and you get the same answer. Our public verifier keeps no logs.</p></details>
+  </div>
+</section>

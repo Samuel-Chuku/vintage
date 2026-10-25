@@ -200,6 +200,20 @@
   </div>
 </section>
 
+<section class="reveal" id="faq">
+  <div class="label eyebrow">About the lab</div>
+  <h2 class="display">What you're simulating.</h2>
+  <div class="faq">
+    <details><summary>Is any money moving?</summary><p>No. The lab sends no transactions and moves no funds. Live steps only read public mainnet data through our verifier. Real funds moved once, in our mainnet demo of 21 to 23 October 2026, and those transactions are what you check here.</p></details>
+    <details><summary>What is real and what is simulated?</summary><p>Every step is tagged. <b>Live</b>: a real request to our verifier on mainnet, made as you click. <b>Sandbox</b>: computed in your browser from real block heights. <b>Replay</b>: a real mainnet result, recorded. The full list is in <a href="https://github.com/Samuel-Chuku/vintage/blob/main/docs/REAL_VS_SIMULATED.md" rel="noopener noreferrer">REAL_VS_SIMULATED.md</a>.</p></details>
+    <details><summary>Whose wallet is in station 1?</summary><p>Our demo wallet's two real notes: 0.015 ZEC received before the demo event, and 0.005 ZEC sent from the event wallet after it. You can't spend them. You choose what a deposit would do, and the lab shows the result.</p></details>
+    <details><summary>Is the demo event a real hack?</summary><p>No. It's a block we staged on mainnet, 3,525,709, so the whole flow could run with real transactions. The Bitget event, block 3,501,240, is real.</p></details>
+    <details><summary>Why do some notes lock when I move the anchor?</summary><p>A note can only be spent at an anchor if it was in the pool by that block. That consensus rule is what the whole proof rests on.</p></details>
+    <details><summary>Why is the zero-knowledge step a replay?</summary><p>It runs on the command line, not in a browser, and it's an unreviewed research prototype. The replay shows its real result on our mainnet deposit.</p></details>
+    <details><summary>Is my session saved?</summary><p>No. It lives in this tab only, and its ID never leaves your browser. The verifier keeps only its anonymous daily count of checks.</p></details>
+  </div>
+</section>
+
 <section class="reveal">
   <div class="label eyebrow">Run it yourself</div>
   <h2 class="display">Every live step, from your terminal.</h2>

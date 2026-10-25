@@ -12,7 +12,7 @@
 // and screenshots the verifier window.
 
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { mkdirSync, writeFileSync, mkdtempSync , rmSync} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -23,13 +23,26 @@ const verify = vi >= 0 ? { txid: rest[vi + 1], chip: rest[vi + 2] } : null;
 mkdirSync(outdir, { recursive: true });
 
 const port = 9300 + Math.floor(Math.random() * 500);
-const profile = mkdtempSync(join(tmpdir(), 'vt-chrome-'));
+const PROFILE = mkdtempSync(join(tmpdir(), 'vt-chrome-'));
 const chrome = spawn('google-chrome', [
-  '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
+  '--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${PROFILE}`,
   '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-sync',
   '--disable-background-networking', '--disable-component-update', '--disable-default-apps',
   '--metrics-recording-only', '--disable-domain-reliability', 'about:blank',
 ], { stdio: 'ignore' });
+// The profile is throwaway: remove it when Chrome exits, and on any crash or Ctrl-C.
+const dropProfile = () => { try { chrome.kill('SIGKILL'); } catch {} try { rmSync(PROFILE, { recursive: true, force: true }); } catch {} };
+process.on('exit', dropProfile);
+// On a crash or Ctrl-C, stop Chrome, wait for it and its helper processes to exit, then delete.
+const bail = async (code, e) => {
+  if (e) console.error(e);
+  await new Promise((r) => { if (chrome.exitCode !== null || chrome.signalCode) return r(); chrome.once('exit', r); chrome.kill(); setTimeout(r, 3000); });
+  await new Promise((r) => setTimeout(r, 300));
+  dropProfile(); process.exit(code);
+};
+process.on('SIGINT', () => bail(130)); process.on('SIGTERM', () => bail(143));
+process.on('uncaughtException', (e) => bail(1, e)); process.on('unhandledRejection', (e) => bail(1, e));
+
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function wsUrl() {
@@ -159,4 +172,4 @@ if (verify) {
 }
 
 ws.close();
-chrome.kill();
+await new Promise((r) => { chrome.once('exit', r); chrome.kill(); }); await new Promise((r) => setTimeout(r, 300)); dropProfile();

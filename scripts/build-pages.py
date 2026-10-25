@@ -9,6 +9,8 @@ nav and footer, copies web/shared and web/static/<site>, and writes each site's 
 Content-Security-Policy hash of the one inline script, plus sitemap.xml. Run via scripts/build-web.sh.
 """
 import base64
+import html
+import re
 import hashlib
 import json
 import shutil
@@ -111,6 +113,17 @@ def jsonld():
     return '<script type="application/ld+json">' + json.dumps(data, separators=(",", ":")) + "</script>\n"
 
 
+def faq_jsonld(body):
+    """schema.org FAQPage from the page's <details><summary>Q</summary><p>A</p></details> blocks."""
+    qa = re.findall(r"<details><summary>(.*?)</summary><p>(.*?)</p></details>", body, re.S)
+    if not qa:
+        return ""
+    text = lambda s: html.unescape(re.sub(r"<[^>]+>", "", s)).strip()
+    data = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
+        {"@type": "Question", "name": text(q), "acceptedAnswer": {"@type": "Answer", "text": text(a)}} for q, a in qa]}
+    return '<script type="application/ld+json">' + json.dumps(data, separators=(",", ":"), ensure_ascii=False) + "</script>\n"
+
+
 def page(name):
     site, out, current, title, desc, scripts = PAGES[name]
     canonical = url(site, out)
@@ -139,7 +152,7 @@ def page(name):
 <link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/vintage.css">
 <script>{THEME_JS}</script>
-{jsonld() if name == "home" else ""}</head>
+{jsonld() if name == "home" else ""}{faq_jsonld(body)}</head>
 <body data-page="{name.removesuffix('-app')}">
 <a class="skip tkt" href="#main"><span class="lbl">Skip to content</span><span class="stub" aria-hidden="true">↓</span></a>
 
