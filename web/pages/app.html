@@ -3,8 +3,9 @@
   <div class="grid2">
     <div>
       <div class="label eyebrow">01 / Verify</div>
-      <h2 class="display" style="margin-bottom:var(--vt-4)">Paste a txid. Pick the event.</h2>
-      <p class="lead">The verifier reads the anchor from the transaction and walks the tree back to the event. It needs nothing but the txid.</p>
+      <h2 class="display" style="margin-bottom:var(--vt-4)">Paste a txid. Pick an event.</h2>
+      <p class="lead">The verifier reads the anchor from the transaction and finds when its coins were already in the shielded pool. It needs nothing but the txid.</p>
+      <p style="font-size:14px;color:var(--vt-ink-2);max-width:460px"><b>An event</b> answers yes or no: were these coins here before it? <b>Age only</b> gives the date itself, and every registered event that date predates.</p>
       <p style="font-size:14px;color:var(--vt-ink-2);max-width:460px">Your txid goes to our verifier and to a public lightwalletd server. We keep no logs of either. To involve nobody, run <span class="mono">vintage verify</span> on your own machine.</p>
     </div>
 
@@ -15,10 +16,14 @@
           <label class="field"><span class="p">&gt;</span><input id="txid" placeholder="Paste a Zcash txid" spellcheck="false" autocomplete="off" aria-label="Zcash transaction id" aria-describedby="txerr"><span class="div"></span><button type="button" class="quiet" id="paste">Paste</button></label>
           <p class="err" id="txerr" hidden>A txid is 64 characters, 0 to 9 and a to f.</p>
           <div class="row" role="group" aria-label="Event" id="chips"><span class="label">Before</span>
-            <button type="button" class="chip" aria-pressed="false" data-before="custom" id="customchip">Custom height +</button></div>
+            <button type="button" class="chip" aria-pressed="false" data-before="custom" id="customchip">Custom height +</button><button type="button" class="chip" aria-pressed="false" data-before="age" id="agechip" title="No event: how old are these coins, and which events do they predate?">Age only</button></div>
           <label class="field" id="customfield" hidden><span class="p">&gt;</span><input id="customh" inputmode="numeric" placeholder="Block height, e.g. 3501240" spellcheck="false" autocomplete="off" aria-label="Custom block height" aria-describedby="herr"></label>
           <p class="err" id="herr" hidden>A block height is a whole number after Ironwood's activation at block 3,428,143.</p>
           <noscript><p class="err">The live verifier needs JavaScript. Everything else on this page works without it, and so does <span class="mono">vintage verify</span> on your own machine.</p></noscript>
+          <div class="row">
+            <button type="submit" class="tkt primary"><span class="lbl">Verify deposit</span><span class="stub" aria-hidden="true">→</span></button>
+            <button type="button" class="quiet" id="example">Try a real example</button>
+          </div>
           <div class="tape mini" id="vtape" aria-hidden="true"><div class="cells"></div><div class="scanl"></div></div>
           <div class="ticker label" id="ticker"><span id="tk1">Roots checked 0</span><span id="tk2">Block</span></div>
           <div class="vwrap">
@@ -29,16 +34,10 @@
             </div>
             <div class="v idle" id="verdict" aria-live="polite">
               <div class="label">Awaiting txid</div>
-              <p style="font-family:var(--vt-font-mono);font-size:14px">&gt; Paste a Zcash txid. We'll check whether every coin it spends was already in the shielded pool before the event you pick.</p>
+              <p style="font-family:var(--vt-font-mono);font-size:14px">&gt; Paste a Zcash txid, then pick an event to check against, or Age only to see how old its coins are.</p>
             </div>
           </div>
-          <div class="row" style="justify-content:space-between">
-            <div class="row">
-              <button type="submit" class="tkt primary"><span class="lbl">Verify deposit</span><span class="stub" aria-hidden="true">→</span></button>
-              <button type="button" class="quiet" id="example">Try a real example</button>
-            </div>
-            <span class="label" id="vmeta"></span>
-          </div>
+          <span class="label" id="vmeta"></span>
         </form>
       </div>
     </div>

@@ -19,6 +19,7 @@ Built for ZECATHON 2026 (Core & Tooling). Open source, MIT OR Apache-2.0. Live o
 ## API
 
 - `GET https://api.usevintage.site/verify/{txid}?before={event-id|height}`: verdict (PASS, FAIL, NOT_PROVABLE) and evidence
+- `GET https://api.usevintage.site/age/{txid}`: proven age with no event (the block and time by which every coin it spends was in the pool) and which registry events it predates
 - `POST https://api.usevintage.site/verify-link`: receipt-account link check for coins received after an event
 - `GET https://api.usevintage.site/events`: the signed event registry
 - `GET https://api.usevintage.site/stats`: anonymous daily counts

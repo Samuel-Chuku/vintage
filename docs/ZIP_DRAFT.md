@@ -53,12 +53,17 @@ Given a mined transaction T and a height H:
 1. If T has transparent inputs, Sapling spends, Orchard spends, or no Ironwood bundle with spends
    enabled, the result is NOT PROVABLE.
 2. Let `a` = T's anchor. For every height h in [H, tip], compute the root at h.
-3. If `a` equals any of them, the result is FAIL. Otherwise it is PASS.
+3. If `a` equals none of them, the result is PASS.
+4. If `a` equals the root at H and the tree at H − 1 has the same size as at H (block H added no notes),
+   the result is PASS. Otherwise the result is FAIL.
 
-PASS is correct because `a` must equal the root at some earlier block (consensus), and that block is not
-in [H, tip], so it is before H. FAIL is conservative: if the tree didn't change between some A < H and H,
-the root at A equals the root at H, and a spend anchored at A FAILs. Verifiers SHOULD report this case
-(the root at H − 1 equals the matched root).
+PASS in step 3 is correct because `a` must equal the root at some earlier block (consensus), and that
+block is not in [H, tip], so it is before H. PASS in step 4 is correct because the tree is append-only:
+equal size means equal contents, so the pool `a` names already existed at H − 1.
+
+**Age.** Independently of H, a verifier MAY report the first block A whose root equals `a`: every note
+T spends was in the pool by the end of block A, and T predates every event H > A. One search answers
+all events at once.
 
 Implementations MAY compute roots from compact blocks (append each Ironwood action's `cmx` in order),
 and SHOULD cross-check them against `GetTreeState` at intervals. Roots depend only on tree size, so they

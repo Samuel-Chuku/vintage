@@ -241,6 +241,8 @@ else:
   <div class="prose">
     <h3>Can a hacker fake a pass?</h3>
     <p>No. An anchor must be a real earlier root, and the spend proof must show every coin is in it. Coins that arrived after the event aren't in any earlier root, so no valid transaction can spend them under it. Our wallet test shows it: asked to include a coin from after the event, it refused to build the transaction.</p>
+    <h3>Can it just tell me how old my coins are?</h3>
+    <p>Yes. The anchor names one state of the pool, so the verifier can find the first block that had it: every coin the transaction spends was in the pool by then. The demo payment's coins were in the pool by block 3,525,693, on 21 October 2026. Pick <b>Age only</b> in the <a href="https://app.usevintage.site/">verifier</a>, or run <span class="mono">vintage age</span>, and it lists every registered event the coins predate.</p>
     <h3>Does Vintage keep a list of bad coins or bad people?</h3>
     <p>No. The registry only labels block heights ("Bitget hack, block 3,501,240"), and anyone can check against any height of their own. Nothing is ever marked bad.</p>
     <h3>What does the verifier learn about me?</h3>

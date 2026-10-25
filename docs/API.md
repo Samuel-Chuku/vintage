@@ -35,6 +35,7 @@ Resources: ~16 MB RAM. Any core count works; more cores only speed up the very f
 | Method and path | What |
 |---|---|
 | `GET /verify/{txid}?before={height \| event-id}` | Age check: do all of this transaction's Ironwood inputs predate the event? |
+| `GET /age/{txid}` | Proven age, no event: the block by which every coin it spends was in the pool, and which registered events that predates. |
 | `POST /verify-link` | The receipt-account link (fresh coins). Takes a viewing key; stateless. |
 | `GET /events` | The signed event registry for this network |
 | `GET /registry/events.json`, `GET /registry/events.json.sig` | The exact signed bytes and signature |
@@ -85,8 +86,8 @@ demo's Vintage payment:
 | `before.event_type` | `hack`, `tax_cutoff`, `bug_window`, `snapshot` or `custom`; absent for a plain height. |
 | `reasons` | For `NOT_PROVABLE`: e.g. `"transparent inputs"`, `"Sapling spends"`, `"Orchard spends"`, `"no Ironwood bundle"`. |
 | `anchor` | The transaction's Ironwood anchor (hex). |
-| `matched_heights` | For `FAIL`: first and last height ≥ H whose root equals the anchor. |
-| `root_existed_before_h` | For `FAIL`: the matching root already existed at H − 1 (no notes were added in between), so the coins *may* predate H; a spend anchored earlier would prove it. |
+| `matched_heights` | First and last height ≥ H whose root equals the anchor: for `FAIL`, and for a `PASS` where block H added no notes (the anchor is then the pool as it already was at H − 1). |
+| `age` | `existed_by_height`, `existed_by_time` (unix seconds) and `exact`: every coin the transaction spends was in the pool by the end of that block. `exact: false` means the anchor is older than the 50,000-block search, so this is a lower bound. Present for `PASS` and `FAIL`. |
 | `evidence` | Blocks covered, distinct roots ruled out, and how many blocks were computed and cross-checked against the server for this request. |
 
 **Errors**: JSON `{"error": "…"}`.
@@ -96,6 +97,34 @@ demo's Vintage payment:
 | 400 | Malformed txid; missing `before`; unknown event id; H not after Ironwood's activation (mainnet block 3,428,143) or above the tip. |
 | 404 | The server doesn't know the transaction. |
 | 502 | lightwalletd error. |
+
+### `GET /age/{txid}`
+
+The coins' proven age, with no event to choose: the first block whose Ironwood root equals the
+transaction's anchor. The tree is append-only, so the anchor names one pool state, and every spent coin
+was in it. `events` lists each registered event and whether the coins predate it. Real response:
+
+```json
+{
+  "txid": "da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7",
+  "network": "main",
+  "mined_height": 3527813,
+  "provisional": false,
+  "chain_tip": 3529889,
+  "verdict": "DATED",
+  "summary": "Every coin this transaction spends was in the shielded pool by block 3525693.",
+  "anchor": "855ccc99a779159d9d98664d1a09737814b930cc782b149660a94a3881d98502",
+  "age": { "existed_by_height": 3525693, "existed_by_time": 1792598612, "exact": true },
+  "events": [
+    { "id": "bitget-2026-09", "event_type": "hack", "height": 3501240, "predates": false, "label": "…" },
+    { "id": "vintage-demo-2026-10", "event_type": "custom", "height": 3525709, "predates": true, "label": "…" }
+  ],
+  "elapsed_secs": 0.468
+}
+```
+
+`verdict` is `DATED`, or `NOT_PROVABLE` with `reasons` for transactions with non-Ironwood inputs. Errors
+as for `/verify`. Counted in `/stats` under the event `age lookup`.
 
 ### `POST /verify-link`
 

@@ -147,10 +147,31 @@ flowchart TD
 PASS needs no knowledge of where the anchor is from. It only needs to rule out every snapshot from H
 onwards. That is complete, because there are finitely many blocks from H to the tip.
 
-**The conservative edge.** If no notes were added between some block A < H and H, the roots at A and
-H are identical. A transaction anchored at A then FAILs against H, even though its coins do predate H.
-Vintage never gives a false PASS; in this case it can give a FAIL for coins that are in fact old enough,
-and it says so (`root_existed_before_h: true`).
+**When block H added no notes.** If no notes were added between some block A < H and H, the roots at A
+and H are identical, so the anchor matches a root "from H on". Vintage checks the root at H − 1: if it
+is the same, the anchor names the pool as it already was before H, so every spent note existed before
+H, and the verdict is PASS. (Before 25 Oct this case was a conservative FAIL.) Mainnet example: the demo
+payment's anchor is the pool as of block 3,525,693, and blocks 3,525,694 to 3,525,696 added no notes.
+Against H = 3,525,694 it now PASSes; against H = 3,525,693 it FAILs, correctly.
+
+## Proven age, with no event
+
+The anchor gives more than a yes or no. The tree is append-only, so a root names exactly one tree size,
+and the first block whose tree reached that size is the moment every spent note was in the pool.
+Vintage finds that block by searching down from the transaction (`roots::locate`, from the same cached,
+server-checked roots) and reports it with its time:
+
+```
+$ vintage age da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7
+age:         in the pool by block 3525693 (2026-10-21 16:03 UTC)
+             × bitget-2026-09         block   3501240  Bitget hot-wallet exploit: first shielding into Ironwood
+             ✓ vintage-demo-2026-10   block   3525709  Vintage demo: simulated event (not a real hack)
+```
+
+One lookup answers every event at once: the coins predate each event whose height is above that block.
+Every report from `GET /verify` carries the same `age`, and `GET /age/{txid}` gives it alone. For an
+ordinary transaction the age is a few blocks before it was mined, which is true and not interesting;
+for a Vintage send it is the date the holder chose to prove.
 
 ## The fast verifier
 

@@ -16,6 +16,8 @@ use rusqlite::{Connection, params};
 use serde_json::{Value, json};
 
 pub const CUSTOM_HEIGHT: &str = "custom height";
+/// The "event" an age lookup (`GET /age`) is counted under.
+pub const AGE: &str = "age lookup";
 pub const WHAT_IS_COUNTED: &str = "Only daily totals of completed checks, by verdict and by event. \
      No transaction ids, IP addresses, times of day or other request details are recorded.";
 

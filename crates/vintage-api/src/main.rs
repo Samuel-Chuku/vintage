@@ -1,6 +1,8 @@
 //! vintage-api: the exchange-facing HTTP verifier.
 //!
 //! - `GET /verify/{txid}?before=<height|event-id>`: verdict + evidence (the CLI's `--json` report)
+//! - `GET /age/{txid}`: the coins' proven age (the block by which every coin it spends was in the pool)
+//!   and which registry events that predates; no event needed
 //! - `GET /events`: the registry's events for this network, its public key, and whether its
 //!   signature verified
 //! - `GET /registry/events.json`, `GET /registry/events.json.sig`: the exact signed bytes, so
@@ -11,7 +13,7 @@
 //!   is held in memory for the request only and never written to disk, a log or a cache.
 //!
 //! Read-only and stateless apart from the root cache. It keeps one connection to lightwalletd, and a
-//! background task keeps roots warm from the earliest registry event to the tip.
+//! background task keeps roots warm from Ironwood's activation to the tip.
 //!
 //! Version-1 names stay as aliases: `GET /incidents`, `GET /registry/incidents.json(.sig)`.
 
@@ -31,6 +33,7 @@ use serde::Deserialize;
 use serde_json::json;
 use tokio::sync::Semaphore;
 use vintage_core::{VintageNetwork, registry::Registry};
+use zcash_protocol::consensus::{NetworkUpgrade, Parameters};
 mod stats;
 
 use vintage_verifier::{
@@ -119,6 +122,39 @@ async fn verify(State(s): State<Shared>, Path(txid): Path<String>, Query(q): Que
         Err(VerifyError::Upstream(_)) => {
             // The error class only: never the request or the error's details.
             eprintln!("verify: upstream error");
+            error(StatusCode::BAD_GATEWAY, "lightwalletd request failed")
+        }
+    }
+}
+
+/// `GET /age/{txid}`: the age report, plus each registry event and whether the coins predate it.
+async fn age(State(s): State<Shared>, Path(txid): Path<String>) -> Response {
+    let _permit = s.limit.acquire().await.expect("semaphore open");
+    match report::date(&s.client, s.network, Some(&s.cache), &txid, s.concurrency).await {
+        Ok(d) => {
+            s.stats.count(stats::AGE, d.verdict);
+            let mut v = serde_json::to_value(&d).expect("report serializes");
+            if let Some(a) = &d.age {
+                v["events"] = json!(s
+                    .registry
+                    .events
+                    .iter()
+                    .filter(|e| e.network == s.network.name())
+                    .map(|e| json!({
+                        "id": e.id,
+                        "label": e.label,
+                        "event_type": e.kind,
+                        "height": e.height,
+                        "predates": a.existed_by_height < e.height,
+                    }))
+                    .collect::<Vec<_>>());
+            }
+            Json(v).into_response()
+        }
+        Err(VerifyError::BadRequest(m)) => error(StatusCode::BAD_REQUEST, m),
+        Err(VerifyError::NotFound) => error(StatusCode::NOT_FOUND, "transaction not found"),
+        Err(VerifyError::Upstream(_)) => {
+            eprintln!("age: upstream error");
             error(StatusCode::BAD_GATEWAY, "lightwalletd request failed")
         }
     }
@@ -233,18 +269,14 @@ async fn cors(State(origin): State<HeaderValue>, mut res: Response) -> Response 
     res
 }
 
-/// Keep roots computed from the earliest event to the tip, so requests only read the cache.
+/// Keep roots computed from Ironwood's activation to the tip, so verifications and age lookups only
+/// read the cache.
 async fn refresher(s: Shared, every: Duration) {
-    let Some(from) = s
-        .registry
-        .events
-        .iter()
-        .filter(|e| e.network == s.network.name())
-        .map(|e| e.height)
-        .min()
-    else {
+    let Some(activation) = s.network.params().activation_height(NetworkUpgrade::Nu6_3).map(u32::from) else {
         return;
     };
+    // The first chunk reads the tree at `from − 2`; the server has no Ironwood tree before activation.
+    let from = activation + 2;
     loop {
         let t = std::time::Instant::now();
         let run = async {
@@ -300,6 +332,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/verify/{txid}", get(verify))
+        .route("/age/{txid}", get(age))
         .route("/verify-link", axum::routing::post(verify_link).options(preflight))
         .route("/events", get(events))
         .route("/registry/events.json", get(get_registry_json))

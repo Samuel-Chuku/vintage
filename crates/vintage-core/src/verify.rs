@@ -3,8 +3,9 @@
 //! Given the transaction's Ironwood anchor and the Ironwood tree root at every height in `[H, tip]`:
 //! if the anchor equals any of those roots, it is not provably older than `H` (FAIL). Otherwise
 //! consensus guarantees it is the root of some block before `H`, so every input existed before `H`
-//! (PASS). Equal roots mean identical tree contents, so the repeated-root case is sound but
-//! conservative: it can say FAIL for inputs that truly predate `H`, but it never gives a false PASS.
+//! (PASS). Equal roots mean identical tree contents. One case needs the tree size at `H − 1`: if the
+//! anchor is `H`'s root and block `H` added no notes, the anchor names the pool as it already was before
+//! `H`, which is a PASS too ([`unchanged_before`]).
 
 use std::collections::BTreeMap;
 
@@ -52,6 +53,14 @@ pub fn decide_runs(anchor: &[u8; 32], runs: &[(Run, [u8; 32])]) -> Verdict {
     }
 }
 
+/// True when a FAIL from [`decide_runs`] is really a PASS: the anchor matched from `h` itself, and the
+/// tree at `h − 1` already had that size (`size_before`), so block `h` added no notes and the pool the
+/// anchor names existed before `h`. Sound for the same reason as any PASS: the tree is append-only, so
+/// equal size means equal contents, and every spent note sits inside it.
+pub fn unchanged_before(h: u32, matched_from: u32, size_before: u32, first_run: &Run) -> bool {
+    matched_from == h && first_run.from == h && first_run.size == size_before
+}
+
 /// Decide from a complete map of `height → Ironwood root` covering `[before, tip]`.
 pub fn decide(anchor: &[u8; 32], roots: &BTreeMap<u32, [u8; 32]>) -> Verdict {
     let matches: Vec<u32> = roots
@@ -89,6 +98,18 @@ mod tests {
         let with_roots: Vec<_> = runs.iter().map(|r| (*r, [r.size as u8; 32])).collect();
         assert_eq!(decide_runs(&[7; 32], &with_roots), Verdict::Fail { matched_from: 12, matched_to: 14 });
         assert_eq!(decide_runs(&[3; 32], &with_roots), Verdict::Pass { roots_checked: 3 });
+    }
+
+    #[test]
+    fn unchanged_block_is_a_pass() {
+        // Sizes from H = 12: block 12 added no notes (size 5 at 11 and at 12), so an anchor matching
+        // from 12 names the pool as of block 11 or earlier.
+        let runs = size_runs(&[(12, 5), (13, 5), (14, 8)].into()).unwrap();
+        assert!(unchanged_before(12, 12, 5, &runs[0]));
+        // Block 12 did add notes (size 4 at 11): the anchor's pool first existed at 12, not before.
+        assert!(!unchanged_before(12, 12, 4, &runs[0]));
+        // The anchor matched a later run: its pool is from after H.
+        assert!(!unchanged_before(12, 14, 5, &runs[1]));
     }
 
     #[test]

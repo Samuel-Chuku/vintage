@@ -197,10 +197,11 @@
           : verdict('fail', 'Not provable', d.summary, ins));
         acts = { verifier: d.verdict === 'PASS' ? 'LINK PASS in ' + d.elapsed_secs.toFixed(2) + ' s' : 'Not provable', rail: d.verdict === 'PASS' ? 'Link verified' : 'No information' };
       } else if (d.verdict === 'PASS') {
-        out = verdict('pass', 'Pass', 'These coins existed before block ' + fmt(d.before.height) + '.', fmt(d.evidence.distinct_roots) + ' pool states ruled out, block ' + fmt(d.before.height) + ' to the tip at ' + fmt(d.chain_tip) + '.');
+        out = verdict('pass', 'Pass', 'These coins existed before block ' + fmt(d.before.height) + '.', (d.age ? 'In the pool by block ' + fmt(d.age.existed_by_height) + '. ' : '') + fmt(d.evidence.distinct_roots) + ' pool states ruled out, block ' + fmt(d.before.height) + ' to the tip at ' + fmt(d.chain_tip) + '.');
         acts = { verifier: 'PASS in ' + d.elapsed_secs.toFixed(2) + ' s', rail: 'Verdict: PASS' };
       } else {
-        var why = d.matched_heights ? 'Its anchor is the pool state at block ' + fmt(d.matched_heights[0]) + ', after the event.' : 'It has ' + (d.reasons || []).join(', ') + '.';
+        var poolAt = d.age ? d.age.existed_by_height : (d.matched_heights ? d.matched_heights[0] : 0);
+        var why = poolAt ? 'Its coins were in the pool by block ' + fmt(poolAt) + ', ' + fmt(poolAt - d.before.height) + ' blocks after the event.' : 'It has ' + (d.reasons || []).join(', ') + '.';
         out = verdict('fail', 'Not provable', "This deposit can't be dated before block " + fmt(d.before.height) + '.', why);
         acts = { verifier: 'Not provable', rail: 'Verdict: not provable' };
       }

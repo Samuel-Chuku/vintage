@@ -114,6 +114,10 @@ Real response, trimmed:
 Store the `verdict`, `anchor`, `before.height` and `mined_height` with the deposit if you want an audit
 trail: anyone can re-run the check later from those values and get the same answer.
 
+Every response also has an `age`: the block (and its time) by which every coin the deposit spends was
+in the pool. To screen one deposit against **all** registered events at once, call
+`GET /age/{txid}` instead: it returns the same `age` and, for each event, whether the coins predate it.
+
 ### Errors and timeouts
 
 Errors are JSON `{"error": "..."}` with status 400 (bad txid, unknown event, height out of range), 404

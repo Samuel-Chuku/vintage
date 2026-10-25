@@ -209,6 +209,51 @@ async fn compute_chunk(client: lwd::Client, s: u32, e: u32) -> Result<Vec<(u32, 
     .await?
 }
 
+/// Sizes for `[lo, to]` and the root of every size from `roots_from` on, read from the cache or
+/// computed (and then cached). Returns the maps, the number of blocks computed, and the number of chunks.
+#[allow(clippy::too_many_arguments)]
+async fn fill(
+    client: &lwd::Client,
+    cache: Option<&Cache>,
+    lo: u32,
+    to: u32,
+    roots_from: u32,
+    tip: u32,
+    tip_hash: &[u8],
+    concurrency: usize,
+) -> Result<(BTreeMap<u32, u32>, BTreeMap<u32, [u8; 32]>, u32, u32)> {
+    let (mut sizes, mut roots) = match cache {
+        Some(c) => c.get(lo, to, tip_hash)?,
+        None => (BTreeMap::new(), BTreeMap::new()),
+    };
+
+    // Compute every block whose size, or (from `roots_from` on) whose root, isn't known.
+    let todo = gaps(lo, to, |h| match sizes.get(&h) {
+        None => true,
+        Some(size) => h >= roots_from && !roots.contains_key(size),
+    });
+    let chunks: Vec<(u32, u32)> = todo
+        .iter()
+        .flat_map(|&(s, e)| (s..=e).step_by(CHUNK as usize).map(move |c| (c, (c + CHUNK - 1).min(e))))
+        .collect();
+    let n_chunks = chunks.len() as u32;
+    let computed: Vec<Vec<(u32, u32, [u8; 32])>> = stream::iter(chunks)
+        .map(|(s, e)| compute_chunk(client.clone(), s, e))
+        .buffer_unordered(concurrency)
+        .try_collect()
+        .await?;
+    let computed: Vec<(u32, u32, [u8; 32])> = computed.into_iter().flatten().collect();
+    let downloaded = computed.len() as u32;
+    if let Some(c) = cache {
+        c.put(&computed, tip.saturating_sub(FINAL_DEPTH), tip_hash)?;
+    }
+    for (h, size, root) in computed {
+        sizes.insert(h, size);
+        roots.insert(size, root);
+    }
+    Ok((sizes, roots, downloaded, n_chunks))
+}
+
 /// Roots for `[from, tip]`. `tip_hash` is the tip block's hash (empty disables the in-memory layer).
 pub async fn roots_for(
     client: &lwd::Client,
@@ -220,38 +265,10 @@ pub async fn roots_for(
 ) -> Result<Roots> {
     let t = Instant::now();
     let lo = from.checked_sub(1).ok_or_else(|| anyhow!("H must be > 0"))?;
-    let final_to = tip.saturating_sub(FINAL_DEPTH);
     let mut stats = Stats { blocks: tip - from + 1, ..Default::default() };
-
-    let (mut sizes, mut roots) = match cache {
-        Some(c) => c.get(lo, tip, tip_hash)?,
-        None => (BTreeMap::new(), BTreeMap::new()),
-    };
-
-    // Compute every block whose size, or (from `from` on) whose root, isn't known.
-    let todo = gaps(lo, tip, |h| match sizes.get(&h) {
-        None => true,
-        Some(size) => h >= from && !roots.contains_key(size),
-    });
-    let chunks: Vec<(u32, u32)> = todo
-        .iter()
-        .flat_map(|&(s, e)| (s..=e).step_by(CHUNK as usize).map(move |c| (c, (c + CHUNK - 1).min(e))))
-        .collect();
-    stats.server_tree_checks = 2 * chunks.len() as u32;
-    let computed: Vec<Vec<(u32, u32, [u8; 32])>> = stream::iter(chunks)
-        .map(|(s, e)| compute_chunk(client.clone(), s, e))
-        .buffer_unordered(concurrency)
-        .try_collect()
-        .await?;
-    let computed: Vec<(u32, u32, [u8; 32])> = computed.into_iter().flatten().collect();
-    stats.blocks_downloaded = computed.len() as u32;
-    if let Some(c) = cache {
-        c.put(&computed, final_to, tip_hash)?;
-    }
-    for (h, size, root) in computed {
-        sizes.insert(h, size);
-        roots.insert(size, root);
-    }
+    let (mut sizes, roots, downloaded, chunks) = fill(client, cache, lo, tip, from, tip, tip_hash, concurrency).await?;
+    stats.blocks_downloaded = downloaded;
+    stats.server_tree_checks = 2 * chunks;
 
     let size_before = *sizes.get(&lo).expect("size at from − 1 is known");
     sizes.retain(|h, _| *h >= from && *h <= tip);
@@ -263,4 +280,57 @@ pub async fn roots_for(
     stats.blocks_from_cache = (tip - lo + 1) - stats.blocks_downloaded;
     stats.secs = t.elapsed().as_secs_f64();
     Ok(Roots { runs, size_before, stats })
+}
+
+/// Where an anchor sits in the chain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Located {
+    /// The anchor is the Ironwood root at the end of every block in `first..=last`, and of no other
+    /// block: the tree first held exactly these notes at the end of block `first`.
+    At { first: u32, last: u32 },
+    /// The anchor is the root of no block in `[floor, below)`, so it is from a block before `floor`.
+    Before { floor: u32 },
+}
+
+/// Find the first and last block whose Ironwood root is `anchor`, searching down from `below − 1` to
+/// `floor`, in windows that double in size. Consensus makes an anchor the root of some block before the
+/// transaction, and the tree is append-only, so a root names one tree size and one run of blocks.
+#[allow(clippy::too_many_arguments)]
+pub async fn locate(
+    client: &lwd::Client,
+    cache: Option<&Cache>,
+    anchor: &[u8; 32],
+    below: u32,
+    floor: u32,
+    tip: u32,
+    tip_hash: &[u8],
+    concurrency: usize,
+) -> Result<Located> {
+    let mut hi = below.checked_sub(1).ok_or_else(|| anyhow!("nothing below block 0"))?;
+    let mut window = 1_000u32;
+    while hi >= floor {
+        let lo = hi.saturating_sub(window - 1).max(floor);
+        let (sizes, roots, _, _) = fill(client, cache, lo, hi, lo, tip, tip_hash, concurrency).await?;
+        if let Some((&size, _)) = roots.iter().find(|(_, r)| *r == anchor) {
+            let heights: Vec<u32> = sizes.range(lo..=hi).filter(|(_, s)| **s == size).map(|(h, _)| *h).collect();
+            if let (Some(&first), Some(&last)) = (heights.first(), heights.last()) {
+                // The run may continue below the window: walk down while the size stays the same.
+                let mut first = first;
+                while first > floor {
+                    let (s, _, _, _) = fill(client, cache, first - 1, first - 1, first, tip, tip_hash, concurrency).await?;
+                    if s.get(&(first - 1)) != Some(&size) {
+                        break;
+                    }
+                    first -= 1;
+                }
+                return Ok(Located::At { first, last });
+            }
+        }
+        if lo == floor {
+            break;
+        }
+        hi = lo - 1;
+        window = window.saturating_mul(2);
+    }
+    Ok(Located::Before { floor })
 }

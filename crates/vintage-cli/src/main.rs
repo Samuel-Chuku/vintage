@@ -60,6 +60,19 @@ enum Cmd {
         #[arg(long)]
         received_by: Option<String>,
     },
+    /// How old a transaction's coins are: the block by which every coin it spends was in the pool, and
+    /// which registry events it predates. No event needed.
+    Age {
+        txid: String,
+        #[arg(long, default_value_t = 16)]
+        concurrency: usize,
+        /// Print the result as JSON.
+        #[arg(long)]
+        json: bool,
+        /// Root cache (SQLite). Default: ~/.cache/vintage/cache.sqlite.
+        #[arg(long)]
+        cache: Option<PathBuf>,
+    },
     /// Send from a zcash-devtool wallet with an anchor before block H, so the tx proves its inputs predate H.
     Send {
         /// zcash-devtool wallet directory.
@@ -273,6 +286,43 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Cmd::Link(c) => link_cmd::run(network, &server, &cli.registry, c).await,
+        Cmd::Age { txid, concurrency, json, cache } => {
+            let client = lwd::connect(&server).await?;
+            let cache = cache.or_else(roots::default_cache_path).map(|p| roots::Cache::open(&p, network)).transpose()?;
+            let d = report::date(&client, network, cache.as_ref(), &txid, concurrency).await?;
+            let events = load_registry(&cli.registry).map(|r| r.events).unwrap_or_default();
+            let events: Vec<_> = events.into_iter().filter(|e| e.network == network.name()).collect();
+            if json {
+                let mut v = serde_json::to_value(&d)?;
+                if let Some(a) = &d.age {
+                    v["events"] = serde_json::json!(events.iter().map(|e| serde_json::json!({
+                        "id": e.id, "label": e.label, "height": e.height, "predates": a.existed_by_height < e.height,
+                    })).collect::<Vec<_>>());
+                }
+                println!("{}", serde_json::to_string_pretty(&v)?);
+            } else {
+                println!("txid:        {}", d.txid);
+                println!("mined:       {}", d.mined_height.map_or("not yet".into(), |h| h.to_string()));
+                if let Some(a) = &d.anchor {
+                    println!("anchor:      {a}");
+                }
+                if let Some(a) = &d.age {
+                    println!(
+                        "age:         in the pool {} block {} ({})",
+                        if a.exact { "by" } else { "at least by" },
+                        a.existed_by_height,
+                        vintage_core::time::utc(a.existed_by_time)
+                    );
+                    for e in &events {
+                        let ok = a.existed_by_height < e.height;
+                        println!("             {} {:<22} block {:>9}  {}", if ok { "✓" } else { "×" }, e.id, e.height, e.label);
+                    }
+                }
+                println!("time:        {:.2}s\n", d.elapsed_secs);
+                println!("{}: {}", d.verdict, d.summary);
+            }
+            std::process::exit(if d.verdict == "DATED" { 0 } else { 2 });
+        }
         Cmd::Verify { txid, before, locate_back, concurrency, json, cache, no_cache, received_by } => {
             let before = resolve_before(|| load_registry(&cli.registry), network, &before)?;
             let client = lwd::connect(&server).await?;
@@ -331,6 +381,14 @@ async fn main() -> Result<()> {
                     e.blocks_downloaded, e.blocks_from_cache, e.server_tree_checks
                 );
             }
+            if let Some(a) = &r.age {
+                println!(
+                    "age:         in the pool {} block {} ({})",
+                    if a.exact { "by" } else { "at least by" },
+                    a.existed_by_height,
+                    vintage_core::time::utc(a.existed_by_time)
+                );
+            }
             println!("time:        {:.2}s", r.elapsed_secs);
             if let Some(rs) = &received {
                 let total: u64 = rs.iter().map(|x| x.value).sum();
@@ -357,7 +415,14 @@ async fn main() -> Result<()> {
             }
             println!();
             match (r.verdict, r.matched_heights) {
-                ("PASS", _) => {
+                ("PASS", Some([lo, hi])) => {
+                    println!("PASS: {}", r.summary);
+                    let first = r.age.as_ref().map_or(h - 1, |a| a.existed_by_height);
+                    println!(
+                        "evidence:    the anchor is the Ironwood root at heights {first}..={hi}; blocks {lo}..={hi} added no notes, so the pool it names already existed at block {first}, before {h}"
+                    );
+                }
+                ("PASS", None) => {
                     println!("PASS: {}", r.summary);
                     if let Some(e) = &r.evidence {
                         println!(

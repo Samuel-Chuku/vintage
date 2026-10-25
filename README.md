@@ -93,6 +93,7 @@ Check any mainnet transaction against an event (no wallet needed):
 ```sh
 vintage verify <txid> --before bitget-2026-09
 vintage verify <txid> --before 3501240 --json        # any height; JSON for machines
+vintage age <txid>                                   # no event: when were these coins in the pool?
 ```
 
 Exit codes: `0` PASS, `1` FAIL, `2` not provable. Or use the public verifier, no install:

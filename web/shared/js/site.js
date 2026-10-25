@@ -197,6 +197,67 @@
     if (meta) meta.textContent = 'Signature verified by the API · public key ' + esc(String(r.body.public_key).slice(0, 8)) + '…' + esc(String(r.body.public_key).slice(-4));
   });
 
+  /* ---- home page: check any txid's age, inline (GET /age). Neutral styling: gold is kept for a
+     proven PASS against an event, which happens in the verifier. ---- */
+  var hform = $('#hcheck');
+  if (hform) {
+    var htx = $('#htx'), hres = $('#hres'), hterr = $('#hterr'), hnext = $('#hnext'), hbusy = false;
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var utc = function (t) {
+      var d = new Date(t * 1000), p = function (n) { return (n < 10 ? '0' : '') + n; };
+      return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ', ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' UTC';
+    };
+    var shortName = function (label) { var s = String(label).split(':')[0]; return s.length > 20 ? s.split(' ')[0] : s; };
+    var show = function (kind, label, title, body) {
+      hres.className = 'v ' + kind;
+      hres.innerHTML = '<div class="label">' + esc(label) + '</div>' + (title ? '<h3 class="display">' + esc(title) + '</h3>' : '') + (body ? '<p>' + esc(body) + '</p>' : '');
+    };
+    var check = function (tx) {
+      if (hbusy) return;
+      hnext.hidden = true;
+      if (!/^[0-9a-f]{64}$/.test(tx)) { hterr.hidden = false; htx.setAttribute('aria-invalid', 'true'); htx.focus(); return; }
+      hterr.hidden = true; htx.removeAttribute('aria-invalid');
+      hbusy = true;
+      show('check', 'Checking', 'Finding where its anchor sits in the chain.');
+      api('/age/' + tx).then(function (r) {
+        hbusy = false;
+        var d = r.body;
+        if (!r.ok) {
+          if (r.status === 0) show('idle', 'Not checked', '', "Couldn't reach the verifier. Try again in a minute, or run vintage age on your own machine.");
+          else if (r.status === 404 && !(d && d.error)) show('idle', 'Not available', '', "Age lookups aren't on the verifier yet. Open the verifier to check against an event.");
+          else if (r.status === 404) show('idle', 'Not found', '', "No mainnet transaction with that txid, or it hasn't reached the server yet.");
+          else show('idle', 'Not checked', '', (d && d.error) || 'The verifier could not date this transaction.');
+        } else if (d.verdict !== 'DATED') {
+          show('idle', 'Not provable', "This transaction can't be dated.", 'It has ' + ((d.reasons || []).join(', ') || 'inputs Vintage cannot read') + '. Vintage only dates shielded Ironwood coins.');
+        } else {
+          var a = d.age;
+          show('idle', d.provisional ? 'Dated · not mined yet' : 'Dated · ' + d.elapsed_secs.toFixed(2) + ' s', 'In the pool by ' + utc(a.existed_by_time) + '.',
+            'Every coin it spends was in the shielded pool ' + (a.exact ? 'by' : 'at least by') + ' block ' + fmt(a.existed_by_height) + '.');
+          var evs = d.events || [];
+          if (evs.length) {
+            var ul = document.createElement('ul'); ul.className = 'ticks';
+            evs.forEach(function (e) {
+              var li = document.createElement('li');
+              li.dataset.g = e.predates ? '✓' : '×';
+              li.textContent = (e.predates ? 'Predates ' : 'After ') + shortName(e.label) + ', block ' + fmt(e.height);
+              ul.appendChild(li);
+            });
+            hres.appendChild(ul);
+          }
+        }
+        if (r.status !== 0) {
+          hnext.innerHTML = 'Check it against one event or any block in the <a href="https://app.usevintage.site/#tx=' + tx + '">verifier</a>.';
+          hnext.hidden = false;
+        }
+      });
+    };
+    hform.addEventListener('submit', function (e) { e.preventDefault(); check(htx.value.trim().toLowerCase()); });
+    $('#hexample').addEventListener('click', function () {
+      htx.value = 'da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7';
+      check(htx.value);
+    });
+  }
+
   /* ---- counter: the API's anonymous total of checks ---- */
   var box = $('#counter'), bandIn = false, counted = false;
   function roll() { if (!counted) return; $$('.cell', box).forEach(function (c, ix) { var h = $('span', c).offsetHeight; setTimeout(function () { $('.strip', c).style.transform = 'translateY(-' + (+c.dataset.v * h) + 'px)'; }, RM ? 0 : ix * 120); }); }

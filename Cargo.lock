@@ -4163,6 +4163,7 @@ dependencies = [
  "tokio",
  "vintage-core",
  "vintage-verifier",
+ "zcash_protocol",
 ]
 
 [[package]]

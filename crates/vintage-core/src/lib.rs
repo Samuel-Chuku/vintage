@@ -9,6 +9,7 @@
 pub mod grid;
 pub mod network;
 pub mod registry;
+pub mod time;
 pub mod tx;
 pub mod verify;
 

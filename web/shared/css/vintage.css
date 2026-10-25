@@ -486,3 +486,17 @@ html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);trans
 /* No JavaScript on a phone: the menu button can't open anything, so show the page list instead. */
 @media(scripting:none) and (max-width:767px){.menu-btn{display:none}.mnav[hidden]{display:grid!important}}
 @media(scripting:none){.toggle{display:none}}
+
+/* ==== home: inline age check, explore row (round 3) ==== */
+.hcheck{display:grid;gap:var(--vt-3)}
+#hres h3{font-size:1.75rem}
+#hres .ticks{margin:var(--vt-2) 0 0}
+#hnext{margin:0}
+.explore{display:grid;gap:var(--vt-4);grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.explore a{position:relative;display:grid;gap:var(--vt-2);align-content:start;padding:var(--vt-5) var(--vt-5) var(--vt-12);background:var(--vt-surface);border:var(--vt-edge);border-radius:var(--vt-radius);
+  box-shadow:var(--vt-shadow-hard);color:var(--vt-ink);text-decoration:none;transition:transform var(--vt-dur-1) var(--vt-ease),box-shadow var(--vt-dur-1) var(--vt-ease)}
+.explore a b{font:800 var(--vt-text-2xl)/1 var(--vt-font-display);text-transform:uppercase}
+.explore a span:not(.label){font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
+.explore a i{position:absolute;right:var(--vt-5);bottom:var(--vt-4);font:700 var(--vt-text-md)/1 var(--vt-font-mono);font-style:normal}
+.explore a:hover b{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
+.explore a:active{transform:translate(3px,3px);box-shadow:1px 1px 0 0 var(--vt-shadow)}
