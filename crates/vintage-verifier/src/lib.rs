@@ -44,7 +44,7 @@ pub fn resolve_before(
     before: &str,
 ) -> Result<report::Before> {
     if let Ok(h) = before.parse::<u32>() {
-        return Ok(report::Before { height: h, label: format!("block {h}"), requested: before.into(), event_type: None });
+        return Ok(report::Before { height: h, label: format!("block {}", vintage_core::commas(h.into())), requested: before.into(), event_type: None });
     }
     let registry = registry()?;
     let e = registry.find(before).ok_or_else(|| anyhow!("no event `{before}` in the registry"))?;

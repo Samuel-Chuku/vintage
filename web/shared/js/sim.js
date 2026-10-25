@@ -221,7 +221,7 @@
       var box = $('#live1'), b = this; b.disabled = true;
       box.innerHTML = card('check', 'Live · checking', 'Asking the verifier on mainnet now.');
       var t0 = Date.now();
-      VT.api('/verify/' + tx + '?before=' + encodeURIComponent(ev1.id)).then(function (r) {
+      VT.busy(exstat, VT.api('/verify/' + tx + '?before=' + encodeURIComponent(ev1.id))).then(function (r) {
         b.disabled = false;
         var d = r.body, secs = ((Date.now() - t0) / 1000).toFixed(2);
         if (!r.ok || !d) { box.innerHTML = card('idle', 'Live · not checked', '', 'Couldn\'t reach the verifier just now. Try again in a minute.'); return; }
@@ -263,7 +263,7 @@
     age2.innerHTML = card('check', 'Live · checking', 'Finding where its anchor sits in the chain.');
     move2.hidden = true;
     var t0 = Date.now();
-    VT.api('/age/' + tx).then(function (r) {
+    VT.busy(age2, VT.api('/age/' + tx)).then(function (r) {
       var d = r.body, secs = ((Date.now() - t0) / 1000).toFixed(2);
       if (!r.ok) {
         age2.innerHTML = card('idle', 'Live · not dated', '', r.status === 404 && d && d.error ? 'No mainnet transaction with that txid.' : r.status === 0 ? 'Couldn\'t reach the verifier. Try again in a minute.' : esc((d && d.error) || 'The verifier couldn\'t date this transaction.'));
@@ -274,7 +274,7 @@
       dated = { tx: tx, A: d.age.existed_by_height, time: d.age.existed_by_time, events: d.events || [] };
       age2.innerHTML = '<div class="lab-agecard"><span class="lab-tag live">Live · ' + secs + ' s</span><b>In the pool by ' + esc(utc(dated.time)) + '</b><span class="s">Every coin ' + link(tx) + ' spends was in the shielded pool by block ' + fmt(dated.A) + '.</span></div>';
       snap2.innerHTML = '<span class="label">Jump to</span>' + dated.events.map(function (e) {
-        return '<button type="button" class="chip" data-h="' + e.height + '">' + esc(String(e.label).split(':')[0]) + ' · ' + fmt(e.height) + '</button>';
+        return '<button type="button" class="chip" data-h="' + e.height + '">' + esc(String(e.label).split(/[:,]/)[0]) + ' · ' + fmt(e.height) + '</button>';
       }).join('') + '<button type="button" class="chip" data-h="' + (dated.A + 1) + '">The next block · ' + fmt(dated.A + 1) + '</button>';
       $$('.chip', snap2).forEach(function (c) { c.addEventListener('click', function () { range2(+c.dataset.h); draw2(); log('sand', 'Event moved to block ' + fmt(+c.dataset.h) + ': ' + (dated.A < +c.dataset.h ? 'predates' : 'not provable') + '.'); }); });
       var first = dated.events.filter(function (e) { return e.height > dated.A; })[0];
@@ -296,7 +296,7 @@
     if (!dated) return;
     var H = +evh.value, predicted = dated.A < H ? 'PASS' : 'FAIL', t0 = Date.now();
     conf2.textContent = 'Asking the verifier…';
-    VT.api('/verify/' + dated.tx + '?before=' + H).then(function (r) {
+    VT.busy(conf2, VT.api('/verify/' + dated.tx + '?before=' + H)).then(function (r) {
       var secs = ((Date.now() - t0) / 1000).toFixed(2);
       if (!r.ok || !r.body) { conf2.textContent = r.body && r.body.error ? r.body.error : 'Couldn\'t reach the verifier.'; return; }
       var got = r.body.verdict;
@@ -316,12 +316,12 @@
       expect: { verdict: 'FAIL', matched: true, rule: 'FAIL: its anchor is a pool state from after the Bitget event' } },
     { title: 'Borrow someone else\'s link', tries: 'Send the real receipt-account link, but name the tainted transfer as the deposit it covers.',
       run: function () { var b = JSON.parse(JSON.stringify(BUNDLE)); b.deposit = TAINT; return VT.api('/verify-link', { body: { bundle: b, before: EVENT } }); }, call: 'POST /verify-link with a swapped deposit',
-      expect: { verdict: 'FAIL', reason: /not covered by the disclosed payments/, rule: 'FAIL: the deposit spends coins the disclosed payment never sent' } },
+      expect: { verdict: 'FAIL', reason: /not covered/, rule: 'FAIL: the deposit spends coins the disclosed payment never sent' } },
     { title: 'Date coins before the pool existed', tries: 'Ask for a pass against block 3,428,000, before Ironwood launched.',
       run: function () { return VT.api('/verify/' + T1 + '?before=3428000'); }, call: 'GET /verify/' + short(T1) + ' before 3,428,000',
       expect: { status: 400, reason: /after Ironwood's activation/, rule: '400: the height must be after Ironwood\'s activation' } },
     { title: 'Spend new coins at an old anchor', tries: 'Build a deposit at anchor 3,525,696 that also spends the 0.005 ZEC received at block 3,525,726.',
-      replay: 'NO WITNESS: Tree does not contain a root at address Address { level: Level(0), index: 824517 }',
+      replay: 'No witness: this note isn\'t in the pool state at that anchor.',
       call: 'our wallet on mainnet, 21 Oct', expect: { rule: 'Refused: the note has no witness at that anchor' } }
   ];
   var atBox = $('#attacks');
@@ -353,7 +353,7 @@
     };
     if (a.replay) { wait(500).then(function () { done(true, 'Refused to build', a.replay, 'replay', true); }); return; }
     var x = a.expect;
-    a.run().then(function (r) {
+    VT.busy($('#st3'), a.run()).then(function (r) {
       var d = r.body;
       if (r.status === 0 || !d) return done(false, 'Not checked', 'Couldn\'t reach the verifier. Try again in a minute.', 'live', false);
       if (!r.ok) return done(true, 'Rejected (' + r.status + ')', d.error || 'error', 'live', r.status === x.status && (!x.reason || x.reason.test(d.error || '')));
@@ -377,7 +377,7 @@
   function liveInto(box, call, label, show) {
     box.innerHTML = card('check', 'Live · checking', 'Asking the verifier on mainnet now.');
     var t0 = Date.now();
-    call().then(function (r) {
+    VT.busy(box, call()).then(function (r) {
       var secs = ((Date.now() - t0) / 1000).toFixed(2);
       if (!r.ok || !r.body) { box.innerHTML = card('idle', 'Live · not checked', '', 'Couldn\'t reach the verifier just now. Try again in a minute.'); return; }
       log('live', label + ' → ' + r.body.verdict + ' in ' + secs + ' s.');

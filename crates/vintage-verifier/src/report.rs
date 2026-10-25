@@ -18,6 +18,12 @@ use vintage_core::{
 
 use crate::{lwd, roots};
 
+/// "block 3,525,709 (label)" for sentences, or just "block 3,525,709" when the label is the height.
+pub fn before_phrase(h: u32, label: &str) -> String {
+    let block = format!("block {}", vintage_core::commas(h.into()));
+    if label == block { block } else { format!("{block} ({label})") }
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Before {
     pub height: u32,
@@ -163,7 +169,7 @@ pub async fn date(
         d.summary = format!(
             "Every coin this transaction spends was in the shielded pool {} block {}.",
             if a.exact { "by" } else { "at least by" },
-            a.existed_by_height
+            vintage_core::commas(a.existed_by_height.into())
         );
         d.age = Some(a);
     } else {
@@ -258,7 +264,10 @@ pub async fn verify(
         .map_or(0, u32::from);
     if h <= activation || h > tip {
         return Err(VerifyError::BadRequest(format!(
-            "H = {h} must be after Ironwood's activation (block {activation}) and at most the chain tip {tip}"
+            "H = {} must be after Ironwood's activation (block {}) and at most the chain tip {}",
+            vintage_core::commas(h.into()),
+            vintage_core::commas(activation.into()),
+            vintage_core::commas(tip.into())
         )));
     }
 
@@ -273,7 +282,7 @@ pub async fn verify(
     match verify::decide_runs(&anchor, &r.runs) {
         Verdict::Pass { .. } => {
             report.verdict = "PASS";
-            report.summary = format!("These coins existed before block {h} ({label}).");
+            report.summary = format!("These coins existed before {}.", before_phrase(h, &label));
             // The anchor is from before H; find where.
             report.age = Some(age(client, network, cache, &anchor, h, tip, &tip_hash, concurrency).await?);
         }
@@ -285,16 +294,17 @@ pub async fn verify(
             report.matched_heights = Some([matched_from, matched_to]);
             let a = age(client, network, cache, &anchor, h, tip, &tip_hash, concurrency).await?;
             report.summary = format!(
-                "These coins existed before block {h} ({label}): its anchor is the pool as of block {}, \
-                 which block {h} left unchanged.",
-                a.existed_by_height
+                "These coins existed before {}: its anchor is the pool as of block {}, which block {} left unchanged.",
+                before_phrase(h, &label),
+                vintage_core::commas(a.existed_by_height.into()),
+                vintage_core::commas(h.into())
             );
             report.age = Some(a);
         }
         Verdict::Fail { matched_from, matched_to } => {
             report.verdict = "FAIL";
             report.matched_heights = Some([matched_from, matched_to]);
-            report.summary = format!("Can't prove these coins existed before block {h} ({label}).");
+            report.summary = format!("Can't prove these coins existed before {}.", before_phrase(h, &label));
             // The anchor's run starts at `matched_from` (block `matched_from − 1` had another root).
             report.age = Some(Age {
                 existed_by_height: matched_from,

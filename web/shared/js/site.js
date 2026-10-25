@@ -19,6 +19,14 @@
       return r.json().then(function (j) { return { ok: r.ok, status: r.status, body: j }; }, function () { return { ok: false, status: r.status, body: null }; });
     }, function () { return { ok: false, status: 0, body: null }; });
   }
+  /* Mark the window around `el` busy while promise `p` runs: its title-bar dots pulse only then. */
+  function busy(el, p) {
+    var w = el && el.closest ? el.closest('.win') : null;
+    if (!w) return p;
+    w.dataset.busy = (+w.dataset.busy || 0) + 1; w.classList.add('busy');
+    var done = function (r) { var n = (+w.dataset.busy || 1) - 1; w.dataset.busy = n; if (!n) w.classList.remove('busy'); return r; };
+    return p.then(done, function (e) { done(); throw e; });
+  }
   function savedTheme() { try { return localStorage.getItem('vt-theme'); } catch (e) { return null; } }
 
   /* ---- theme ---- */
@@ -157,7 +165,7 @@
   /* ---- live chain tip ---- */
   var tipWaiters = [];
   var VT = window.VT = { api: api, fmt: fmt, esc: esc, $: $, $$: $$, RM: RM, buildTape: buildTape, tip: null,
-    onTip: function (f) { if (VT.tip) f(VT.tip); else tipWaiters.push(f); } };
+    onTip: function (f) { if (VT.tip) f(VT.tip); else tipWaiters.push(f); }, busy: busy };
   api('/health').then(function (r) {
     if (!r.ok || !r.body || !r.body.chain_tip) return;
     VT.tip = r.body.chain_tip;
@@ -223,7 +231,7 @@
       var d = new Date(t * 1000), p = function (n) { return (n < 10 ? '0' : '') + n; };
       return d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ', ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' UTC';
     };
-    var shortName = function (label) { var s = String(label).split(':')[0]; return s.length > 20 ? s.split(' ')[0] : s; };
+    var shortName = function (label) { var s = String(label).split(/[:,]/)[0]; return s.length > 20 ? s.split(' ')[0] : s; };
     var show = function (kind, label, title, body) {
       hres.className = 'v ' + kind;
       hres.innerHTML = '<div class="label">' + esc(label) + '</div>' + (title ? '<h3 class="display">' + esc(title) + '</h3>' : '') + (body ? '<p>' + esc(body) + '</p>' : '');
@@ -235,7 +243,7 @@
       hterr.hidden = true; htx.removeAttribute('aria-invalid');
       hbusy = true;
       show('check', 'Checking', 'Finding where its anchor sits in the chain.');
-      api('/age/' + tx).then(function (r) {
+      busy(hres, api('/age/' + tx)).then(function (r) {
         hbusy = false;
         var d = r.body;
         if (!r.ok) {
@@ -254,7 +262,7 @@
             var ul = document.createElement('ul'); ul.className = 'ticks';
             evs.forEach(function (e) {
               var li = document.createElement('li');
-              li.dataset.g = e.predates ? '✓' : '×';
+              li.dataset.g = e.predates ? '✓' : '×'; if (e.predates) li.className = 'gold';
               li.textContent = (e.predates ? 'Predates ' : 'After ') + shortName(e.label) + ', block ' + fmt(e.height);
               ul.appendChild(li);
             });

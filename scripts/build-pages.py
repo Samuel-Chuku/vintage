@@ -14,6 +14,7 @@ import re
 import hashlib
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -56,6 +57,22 @@ THEME_JS = ("(function(){var d=document.documentElement,m=/[#&]theme=(light|dark
 THEME_HASH = "sha256-" + base64.b64encode(hashlib.sha256(THEME_JS.encode()).digest()).decode()
 CSP = (f"default-src 'none'; script-src 'self' '{THEME_HASH}'; style-src 'self' 'unsafe-inline'; font-src 'self'; "
        f"img-src 'self' data:; connect-src {API}; base-uri 'none'; form-action 'none'")
+
+def build_version():
+    """Short git hash of the commit being built (Cloudflare Pages builds from a checkout). Falls back to a
+    hash of web/shared, so a build outside git still changes the version when an asset changes."""
+    try:
+        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True,
+                              check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        h = hashlib.sha256()
+        for f in sorted((WEB / "shared").rglob("*")):
+            if f.is_file():
+                h.update(f.read_bytes())
+        return h.hexdigest()[:7]
+
+
+VERSION = build_version()
 
 NE = ('<svg class="ne" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M3 9L9 3M4 3h5v5" '
       'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg>')
@@ -149,15 +166,15 @@ def page(name):
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/css/tokens.css">
-<link rel="stylesheet" href="/css/vintage.css">
+<link rel="stylesheet" href="/css/tokens.css?v={VERSION}">
+<link rel="stylesheet" href="/css/vintage.css?v={VERSION}">
 <script>{THEME_JS}</script>
 {jsonld() if name == "home" else ""}{faq_jsonld(body)}</head>
 <body data-page="{name.removesuffix('-app')}">
 <a class="skip tkt" href="#main"><span class="lbl">Skip to content</span><span class="stub" aria-hidden="true">↓</span></a>
 
 '''
-    js = "".join(f'<script src="/js/{s}" defer></script>\n' for s in scripts)
+    js = "".join(f'<script src="/js/{s}?v={VERSION}" defer></script>\n' for s in scripts)
     html = head + nav(site, current) + f'\n\n<main class="wrap" id="main">\n{body}</main>\n\n' + footer(site) + "\n\n" + js + "</body>\n</html>\n"
     dest = DIST / site / out
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -212,7 +229,7 @@ def main():
         sm = "".join(f"  <url><loc>{u}</loc></url>\n" for u in urls[site])
         (d / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n'
                                        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + sm + "</urlset>\n")
-    print("built", ", ".join(f"{s}: {len(u)} page(s)" for s, u in urls.items()), "| CSP script hash", THEME_HASH)
+    print("built", ", ".join(f"{s}: {len(u)} page(s)" for s, u in urls.items()), "| version", VERSION, "| CSP script hash", THEME_HASH)
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@
     {
       "id": "vintage-demo-2026-10",
       "type": "custom",
-      "label": "Vintage demo: simulated event (not a real hack)",
+      "label": "Vintage demo, a staged event, not a real hack",
       "network": "main",
       "height": 3525709,
       "txids": [

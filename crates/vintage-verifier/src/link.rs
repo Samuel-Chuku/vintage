@@ -302,7 +302,7 @@ pub async fn verify_link(
     (report.verdict, report.summary) = if !all_pass {
         let failing: Vec<&str> =
             report.funding.iter().filter(|f| f.verdict != "PASS").map(|f| &f.txid[..16]).collect();
-        ("FAIL", format!("Can't link: funding payment(s) {}… don't pass the age check against block {h} ({label}).", failing.join("…, ")))
+        ("FAIL", format!("Can't link: funding payment(s) {}… don't pass the age check against {}.", failing.join("…, "), crate::report::before_phrase(h, label)))
     } else if unmatched > 0 {
         (
             "FAIL",
@@ -316,8 +316,9 @@ pub async fn verify_link(
         (
             "PASS",
             format!(
-                "Every coin this deposit spends came from {n} payment{} whose coins existed before block {h} ({label}).",
-                if n == 1 { "" } else { "s" }
+                "Every coin this deposit spends came from {n} payment{} whose coins existed before {}.",
+                if n == 1 { "" } else { "s" },
+                crate::report::before_phrase(h, label)
             ),
         )
     };

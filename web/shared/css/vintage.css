@@ -291,7 +291,7 @@ section{scroll-margin-top:80px}
 
 /* two-up and three-up */
 .two{display:grid;gap:var(--vt-8)}@media(min-width:900px){.two{grid-template-columns:1fr 1fr}}
-.three{display:grid;gap:var(--vt-8)}@media(min-width:900px){.three{grid-template-columns:repeat(3,1fr)}}
+.three{display:grid;gap:var(--vt-8)}@media(min-width:1100px){.three{grid-template-columns:repeat(3,1fr)}}
 .win .ill{height:180px;border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-tex-grid),var(--vt-sunk);display:grid;place-items:center;overflow:hidden}
 .ill svg{width:100%;height:100%}
 .ill .st{fill:none;stroke:var(--vt-ink);stroke-width:2;stroke-linecap:square;stroke-linejoin:miter}
@@ -338,7 +338,7 @@ footer a{color:var(--vt-ink)}
 /* review fixes */
 .strip-t{display:flex;flex-wrap:wrap;gap:4px 0;padding:var(--vt-3) var(--vt-6)}
 .strip-t>span{white-space:nowrap}
-.strip-t>span+span::before{content:"·";margin:0 10px;color:var(--vt-ink-2)}
+.strip-t>span:not(:last-child)::after{content:"·";margin:0 10px;color:var(--vt-ink-2)}
 .strip-t a{display:inline}
 .win .bar .t{white-space:nowrap}
 @media(max-width:1100px){.hide-sm{display:none}}
@@ -472,7 +472,9 @@ html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);trans
 #hres h3{font-size:1.75rem}
 #hres .ticks{margin:var(--vt-2) 0 0}
 #hnext{margin:0}
-.explore{display:grid;gap:var(--vt-4);grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.explore{display:grid;gap:var(--vt-4);grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1099px){.explore{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:519px){.explore{grid-template-columns:1fr}}
 .explore a{position:relative;display:grid;gap:var(--vt-2);align-content:start;padding:var(--vt-5) var(--vt-5) var(--vt-12);background:var(--vt-surface);border:var(--vt-edge);border-radius:var(--vt-radius);
   box-shadow:var(--vt-shadow-hard);color:var(--vt-ink);text-decoration:none;transition:transform var(--vt-dur-1) var(--vt-ease),box-shadow var(--vt-dur-1) var(--vt-ease)}
 .explore a b{font:800 var(--vt-text-2xl)/1 var(--vt-font-display);text-transform:uppercase}
@@ -487,12 +489,14 @@ html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);trans
   font:700 11px/1 var(--vt-font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--vt-ink);background:var(--vt-surface);white-space:nowrap}
 .lab-chip.off{border-style:dashed;color:var(--vt-ink-2);background:transparent}
 .lab-chip.done{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
-.lab-chip.warn{background:var(--vt-tex-hatch),var(--vt-surface)}
+.lab-chip.warn{position:relative;padding-left:16px;overflow:hidden}
+.lab-chip.warn::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--vt-tex-hatch),var(--vt-surface);border-right:2px solid var(--vt-line)}
 .lab-tag{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:2px solid var(--vt-line);border-radius:4px;
   font:700 10px/1 var(--vt-font-mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;width:max-content}
 .lab-tag.live{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
 .lab-tag.sand{border-style:dashed;color:var(--vt-ink-2)}
-.lab-tag.replay{background:var(--vt-tex-hatch),var(--vt-surface);color:var(--vt-ink)}
+.lab-tag.replay{position:relative;padding-left:14px;background:var(--vt-surface);color:var(--vt-ink);overflow:hidden}
+.lab-tag.replay::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--vt-tex-hatch),var(--vt-surface);border-right:2px solid var(--vt-line)}
 .lab-tag.info{color:var(--vt-ink-2)}
 
 .lab-plan{margin:0;padding-left:var(--vt-5);display:grid;gap:var(--vt-3);max-width:640px}
@@ -559,7 +563,7 @@ html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);trans
 .lab-marks .mk i{position:absolute;left:-1px;top:18px;bottom:0;border-left:2px solid var(--vt-ink)}
 .lab-marks .mk em{position:absolute;top:0;left:0;transform:translateX(-50%);font:700 10px/1 var(--vt-font-mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
   padding:2px 4px;border:2px solid var(--vt-line);border-radius:4px;background:var(--vt-surface)}
-.lab-marks .mk.note.t em{background:var(--vt-tex-hatch),var(--vt-surface)}
+.lab-marks .mk.note.t em{border-left-width:8px;border-left-style:double}
 .lab-marks .mk.ev em,.lab-marks .mk.age em{top:22px;background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
 .lab-marks .mk.ev i,.lab-marks .mk.age i{top:40px}
 .lab-marks .mk.ev.far em{transform:none}
@@ -685,3 +689,27 @@ main .v.pass a:not(.tkt):not(.quiet):hover{background:var(--vt-on-gold);color:va
 .faq summary:hover{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
 .faq summary:focus-visible{outline:2px solid var(--vt-focus);outline-offset:3px;border-radius:4px}
 .faq details p{margin:0 0 var(--vt-4);max-width:680px;color:var(--vt-ink-2)}
+
+/* Window title-bar dots: still, except while that window has a request in flight. */
+.win.busy .dots i{animation:vt-dot 1.2s steps(1) infinite}
+.win.busy .dots i:nth-child(2){animation-delay:.4s}.win.busy .dots i:nth-child(3){animation-delay:.8s}
+@keyframes vt-dot{0%,33%{background:var(--vt-ink);border-color:var(--vt-ink)}34%,100%{background:var(--vt-surface)}}
+.win.active.busy .dots i{animation-name:vt-dot-inv}
+@keyframes vt-dot-inv{0%,33%{background:var(--vt-surface)}34%,100%{background:var(--vt-ink)}}
+@media(prefers-reduced-motion:reduce){.win.busy .dots i{animation:none}}
+
+/* Station 1: the Send ticket keeps its own width. */
+.lab-panel .tkt{justify-self:start}
+
+/* Evidence tables: numbers and txids stay on one line; descriptive cells may wrap. */
+.ev td{white-space:nowrap}
+.ev td.wrap{white-space:normal;text-align:right}
+@media(max-width:1099px){.three .ev td.wrap{max-width:none}}
+
+/* Gold marks a proven result: PASS cells in the evidence tables and "Predates" rows from a live age. */
+.vgold{display:inline-block;padding:2px 8px;border-radius:4px;background:var(--vt-gold);color:var(--vt-on-gold);font-weight:700}
+.ticks li.gold{padding:4px 8px 4px 4px;border-radius:6px;background:var(--vt-gold);color:var(--vt-on-gold)}
+.ticks li.gold::before{border-color:var(--vt-on-gold);background:var(--vt-gold);color:var(--vt-on-gold)}
+
+/* The lab: no empty band above the session bar. */
+#lab{padding-top:var(--vt-6)}

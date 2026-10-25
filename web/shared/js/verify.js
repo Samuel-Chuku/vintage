@@ -19,7 +19,7 @@
   }
   chips.addEventListener('click', function (e) { var c = e.target.closest('.chip[aria-pressed]'); if (c) selectChip(c); });
   /* A short name for a registry event: the label before any colon, or its first word if that is long. */
-  function shortName(label) { var s = String(label).split(':')[0]; return s.length > 20 ? s.split(' ')[0] : s; }
+  function shortName(label) { var s = String(label).split(/[:,]/)[0]; return s.length > 20 ? s.split(' ')[0] : s; }
 
   var pasteBtn = $('#paste');
   if (!navigator.clipboard || !navigator.clipboard.readText) pasteBtn.hidden = true;
@@ -78,7 +78,7 @@
     vt.scan(RM ? 0 : 1600, function (p) {
       if (VT.tip) tk2.textContent = 'Block ' + fmt(VT.tip - (VT.tip - ev.h) * p);
     }, function () { scanned = true; finish(); });
-    VT.api('/verify/' + tx + '?before=' + encodeURIComponent(ev.before)).then(function (r) { resp = r; finish(); });
+    VT.busy(verdict, VT.api('/verify/' + tx + '?before=' + encodeURIComponent(ev.before))).then(function (r) { resp = r; finish(); });
 
     function finish() {
       if (!scanned || !resp) return;
@@ -137,7 +137,7 @@
     setVerdict('check', 'Checking', 'Finding where its anchor sits in the chain.');
     var cells = bar(), k = 0;
     var loop = setInterval(function () { k = (k + 1) % (cells.length + 1); cells.forEach(function (c, i) { c.classList.toggle('f', i < k); }); }, RM ? 1000 : 80);
-    VT.api('/age/' + tx).then(function (resp) {
+    VT.busy(verdict, VT.api('/age/' + tx)).then(function (resp) {
       clearInterval(loop);
       var d = resp.body;
       busy = false;
@@ -162,7 +162,7 @@
         var ul = document.createElement('ul'); ul.className = 'ticks';
         evs.forEach(function (e) {
           var li = document.createElement('li');
-          li.dataset.g = e.predates ? '✓' : '×';
+          li.dataset.g = e.predates ? '✓' : '×'; if (e.predates) li.className = 'gold';
           li.textContent = (e.predates ? 'Predates ' : 'After ') + shortName(e.label) + ' at block ' + fmt(e.height) + '.';
           ul.appendChild(li);
         });

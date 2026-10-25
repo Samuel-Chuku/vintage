@@ -165,7 +165,7 @@ server-checked roots) and reports it with its time:
 $ vintage age da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7
 age:         in the pool by block 3525693 (2026-10-21 16:03 UTC)
              × bitget-2026-09         block   3501240  Bitget hot-wallet exploit: first shielding into Ironwood
-             ✓ vintage-demo-2026-10   block   3525709  Vintage demo: simulated event (not a real hack)
+             ✓ vintage-demo-2026-10   block   3525709  Vintage demo, a staged event, not a real hack
 ```
 
 One lookup answers every event at once: the coins predate each event whose height is above that block.

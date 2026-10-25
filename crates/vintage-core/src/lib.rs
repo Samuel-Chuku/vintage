@@ -14,3 +14,27 @@ pub mod tx;
 pub mod verify;
 
 pub use network::VintageNetwork;
+
+/// A block height or count with thousands separators, for sentences people read: `3,525,709`.
+pub fn commas(n: u64) -> String {
+    let digits = n.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, c) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i) % 3 == 0 {
+            out.push(',');
+        }
+        out.push(c);
+    }
+    out
+}
+
+#[cfg(test)]
+mod commas_tests {
+    #[test]
+    fn groups_of_three() {
+        assert_eq!(super::commas(0), "0");
+        assert_eq!(super::commas(999), "999");
+        assert_eq!(super::commas(1000), "1,000");
+        assert_eq!(super::commas(3525709), "3,525,709");
+    }
+}

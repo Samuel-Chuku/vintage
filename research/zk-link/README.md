@@ -51,9 +51,9 @@ keys:          verifying key built in 1.3s
 input 60f41a42…:  proof valid in 0.01s, value ≥ 300000 zat, came from the funding payment
 input 3d933873…:  proof valid in 0.01s, value ≥ 300000 zat, came from the funding payment
 coverage:      all 2 inputs of df151ee2… proven, 600000 zat in total
-funding age:   PASS: These coins existed before block 3525709 (Vintage demo: simulated event (not a real hack)).
+funding age:   PASS: These coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).
 
-ZK LINK PASS: every coin df151ee2… spends came from a payment whose coins existed before block 3525709.
+ZK LINK PASS: every coin df151ee2… spends came from a payment whose coins existed before block 3,525,709.
 Disclosed: each input's value. Not disclosed: any key, which output, addresses, memos.
 wall 8.00s, peak 18152KB
 ```

@@ -60,12 +60,12 @@ demo's Vintage payment:
   "chain_tip": 3527903,
   "before": {
     "height": 3525709,
-    "label": "Vintage demo: simulated event (not a real hack)",
+    "label": "Vintage demo, a staged event, not a real hack",
     "requested": "vintage-demo-2026-10",
     "event_type": "custom"
   },
   "verdict": "PASS",
-  "summary": "These coins existed before block 3525709 (Vintage demo: simulated event (not a real hack)).",
+  "summary": "These coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).",
   "anchor": "855ccc99a779159d9d98664d1a09737814b930cc782b149660a94a3881d98502",
   "evidence": {
     "blocks_covered": 2195,
@@ -156,16 +156,16 @@ Request (`content-type: application/json`; the bundle is what `vintage link prov
 ```json
 {
   "network": "main",
-  "before": { "height": 3525709, "label": "Vintage demo: simulated event (not a real hack)", "requested": "vintage-demo-2026-10", "event_type": "custom" },
+  "before": { "height": 3525709, "label": "Vintage demo, a staged event, not a real hack", "requested": "vintage-demo-2026-10", "event_type": "custom" },
   "verdict": "PASS",
-  "summary": "Every coin this deposit spends came from 1 payment whose coins existed before block 3525709 (Vintage demo: simulated event (not a real hack)).",
+  "summary": "Every coin this deposit spends came from 1 payment whose coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).",
   "provisional": false,
   "deposit": { "txid": "df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402", "mined_height": 3527827 },
   "funding": [
     {
       "txid": "da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7",
       "verdict": "PASS",
-      "summary": "These coins existed before block 3525709 (…).",
+      "summary": "These coins existed before block 3,525,709 (…).",
       "mined_height": 3527813,
       "anchor": "855ccc99a779159d9d98664d1a09737814b930cc782b149660a94a3881d98502",
       "received": [
@@ -220,7 +220,7 @@ The registry entries for this network, its public key and the paths of the signe
       "added_at": "2026-10-21",
       "notes": "… This entry labels a height only: it names no person or address."
     },
-    { "id": "vintage-demo-2026-10", "type": "custom", "label": "Vintage demo: simulated event (not a real hack)", "height": 3525709, "…": "…" }
+    { "id": "vintage-demo-2026-10", "type": "custom", "label": "Vintage demo, a staged event, not a real hack", "height": 3525709, "…": "…" }
   ]
 }
 ```
