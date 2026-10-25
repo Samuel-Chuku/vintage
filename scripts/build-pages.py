@@ -87,6 +87,18 @@ NAV = [("how", "How it works", "/how-it-works/"), ("events", "Events", "/events/
        ("simulate", "Simulate", "/simulate/"), ("verify", "Verify", APP + "/")]
 
 
+# The three "How it works" pages share a switcher, pinned under the main nav.
+SUBNAV = [("how-it-works", "Overview", "/how-it-works/"), ("cli", "Command line", "/cli/"), ("api", "API", "/api/")]
+
+
+def subnav(name):
+    if name not in {key for key, _, _ in SUBNAV}:
+        return ""
+    links = "".join(
+        f'<a href="{href}"{' aria-current="page"' if key == name else ""}>{label}</a>' for key, label, href in SUBNAV)
+    return f'<nav class="subnav" aria-label="How it works">{links}</nav>\n'
+
+
 def url(site, path):
     base = HOME if site == "landing" else APP
     return base + "/" + path.replace("index.html", "")
@@ -150,7 +162,7 @@ def faq_jsonld(body):
 def page(name):
     site, out, current, title, desc, scripts = PAGES[name]
     canonical = url(site, out)
-    body = (WEB / "pages" / f"{name.removesuffix('-app')}.html").read_text()
+    body = subnav(name) + (WEB / "pages" / f"{name.removesuffix('-app')}.html").read_text()
     robots = '<meta name="robots" content="noindex">\n' if out == "404.html" else ""
     head = f'''<!doctype html>
 <html lang="en">
