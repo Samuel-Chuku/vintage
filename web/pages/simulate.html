@@ -1,56 +1,212 @@
 <section class="page-head">
-  <div class="label eyebrow">Simulate</div>
-  <h1 class="display">See it run.</h1>
-  <p class="lead">Four short walkthroughs of what Vintage does, each a few steps. The check steps are live: they ask our verifier about real Zcash mainnet transactions while you watch. The rest replays our mainnet demo of 21 to 23 October 2026, with real transactions you can open on an explorer.</p>
-  <div class="toc" role="group" aria-label="Scenarios">
-    <a href="#exchange">Exchange deposit</a><a href="#near">NEAR Intents swap</a><a href="#fresh">Fresh coins</a><a href="#tainted">Tainted coins</a>
-  </div>
+  <div class="label eyebrow">Simulate · Vintage Lab</div>
+  <h1 class="display">Run a session.</h1>
+  <p class="lead">Four stations on real Zcash mainnet data. Drag your anchor and get a deposit through, move an event and watch the verdict follow, try to fool the verifier, and get coins you received after the event through. Every step marked <b>Live</b> is a real request to our verifier, made as you click.</p>
 </section>
 
-<section id="sim" tabindex="-1" aria-label="Simulation">
-  <div class="sim-tabs" id="simtabs" role="group" aria-label="Scenario">
-    <button type="button" class="chip" data-sc="exchange" aria-pressed="true">01 Exchange deposit</button>
-    <button type="button" class="chip" data-sc="near" aria-pressed="false">02 NEAR Intents swap</button>
-    <button type="button" class="chip" data-sc="fresh" aria-pressed="false">03 Fresh coins</button>
-    <button type="button" class="chip" data-sc="tainted" aria-pressed="false">04 Tainted coins</button>
-  </div>
+<section id="lab" aria-label="Vintage Lab">
+  <noscript><p class="err">The lab needs JavaScript. The same flows, with every transaction, are written up in the repository's demo/README.md.</p></noscript>
 
-  <div class="stack" style="margin:16px 0 0 16px">
-    <div class="win active">
-      <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t" id="simtitle">Exchange deposit</div><div class="label" id="simstep">Step 1 of 5</div></div>
-      <div class="body">
-        <div class="actors" id="actors" aria-live="polite"></div>
-        <div class="flow" id="flow"></div>
-        <div class="narr" id="narr" aria-live="polite"></div>
-        <div class="ctrls">
-          <div class="rail" id="rail" role="group" aria-label="Steps"></div>
+  <!-- Before the session -->
+  <div class="lab-start" id="labstart">
+    <div class="stack" style="margin:16px 0 0 16px">
+      <div class="win active">
+        <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Vintage Lab</div><span class="lab-chip off">No session</span></div>
+        <div class="body">
+          <ol class="lab-plan">
+            <li><b>Get your deposit through.</b> An exchange is holding shielded deposits after an event. Pick your anchor, send, and see what it can prove.</li>
+            <li><b>Move the event.</b> Date any transaction live, then drag the event and watch the verdict follow.</li>
+            <li><b>Attack the verifier.</b> Five ways to cheat. Each one hits the real verifier.</li>
+            <li><b>Get paid after the event.</b> Fresh coins can't be dated, but they can be linked to a payment that can. Choose how, and see what each way discloses.</li>
+          </ol>
           <div class="row">
-            <button type="button" class="quiet" id="back">Back</button>
-            <button type="button" class="quiet" id="restart">Restart</button>
-            <button type="button" class="quiet" id="play" aria-pressed="false"><span class="lbl">Autoplay</span></button>
-            <button type="button" class="tkt primary" id="next"><span class="lbl">Next step</span><span class="stub" aria-hidden="true">→</span></button>
+            <button type="button" class="tkt primary" id="labgo"><span class="lbl">Start session</span><span class="stub" aria-hidden="true">→</span></button>
+            <span class="ref" style="margin:0">The session lives in this tab. Nothing about it is sent or stored.</span>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <noscript><p class="err">The simulation needs JavaScript. The same four flows, with every transaction, are written up in the repository's demo/README.md.</p></noscript>
 
-  <div class="learn" style="margin-top:var(--vt-12)">
-    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">What the other side learns</div></div>
-      <div class="body"><ul id="knows"></ul></div></div>
-    <div class="win"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">What stays private</div></div>
-      <div class="body"><ul id="hidden"></ul></div></div>
+  <!-- The session -->
+  <div id="labsession" hidden>
+    <div class="lab-bar" role="status">
+      <span class="lab-live"><i aria-hidden="true"></i>Live session</span>
+      <span>ID <b id="sid">VT-0000</b></span>
+      <span><b id="selapsed">00:00</b></span>
+      <span class="hide-sm">Mainnet tip <b id="stip">…</b></span>
+      <span class="lab-last" id="slast" aria-live="polite"></span>
+      <button type="button" class="lab-end" id="labend">End session</button>
+    </div>
+
+    <p class="lab-legend" aria-label="What is real">
+      <span><span class="lab-tag live">Live</span> a real request to our verifier on Zcash mainnet, made as you click</span>
+      <span><span class="lab-tag sand">Sandbox</span> computed in this tab from real block heights</span>
+      <span><span class="lab-tag replay">Replay</span> a real result recorded on mainnet during our demo</span>
+    </p>
+
+    <div class="lab-grid">
+      <div class="lab-main">
+        <div class="lab-stations" role="tablist" aria-label="Stations">
+          <button type="button" role="tab" class="lab-st" id="tab1" aria-controls="st1" aria-selected="true"><span class="label">Station 01</span><b>Get your deposit through</b><span class="lab-chip" id="chip1">Open</span></button>
+          <button type="button" role="tab" class="lab-st" id="tab2" aria-controls="st2" aria-selected="false"><span class="label">Station 02</span><b>Move the event</b><span class="lab-chip" id="chip2">Open</span></button>
+          <button type="button" role="tab" class="lab-st" id="tab3" aria-controls="st3" aria-selected="false"><span class="label">Station 03</span><b>Attack the verifier</b><span class="lab-chip" id="chip3">0 / 5 blocked</span></button>
+          <button type="button" role="tab" class="lab-st" id="tab4" aria-controls="st4" aria-selected="false"><span class="label">Station 04</span><b>Paid after the event</b><span class="lab-chip" id="chip4">Open</span></button>
+        </div>
+
+        <!-- Station 1 -->
+        <div class="lab-panel" id="st1" role="tabpanel" aria-labelledby="tab1">
+          <div class="lab-two">
+            <div class="win">
+              <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Your wallet</div><span class="lab-tag sand">Sandbox · real heights</span></div>
+              <div class="body">
+                <div class="lab-notes" id="notes"></div>
+                <div class="lab-ctl">
+                  <label class="label" for="anchor">Anchor: the pool state your deposit builds on</label>
+                  <div class="lab-ruler" id="ruler1">
+                    <div class="lab-marks" id="marks1" aria-hidden="true"></div>
+                    <input type="range" id="anchor" min="3525640" max="3525760" step="1" value="3525740" aria-describedby="anchorout">
+                  </div>
+                  <p class="lab-out" id="anchorout"></p>
+                </div>
+                <div class="lab-ctl lab-row">
+                  <span class="label">Deposit</span>
+                  <div class="lab-step" role="group" aria-label="Deposit amount">
+                    <button type="button" id="amtminus" aria-label="Less">−</button><output id="amt">0.0100 ZEC</output><button type="button" id="amtplus" aria-label="More">+</button>
+                  </div>
+                </div>
+                <button type="button" class="tkt primary" id="sendbtn"><span class="lbl">Send deposit</span><span class="stub" aria-hidden="true">→</span></button>
+              </div>
+            </div>
+            <div class="win">
+              <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Ledger Exchange</div><span class="lab-tag sand">Simulated party</span></div>
+              <div class="body">
+                <div class="lab-exstat" id="exstat"></div>
+                <div class="lab-ctl">
+                  <span class="label">The event it screens for</span>
+                  <div class="row" role="group" aria-label="Event" id="evchips">
+                    <button type="button" class="chip" aria-pressed="true" data-h="3525709" data-id="vintage-demo-2026-10">Demo event · 3,525,709</button>
+                    <button type="button" class="chip" aria-pressed="false" data-h="3501240" data-id="bitget-2026-09">Bitget · 3,501,240</button>
+                  </div>
+                </div>
+                <ol class="lab-flow" id="flow1" aria-live="polite"></ol>
+              </div>
+            </div>
+          </div>
+          <div class="lab-result" id="res1" aria-live="polite"></div>
+        </div>
+
+        <!-- Station 2 -->
+        <div class="lab-panel" id="st2" role="tabpanel" aria-labelledby="tab2" hidden>
+          <div class="win">
+            <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Date a transaction</div><span class="lab-tag live">Live · mainnet</span></div>
+            <div class="body">
+              <div class="row" role="group" aria-label="Examples" id="txchips">
+                <button type="button" class="chip" data-tx="da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7">Vintage payment</button>
+                <button type="button" class="chip" data-tx="df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402">Receipt deposit</button>
+                <button type="button" class="chip" data-tx="a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143">Tainted transfer</button>
+              </div>
+              <form class="row lab-date" id="dateform" novalidate>
+                <label class="field" style="flex:1;min-width:0"><span class="p">&gt;</span><input id="dtx" placeholder="Or paste any Zcash txid" spellcheck="false" autocomplete="off" aria-label="Zcash transaction id"></label>
+                <button type="submit" class="tkt primary"><span class="lbl">Date it</span><span class="stub" aria-hidden="true">→</span></button>
+              </form>
+              <div id="age2" class="lab-age" aria-live="polite"></div>
+              <div id="move2" hidden>
+                <label class="label" for="evh">Event: drag it, or jump to a registered one</label>
+                <div class="lab-ruler" id="ruler2">
+                  <div class="lab-marks" id="marks2" aria-hidden="true"></div>
+                  <input type="range" id="evh" step="1">
+                </div>
+                <div class="row" role="group" aria-label="Registered events" id="snap2"></div>
+                <div class="lab-verdict" id="v2" aria-live="polite"></div>
+                <div class="row">
+                  <button type="button" class="quiet" id="confirm2">Confirm with the full verifier</button>
+                  <span class="label" id="conf2"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Station 3 -->
+        <div class="lab-panel" id="st3" role="tabpanel" aria-labelledby="tab3" hidden>
+          <p class="sec-lead" style="margin-top:0">Each attack sends a real request to the verifier, or replays the real wallet's answer, and shows the reason it gave.</p>
+          <div class="lab-attacks" id="attacks"></div>
+        </div>
+
+        <!-- Station 4 -->
+        <div class="lab-panel" id="st4" role="tabpanel" aria-labelledby="tab4" hidden>
+          <div class="win">
+            <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">You were paid after the event</div><span class="lab-tag live">Live · mainnet</span></div>
+            <div class="body">
+              <ol class="lab-track" id="track4" aria-label="Timeline">
+                <li data-k="anchor"><b>3,525,696</b><span>Payer's anchor</span></li>
+                <li data-k="event" class="ev"><b>3,525,709</b><span>The event</span></li>
+                <li data-k="paid"><b>3,527,813</b><span>You are paid</span></li>
+                <li data-k="dep"><b>3,527,827</b><span>You deposit</span></li>
+              </ol>
+              <div class="lab-q">
+                <span class="label">1 · How were you paid?</span>
+                <div class="row" role="group" aria-label="How you were paid" id="q4a">
+                  <button type="button" class="chip" aria-pressed="false" data-v="plain">An ordinary payment</button>
+                  <button type="button" class="chip" aria-pressed="false" data-v="vintage">A Vintage payment from someone with old coins</button>
+                </div>
+              </div>
+              <div class="lab-a" id="a4a" aria-live="polite"></div>
+              <div class="lab-q" id="q4b" hidden>
+                <span class="label">2 · Where do you receive it?</span>
+                <div class="row" role="group" aria-label="Where you receive it">
+                  <button type="button" class="chip" aria-pressed="false" data-v="main">Your main account</button>
+                  <button type="button" class="chip" aria-pressed="false" data-v="receipt">A fresh single-use receipt account</button>
+                </div>
+              </div>
+              <div class="lab-a" id="a4b" aria-live="polite"></div>
+              <div class="lab-q" id="q4c" hidden>
+                <span class="label">3 · You deposit. How does the exchange check where the coins came from?</span>
+                <div class="row" role="group" aria-label="How the exchange checks">
+                  <button type="button" class="chip" aria-pressed="false" data-v="age">Just check the age</button>
+                  <button type="button" class="chip" aria-pressed="false" data-v="key">Show the receipt account's viewing key</button>
+                  <button type="button" class="chip" aria-pressed="false" data-v="zk">Zero-knowledge proof (research)</button>
+                </div>
+              </div>
+              <div class="lab-a" id="a4c" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="lab-log" aria-label="Session log">
+        <div class="win">
+          <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Session log · <span id="logn">0</span></div><button type="button" class="quiet" id="logcopy">Copy log</button></div>
+          <div class="body"><ol id="slog"></ol></div>
+        </div>
+      </aside>
+    </div>
   </div>
-  <p class="ref" style="margin-top:var(--vt-6)">Labels on each step: <b>Live</b> means a real request to api.usevintage.site, made now. <b>Replay</b> means real mainnet data recorded during our demo. <b>Simulated party</b> means an illustrative exchange acting on that real data. Keys: ← and → move between steps.</p>
+
+  <!-- After the session -->
+  <div id="labdone" hidden>
+    <div class="win" style="max-width:720px">
+      <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Session ended</div><span class="lab-chip off" id="doneid"></span></div>
+      <div class="body">
+        <div class="facts" id="donefacts" style="margin:0"></div>
+        <p class="ref" style="margin:0">Nothing from this session was stored. Its ID never left your browser, and the verifier kept only its anonymous daily count of checks.</p>
+        <div class="row">
+          <button type="button" class="tkt primary" id="labagain"><span class="lbl">New session</span><span class="stub" aria-hidden="true">→</span></button>
+          <a class="quiet" href="https://app.usevintage.site/">Open the verifier</a>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section class="reveal">
   <div class="label eyebrow">Run it yourself</div>
-  <h2 class="display">Every step, from your terminal.</h2>
+  <h2 class="display">Every live step, from your terminal.</h2>
   <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Reproduce the demo</div><button class="quiet" type="button" data-copy="code-repro">Copy</button></div>
-    <div class="body"><pre class="code" id="code-repro"><span class="m">$</span> vintage verify da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7 --before vintage-demo-2026-10
-<span class="m">$</span> vintage link verify demo/mainnet-link-bundle.json --before vintage-demo-2026-10
-<span class="m">$</span> vintage verify a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143 --before vintage-demo-2026-10</pre></div></div>
-  <p class="ref" style="margin-top:var(--vt-4)">Expected: PASS, LINK PASS and FAIL. Source and build steps: <a href="https://github.com/Samuel-Chuku/vintage" rel="noopener noreferrer">github.com/Samuel-Chuku/vintage</a>.</p>
+    <div class="body"><pre class="code" id="code-repro"><span class="m">$</span> vintage age da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7
+<span class="m">$</span> vintage verify da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7 --before vintage-demo-2026-10
+<span class="m">$</span> vintage verify a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143 --before vintage-demo-2026-10
+<span class="m">$</span> vintage link verify demo/mainnet-link-bundle.json --before vintage-demo-2026-10</pre></div></div>
+  <p class="ref" style="margin-top:var(--vt-4)">Expected: dated by block 3,525,693; PASS; FAIL; LINK PASS. Source and build steps: <a href="https://github.com/Samuel-Chuku/vintage" rel="noopener noreferrer">github.com/Samuel-Chuku/vintage</a>.</p>
 </section>

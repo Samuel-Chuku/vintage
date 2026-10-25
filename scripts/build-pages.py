@@ -33,9 +33,9 @@ PAGES = {
     "privacy": ("landing", "privacy/index.html", "privacy", "Privacy · Vintage",
                 "What Vintage sees, what it keeps (nothing but anonymous daily counts), and what each party learns when you "
                 "prove your coins' age.", ["site.js"]),
-    "simulate": ("landing", "simulate/index.html", "simulate", "Simulate · Vintage",
-                 "Step through an exchange deposit, a NEAR Intents swap, fresh coins and tainted coins, with live checks "
-                 "against Zcash mainnet.", ["site.js", "sim.js"]),
+    "simulate": ("landing", "simulate/index.html", "simulate", "Simulate · Vintage Lab",
+                 "A live lab session on Zcash mainnet data: drag your anchor to get a deposit through, move an event and "
+                 "watch the verdict follow, and try five attacks against the real verifier.", ["site.js", "sim.js"]),
     "app": ("app", "index.html", "verify", "Verify a deposit · Vintage",
             "Check whether every coin a Zcash transaction spends existed before a hack, a cutoff or any block you name. "
             "Live, from public chain data.", ["site.js", "verify.js"]),

@@ -367,9 +367,9 @@ html{overflow-x:clip}
 
 /* Links must read as links, never as plain text: bold, a heavy underline, and an ink-inverted hover.
    Ink only, never gold (law 1). Tickets, chips, nav and the wordmark keep their own styles. */
-main :is(p,li,td,dd,pre) a:not(.tkt):not(.quiet), .strip-t a, footer p a{
+main :is(p,li,td,dd,pre,.s) a:not(.tkt):not(.quiet), .strip-t a, footer p a{
   color:var(--vt-ink);font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;border-radius:2px}
-main :is(p,li,td,dd,pre) a:not(.tkt):not(.quiet):hover, .strip-t a:hover, footer p a:hover{background:var(--vt-ink);color:var(--vt-surface);text-decoration-color:var(--vt-ink)}
+main :is(p,li,td,dd,pre,.s) a:not(.tkt):not(.quiet):hover, .strip-t a:hover, footer p a:hover{background:var(--vt-ink);color:var(--vt-surface);text-decoration-color:var(--vt-ink)}
 .quiet{text-decoration-thickness:2px;text-underline-offset:4px}
 .quiet:hover{background:var(--vt-ink);color:var(--vt-surface)}
 .band a:hover{background:var(--vt-ground);color:var(--vt-ink)}
@@ -452,32 +452,6 @@ html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);trans
 .ev-card dt{font:500 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;color:var(--vt-ink-2)}
 .ev-card dd{margin:0 0 var(--vt-1);font-size:var(--vt-text-sm);color:var(--vt-ink)}
 
-/* Simulation */
-.sim-tabs{display:flex;flex-wrap:wrap;gap:var(--vt-2);margin:var(--vt-8) 0 var(--vt-6)}
-.actors{display:grid;gap:var(--vt-3);grid-template-columns:repeat(2,minmax(0,1fr))}
-@media(min-width:900px){.actors{grid-template-columns:repeat(4,minmax(0,1fr))}}
-.actor{border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);padding:var(--vt-3);display:grid;gap:var(--vt-1);min-height:96px;align-content:start;transition:transform var(--vt-dur-2) var(--vt-ease),box-shadow var(--vt-dur-2) var(--vt-ease)}
-.actor .nm{font:700 var(--vt-text-xs)/1.2 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase}
-.actor .st8{font-size:var(--vt-text-sm);color:var(--vt-ink-2);line-height:1.35;overflow-wrap:anywhere}
-.actor.on{box-shadow:var(--vt-shadow-hard);transform:translate(-2px,-2px)}
-.actor.on .nm::after{content:" ●"}
-.flow{font:500 var(--vt-text-xs)/1.4 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;color:var(--vt-ink);min-height:20px}
-.rail{display:flex;gap:var(--vt-2);align-items:center;flex-wrap:wrap}
-.rail button{width:32px;height:32px;border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);color:var(--vt-ink);font:700 var(--vt-text-xs)/1 var(--vt-font-mono);cursor:pointer;box-shadow:var(--vt-shadow-small)}
-.rail button.done{background:var(--vt-sunk)}
-.rail button[aria-current="step"]{background:var(--vt-ink);color:var(--vt-surface);box-shadow:none;transform:translate(2px,2px)}
-.narr{display:grid;gap:var(--vt-3)}
-.narr h3.display{font-size:var(--vt-text-2xl);line-height:.95;margin:0}
-.narr p{margin:0;max-width:680px}
-.badge{display:inline-flex;align-items:center;gap:var(--vt-2);height:24px;padding:0 var(--vt-2);border:2px solid var(--vt-line);border-radius:4px;font:700 11px/1 var(--vt-font-mono);letter-spacing:.12em;text-transform:uppercase;width:max-content}
-.badge.live{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
-.badge.replay{border-style:dashed;color:var(--vt-ink-2)}
-.evid{background:var(--vt-sunk);border:var(--vt-edge);border-radius:var(--vt-radius-sm);padding:var(--vt-4);font:400 var(--vt-text-sm)/1.6 var(--vt-font-mono);overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
-.ctrls{display:flex;flex-wrap:wrap;gap:var(--vt-3);align-items:center;justify-content:space-between}
-.ctrls .row{gap:var(--vt-3)}
-.learn{display:grid;gap:var(--vt-3)}@media(min-width:900px){.learn{grid-template-columns:1fr 1fr}}
-.learn .win .body{gap:var(--vt-2)}
-.learn ul{margin:0;padding-left:var(--vt-5);font-size:var(--vt-text-sm)}
 
 /* Mobile menu: below 768px the nav links live in a panel under the bar. */
 .menu-btn{display:inline-flex;align-items:center;height:32px;padding:0 var(--vt-3);border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);color:var(--vt-ink);font:500 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;cursor:pointer;box-shadow:var(--vt-shadow-small)}
@@ -506,3 +480,195 @@ html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);trans
 .explore a i{position:absolute;right:var(--vt-5);bottom:var(--vt-4);font:700 var(--vt-text-md)/1 var(--vt-font-mono);font-style:normal}
 .explore a:hover b{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px}
 .explore a:active{transform:translate(3px,3px);box-shadow:1px 1px 0 0 var(--vt-shadow)}
+
+/* ==== the Lab (simulate page): a live session with three stations ==== */
+/* Status chips and step tags. Live = filled ink; Sandbox = dashed; Replay = hatch. No red, no green. */
+.lab-chip{display:inline-flex;align-items:center;height:24px;padding:0 var(--vt-2);border:2px solid var(--vt-line);border-radius:999px;
+  font:700 11px/1 var(--vt-font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--vt-ink);background:var(--vt-surface);white-space:nowrap}
+.lab-chip.off{border-style:dashed;color:var(--vt-ink-2);background:transparent}
+.lab-chip.done{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
+.lab-chip.warn{background:var(--vt-tex-hatch),var(--vt-surface)}
+.lab-tag{display:inline-flex;align-items:center;height:20px;padding:0 6px;border:2px solid var(--vt-line);border-radius:4px;
+  font:700 10px/1 var(--vt-font-mono);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;width:max-content}
+.lab-tag.live{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
+.lab-tag.sand{border-style:dashed;color:var(--vt-ink-2)}
+.lab-tag.replay{background:var(--vt-tex-hatch),var(--vt-surface);color:var(--vt-ink)}
+.lab-tag.info{color:var(--vt-ink-2)}
+
+.lab-plan{margin:0;padding-left:var(--vt-5);display:grid;gap:var(--vt-3);max-width:640px}
+.lab-plan li::marker{font:700 var(--vt-text-sm) var(--vt-font-mono)}
+
+/* The session bar: inverted, sticky under the nav, with a pulsing live dot. */
+.lab-bar{position:sticky;top:64px;z-index:4;display:flex;flex-wrap:wrap;align-items:center;gap:var(--vt-2) var(--vt-6);padding:var(--vt-3) var(--vt-4);
+  background:var(--vt-ink);color:var(--vt-surface);border-radius:var(--vt-radius);box-shadow:var(--vt-shadow-hard);
+  font:500 var(--vt-text-xs)/1.2 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase}
+.lab-bar b{font-weight:700}
+.lab-live{display:inline-flex;align-items:center;gap:var(--vt-2);font-weight:700}
+.lab-live i{width:10px;height:10px;border-radius:50%;background:var(--vt-surface);box-shadow:0 0 0 0 var(--vt-surface);animation:lab-pulse 1.6s var(--vt-ease) infinite}
+@keyframes lab-pulse{0%{box-shadow:0 0 0 0 var(--vt-surface)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media(prefers-reduced-motion:reduce){.lab-live i{animation:none}}
+.lab-end{margin-left:auto;height:28px;padding:0 var(--vt-3);border:2px solid var(--vt-surface);border-radius:var(--vt-radius-sm);background:transparent;color:var(--vt-surface);
+  font:700 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase;cursor:pointer}
+.lab-end:hover{background:var(--vt-surface);color:var(--vt-ink)}
+
+.lab-grid{display:grid;gap:var(--vt-6);margin-top:var(--vt-6);align-items:start}
+/* The full log sits under the stations; the bar carries the latest entry so activity stays in view. */
+.lab-last{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:var(--vt-2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  font:400 12px/1.2 var(--vt-font-body);letter-spacing:0;text-transform:none;opacity:.9}
+.lab-last .lab-tag{border-color:var(--vt-surface);color:var(--vt-surface);background:transparent;flex:none}
+.lab-last .lab-tag.live{background:var(--vt-surface);color:var(--vt-ink)}
+@media(max-width:767px){.lab-last{display:none}}
+.lab-main{display:grid;gap:var(--vt-6);min-width:0}
+
+/* Station tabs: big tiles; the open one is inverted. */
+.lab-stations{display:grid;gap:var(--vt-3);grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.lab-st{display:grid;gap:var(--vt-2);justify-items:start;text-align:left;padding:var(--vt-4);border:var(--vt-edge);border-radius:var(--vt-radius);background:var(--vt-surface);
+  color:var(--vt-ink);box-shadow:var(--vt-shadow-small);cursor:pointer;transition:transform var(--vt-dur-1) var(--vt-ease),box-shadow var(--vt-dur-1) var(--vt-ease)}
+.lab-st b{font:800 var(--vt-text-xl)/1 var(--vt-font-display);text-transform:uppercase}
+.lab-st:hover{transform:translate(-2px,-2px);box-shadow:var(--vt-shadow-hard)}
+.lab-st[aria-selected="true"]{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink);box-shadow:none;transform:translate(2px,2px)}
+.lab-st[aria-selected="true"] .label{color:var(--vt-surface)}
+.lab-st[aria-selected="true"] .lab-chip{background:var(--vt-surface);color:var(--vt-ink);border-color:var(--vt-surface)}
+
+.lab-two{display:grid;gap:var(--vt-6)}
+@media(min-width:900px){.lab-two{grid-template-columns:1fr 1fr}}
+.lab-ctl{display:grid;gap:var(--vt-2)}
+.lab-row{grid-auto-flow:column;justify-content:space-between;align-items:center}
+.lab-out{margin:0;font:500 var(--vt-text-sm)/1.4 var(--vt-font-mono)}
+.lab-preview{font:700 11px/1.6 var(--vt-font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--vt-ink-2)}
+.s{font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
+
+/* Wallet notes: a spendable note is a plain row; a locked one carries the hatch edge. */
+.lab-notes{display:grid;gap:var(--vt-2)}
+.lab-note{display:grid;grid-template-columns:28px 1fr;gap:var(--vt-3);align-items:start;padding:var(--vt-3);border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);
+  transition:opacity var(--vt-dur-2) var(--vt-ease)}
+.lab-note .lab-box{width:28px;height:28px;display:grid;place-items:center;border:2px solid var(--vt-line);border-radius:6px;font:700 14px/1 var(--vt-font-mono)}
+.lab-note:not(.locked) .lab-box{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
+.lab-note.locked{background:linear-gradient(90deg,transparent 0 calc(100% - 14px),transparent 0),var(--vt-surface);border-right-width:14px;position:relative;opacity:.85}
+.lab-note.locked::after{content:"";position:absolute;right:-14px;top:-2px;bottom:-2px;width:14px;background:var(--vt-tex-hatch),var(--vt-surface);border:2px solid var(--vt-line);border-left:0;border-radius:0 var(--vt-radius-sm) var(--vt-radius-sm) 0}
+.lab-note.tainted b::after{content:" · after the event";margin-right:var(--vt-2);font:500 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--vt-ink-2)}
+
+/* The block ruler: a native range input (keyboard and touch for free) over tick marks and markers. */
+.lab-ruler{position:relative;height:88px;border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-tex-grid),var(--vt-sunk);overflow:hidden}
+.lab-marks{position:absolute;inset:0 14px;pointer-events:none}
+.lab-marks::before{content:"";position:absolute;left:0;right:0;top:52px;height:12px;
+  background:repeating-linear-gradient(90deg,var(--vt-ink-2) 0 1px,transparent 1px 8px)}
+.lab-marks .past{position:absolute;top:52px;height:12px;left:0;background:var(--vt-tex-dither),var(--vt-surface);border:2px solid var(--vt-line);border-radius:3px}
+.lab-marks .past.gold{background:var(--vt-gold)}
+.lab-marks .mk{position:absolute;top:6px;bottom:6px;width:0}
+.lab-marks .mk i{position:absolute;left:-1px;top:18px;bottom:0;border-left:2px solid var(--vt-ink)}
+.lab-marks .mk em{position:absolute;top:0;left:0;transform:translateX(-50%);font:700 10px/1 var(--vt-font-mono);font-style:normal;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
+  padding:2px 4px;border:2px solid var(--vt-line);border-radius:4px;background:var(--vt-surface)}
+.lab-marks .mk.note.t em{background:var(--vt-tex-hatch),var(--vt-surface)}
+.lab-marks .mk.ev em,.lab-marks .mk.age em{top:22px;background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
+.lab-marks .mk.ev i,.lab-marks .mk.age i{top:40px}
+.lab-marks .mk.ev.far em{transform:none}
+.lab-marks .mk.reg i{border-left-style:dashed}
+.lab-ruler input[type=range]{-webkit-appearance:none;appearance:none;position:absolute;left:0;right:0;bottom:6px;width:100%;height:40px;margin:0;background:transparent;cursor:ew-resize}
+.lab-ruler input[type=range]::-webkit-slider-runnable-track{height:40px;background:transparent}
+.lab-ruler input[type=range]::-moz-range-track{height:40px;background:transparent}
+.lab-ruler input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:36px;margin-top:2px;border:2px solid var(--vt-line);border-radius:6px;
+  background:var(--vt-ink);box-shadow:var(--vt-shadow-small)}
+.lab-ruler input[type=range]::-moz-range-thumb{width:20px;height:32px;border:2px solid var(--vt-line);border-radius:6px;background:var(--vt-ink);box-shadow:var(--vt-shadow-small)}
+.lab-ruler input[type=range]:focus-visible{outline:none}
+.lab-ruler:focus-within{outline:2px solid var(--vt-focus);outline-offset:3px}
+
+/* Stepper. */
+.lab-step{display:inline-flex;align-items:stretch;height:40px;border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);box-shadow:var(--vt-shadow-small);overflow:hidden}
+.lab-step button{width:40px;border:0;background:none;color:var(--vt-ink);font:700 18px/1 var(--vt-font-mono);cursor:pointer}
+.lab-step button:hover:not(:disabled){background:var(--vt-ink);color:var(--vt-surface)}
+.lab-step button:disabled{color:var(--vt-ink-2);cursor:not-allowed;opacity:.5}
+.lab-step output{display:grid;place-items:center;min-width:128px;border-left:var(--vt-edge-dashed);border-right:var(--vt-edge-dashed);font:700 var(--vt-text-sm)/1 var(--vt-font-mono)}
+
+/* The exchange's status board. */
+.lab-exstat{display:grid;gap:var(--vt-1);padding:var(--vt-4) var(--vt-4) var(--vt-4) var(--vt-6);border:var(--vt-edge);border-radius:var(--vt-radius-sm);position:relative;background:var(--vt-surface)}
+.lab-exstat b{font:800 var(--vt-text-3xl)/1 var(--vt-font-display);text-transform:uppercase}
+.lab-exstat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:12px;border-right:2px solid var(--vt-line);border-radius:6px 0 0 6px}
+.lab-exstat.hold::before{background:var(--vt-tex-hatch),var(--vt-surface)}
+.lab-exstat.check::before{background:var(--vt-tex-dither),var(--vt-surface)}
+.lab-exstat.ok{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
+.lab-exstat.ok .label{color:var(--vt-surface)}
+.lab-exstat.ok::before{background:var(--vt-surface)}
+
+.lab-flow{margin:0;padding:0;list-style:none;display:grid;gap:var(--vt-2);counter-reset:f}
+.lab-flow li{counter-increment:f;display:grid;grid-template-columns:28px 1fr;gap:var(--vt-3);align-items:start;font-size:var(--vt-text-sm);animation:lab-in var(--vt-dur-3) var(--vt-ease) both}
+.lab-flow li::before{content:counter(f);display:grid;place-items:center;width:28px;height:28px;border:2px solid var(--vt-line);border-radius:6px;font:700 12px/1 var(--vt-font-mono);background:var(--vt-surface)}
+@keyframes lab-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.lab-flow li{animation:none}}
+
+.lab-result{display:grid;gap:var(--vt-4)}
+.lab-result:empty{display:none}
+.v.sandbox{border-style:dashed;background:var(--vt-surface)}
+.v.sandbox.ok{border-style:solid;background:var(--vt-ink);color:var(--vt-surface)}
+.v.sandbox.ok .label,.v.sandbox.ok a{color:var(--vt-surface)}
+.lab-golive{margin-top:var(--vt-2);align-items:center}
+.lab-golive .s{flex:1;min-width:220px}
+.v.sandbox.ok .lab-golive .s{color:var(--vt-surface)}
+#live1{margin-top:var(--vt-3)}
+#live1:empty{display:none}
+
+/* Station 2. */
+.lab-date{flex-wrap:nowrap}
+@media(max-width:600px){.lab-date{flex-wrap:wrap}}
+.lab-age:empty{display:none}
+.lab-agecard{display:grid;gap:var(--vt-2);padding:var(--vt-5);border:var(--vt-edge);border-radius:var(--vt-radius);background:var(--vt-surface);box-shadow:var(--vt-shadow-small)}
+.lab-agecard b{font:800 var(--vt-text-2xl)/1 var(--vt-font-display);text-transform:uppercase}
+#move2{display:grid;gap:var(--vt-3)}
+#move2[hidden]{display:none}
+.lab-verdict .v h3{font-size:1.75rem}
+
+/* Station 3: attack cards. Blocked = inverted ink. */
+.lab-attacks{display:grid;gap:var(--vt-4);grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.lab-attack{display:grid;gap:var(--vt-3);align-content:start;padding:var(--vt-5);border:var(--vt-edge);border-radius:var(--vt-radius);background:var(--vt-surface);box-shadow:var(--vt-shadow-hard)}
+.lab-attack .top{display:flex;justify-content:space-between;align-items:center;gap:var(--vt-2)}
+.lab-attack h3{margin:0;font:800 var(--vt-text-xl)/1 var(--vt-font-display);text-transform:uppercase}
+.lab-attack p{margin:0;font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
+.lab-attack .tkt{justify-self:start}
+.lab-attack.blocked{border-color:var(--vt-ink)}
+.lab-attack.blocked .top .lab-chip{background:var(--vt-ink);color:var(--vt-surface);border-color:var(--vt-ink)}
+.lab-reason{display:grid;gap:var(--vt-2);padding:var(--vt-3);border:var(--vt-edge-dashed);border-radius:var(--vt-radius-sm);background:var(--vt-sunk)}
+.lab-reason b{font:700 var(--vt-text-sm)/1 var(--vt-font-mono);letter-spacing:.06em;text-transform:uppercase}
+.lab-reason code{font:400 12px/1.5 var(--vt-font-mono);overflow-wrap:anywhere;color:var(--vt-ink)}
+
+/* The session log. */
+.lab-log ol{margin:0;padding:0;list-style:none;display:grid;gap:var(--vt-2);max-height:280px;overflow-y:auto}
+.lab-log ol:empty::before{content:"Actions appear here as you go.";font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
+.lab-log li{display:grid;grid-template-columns:auto 1fr;gap:4px var(--vt-2);padding-bottom:var(--vt-2);border-bottom:var(--vt-rule);font-size:12px;line-height:1.4;animation:lab-in var(--vt-dur-2) var(--vt-ease) both}
+.lab-log li .t{font:500 11px/20px var(--vt-font-mono);color:var(--vt-ink-2)}
+.lab-log li .m{grid-column:1 / -1;overflow-wrap:anywhere}
+/* Phones: the four stations as a compact 2 x 2 grid, so the controls start on the first screen. */
+@media(max-width:767px){
+  .lab-stations{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--vt-2)}
+  .lab-st{padding:var(--vt-2) var(--vt-3);gap:var(--vt-1)}
+  .lab-st b{font-size:var(--vt-text-md);line-height:1.05}
+  .lab-st .lab-chip{display:none}
+}
+/* Station 4: a four-stop track that lights up as the story advances, then question/answer pairs. */
+.lab-track{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:relative}
+.lab-track::before{content:"";position:absolute;left:12.5%;right:12.5%;top:13px;border-top:2px dashed var(--vt-ink-2)}
+.lab-track li{position:relative;display:grid;justify-items:center;gap:var(--vt-1);text-align:center;padding-top:36px;opacity:.45;transition:opacity var(--vt-dur-2) var(--vt-ease)}
+.lab-track li::before{content:"";position:absolute;top:2px;width:24px;height:24px;border:2px solid var(--vt-line);border-radius:6px;background:var(--vt-surface)}
+.lab-track li b{font:700 var(--vt-text-sm)/1 var(--vt-font-mono)}
+.lab-track li span{font:500 10px/1.2 var(--vt-font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--vt-ink-2)}
+.lab-track li.on{opacity:1}
+.lab-track li.on::before{background:var(--vt-ink)}
+.lab-track li.ev::before{background:var(--vt-tex-hatch),var(--vt-surface)}
+.lab-track li.ev.on::before{background:var(--vt-tex-hatch),var(--vt-surface);border-color:var(--vt-ink)}
+.lab-q{display:grid;gap:var(--vt-2);padding-top:var(--vt-4);border-top:var(--vt-rule)}
+.lab-q[hidden]{display:none}
+.lab-a:empty{display:none}
+.lab-a{display:grid;gap:var(--vt-4)}
+.lab-disc{gap:var(--vt-4)}
+.lab-disc .ticks{margin:var(--vt-2) 0 0}
+.lab-zk{gap:var(--vt-3)}
+.lab-zk h3{font-size:1.75rem}
+/* Links on a gold PASS: always the on-gold ink, in both themes (light link text on gold fails contrast). */
+main .v.pass a:not(.tkt):not(.quiet){color:var(--vt-on-gold);text-decoration-color:var(--vt-on-gold)}
+main .v.pass a:not(.tkt):not(.quiet):hover{background:var(--vt-on-gold);color:var(--vt-gold)}
+@media(max-width:480px){.lab-track li b{font-size:11px;letter-spacing:-.02em}.lab-track li span{font-size:9px}}
+/* The real/simulated legend under the session bar, and each attack's expected rule and match. */
+.lab-legend{display:flex;flex-wrap:wrap;gap:var(--vt-2) var(--vt-6);margin:var(--vt-3) 0 0;font-size:12px;color:var(--vt-ink-2)}
+.lab-legend > span{display:inline-flex;align-items:center;gap:var(--vt-2)}
+.lab-attack p.lab-expect{font-size:12px;color:var(--vt-ink)}
+.lab-expect .label{margin-right:var(--vt-1)}
+.lab-match{font:700 11px/1.3 var(--vt-font-mono);letter-spacing:.06em;text-transform:uppercase}
