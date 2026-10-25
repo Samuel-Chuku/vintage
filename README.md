@@ -94,6 +94,7 @@ Check any mainnet transaction against an event (no wallet needed):
 vintage verify <txid> --before bitget-2026-09
 vintage verify <txid> --before 3501240 --json        # any height; JSON for machines
 vintage age <txid>                                   # no event: when were these coins in the pool?
+vintage sample --from 3500000 --blocks 1             # real Ironwood txids to try (here: the day before Bitget)
 ```
 
 Exit codes: `0` PASS, `1` FAIL, `2` not provable. Or use the public verifier, no install:
@@ -125,6 +126,9 @@ The receipt-account link (fresh coins; discloses one single-use account's viewin
 vintage link prove --deposit <D> --funding <T1> --wallet <receipt-wallet> --out bundle.json
 vintage link verify bundle.json --before bitget-2026-09      # what a rail runs, locally
 ```
+
+Every command, with real output: [usevintage.site/cli](https://usevintage.site/cli/). The API, with live
+examples: [usevintage.site/api](https://usevintage.site/api/).
 
 `vintage send` never reads your seed. It signs through zcash-devtool (with the patches in
 `patches/`), which must sit next to the `vintage` binary or be passed with `--devtool`.

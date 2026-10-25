@@ -367,9 +367,9 @@ html{overflow-x:clip}
 
 /* Links must read as links, never as plain text: bold, a heavy underline, and an ink-inverted hover.
    Ink only, never gold (law 1). Tickets, chips, nav and the wordmark keep their own styles. */
-main :is(p,li,td,dd,pre,.s) a:not(.tkt):not(.quiet), .strip-t a, footer p a{
+main :is(p,li,td,dd,pre,.s,.fact span) a:not(.tkt):not(.quiet), .strip-t a, footer p a{
   color:var(--vt-ink);font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:4px;border-radius:2px}
-main :is(p,li,td,dd,pre,.s) a:not(.tkt):not(.quiet):hover, .strip-t a:hover, footer p a:hover{background:var(--vt-ink);color:var(--vt-surface);text-decoration-color:var(--vt-ink)}
+main :is(p,li,td,dd,pre,.s,.fact span) a:not(.tkt):not(.quiet):hover, .strip-t a:hover, footer p a:hover{background:var(--vt-ink);color:var(--vt-surface);text-decoration-color:var(--vt-ink)}
 .quiet{text-decoration-thickness:2px;text-underline-offset:4px}
 .quiet:hover{background:var(--vt-ink);color:var(--vt-surface)}
 .band a:hover{background:var(--vt-ground);color:var(--vt-ink)}
@@ -713,3 +713,21 @@ main .v.pass a:not(.tkt):not(.quiet):hover{background:var(--vt-on-gold);color:va
 
 /* The lab: no empty band above the session bar. */
 #lab{padding-top:var(--vt-6)}
+
+/* Command line and API pages. */
+.cli-shot{margin:0;display:grid;gap:var(--vt-3)}
+.cli-shot img{display:block;width:100%;height:auto;border:var(--vt-edge);border-radius:var(--vt-radius);box-shadow:var(--vt-shadow-hard)}
+.cmds{display:grid;gap:var(--vt-6)}
+.cmd .body{gap:var(--vt-3)}
+.cmd .body p{margin:0;font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
+.code.out{background:var(--vt-surface);border-style:dashed;font-size:12px;color:var(--vt-ink-2)}
+/* Endpoint titles: URL paths are case-sensitive, so they keep their real case, in the mono face. */
+h2.display.ep{font:700 clamp(1.25rem,2.6vw,2rem)/1.2 var(--vt-font-mono);text-transform:none;letter-spacing:0;overflow-wrap:anywhere}
+.method{display:inline-block;margin-right:var(--vt-2);padding:2px 8px;border-radius:6px;background:var(--vt-ink);color:var(--vt-surface);
+  font:700 .6em/1.4 var(--vt-font-mono);letter-spacing:.06em;vertical-align:.2em}
+.t.ep{text-transform:none}
+.try .body{gap:var(--vt-3)}
+.try .tkt{justify-self:start}
+.tryout{max-height:360px;overflow:auto;font-size:12px;white-space:pre}
+.tryout[hidden]{display:none}
+.try .body p{margin:0;font-size:var(--vt-text-sm);color:var(--vt-ink-2)}

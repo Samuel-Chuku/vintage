@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Source of web/static/landing/img/cli-verify.png (the image on /cli/). Real output of the two commands,
+     captured on 25 Oct 2026 (timing lines omitted). Render with:
+     google-chrome --headless=new --hide-scrollbars --window-size=1200,560 \
+       --screenshot=web/static/landing/img/cli-verify.png scripts/cli-card.html -->
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../web/shared/css/tokens.css">
+<style>
+  html, body { margin: 0; width: 1200px; height: 560px; overflow: hidden; background: var(--vt-ground); }
+  body { box-sizing: border-box; padding: 28px; font-family: var(--vt-font-mono); }
+  .win { height: 100%; box-sizing: border-box; border: 2px solid var(--vt-line); border-radius: 12px; background: var(--vt-surface);
+         box-shadow: 4px 4px 0 0 var(--vt-shadow); overflow: hidden; display: flex; flex-direction: column; }
+  .bar { height: 40px; display: flex; align-items: center; gap: 16px; padding: 0 16px; border-bottom: 2px solid var(--vt-line);
+         background: var(--vt-sunk); color: var(--vt-ink); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+  .dots { display: flex; gap: 8px; } .dots i { width: 8px; height: 8px; border: 2px solid var(--vt-line); border-radius: 50%; }
+  pre { margin: 0; padding: 18px 22px; font: 400 14.5px/1.55 var(--vt-font-mono); color: var(--vt-ink-2); white-space: pre; }
+  .p { color: var(--vt-ink); font-weight: 700; }
+  .pass { background: var(--vt-gold); color: var(--vt-on-gold); font-weight: 700; padding: 0 4px; border-radius: 3px; }
+  .ok { color: var(--vt-ink); }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div>vintage · zcash mainnet</div>
+<pre><span class="p">$ vintage verify da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7 --before vintage-demo-2026-10</span>
+mined:       3527813
+before H:    3525709  (Vintage demo, a staged event, not a real hack)
+anchor:      855ccc99a779159d9d98664d1a09737814b930cc782b149660a94a3881d98502
+checked:     4668 blocks (3525709..=3530376) = 2890 distinct Ironwood roots
+age:         in the pool by block 3525693 (2026-10-21 16:03 UTC)
+
+<span class="pass">PASS</span><span class="ok">: These coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).</span>
+
+<span class="p">$ vintage age d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4</span>
+mined:       3500000
+anchor:      16b227375871c62d8dbaa17dcfb459c93a0caf7ee16fb992b51bfd793d298e0f
+age:         in the pool by block 3499995 (2026-09-29 06:15 UTC)
+             <span class="ok">✓ bitget-2026-09         block   3501240  Bitget hot-wallet exploit: first shielding into Ironwood</span>
+             <span class="ok">✓ vintage-demo-2026-10   block   3525709  Vintage demo, a staged event, not a real hack</span>
+
+<span class="ok">DATED: Every coin this transaction spends was in the shielded pool by block 3,499,995.</span>
+
+<span class="p">$ </span></pre>
+</div>
+</body>
+</html>

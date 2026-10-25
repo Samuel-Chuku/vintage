@@ -140,11 +140,15 @@ enum Cmd {
         #[arg(long)]
         devtool: Option<PathBuf>,
     },
-    /// List txids with Ironwood actions in the last `blocks` blocks (test samples for benchmarks).
-    #[command(hide = true)]
+    /// List transactions with Ironwood actions: in the last N blocks, or N blocks from --from. Handy for
+    /// finding real transactions to check
     Sample {
+        /// How many blocks to scan
         #[arg(long, default_value_t = 50)]
         blocks: u32,
+        /// First block of the range, instead of counting back from the tip.
+        #[arg(long)]
+        from: Option<u32>,
     },
     /// The receipt-account link: prove fresh coins came from Vintage payments (discloses a viewing key).
     #[command(subcommand)]
@@ -240,10 +244,14 @@ async fn main() -> Result<()> {
             let reg = load_registry(&cli.registry)?;
             status::run(network, &server, &reg, &wallet, sync, devtool)
         }
-        Cmd::Sample { blocks } => {
+        Cmd::Sample { blocks, from } => {
             let client = lwd::connect(&server).await?;
             let tip = lwd::tip(&client).await?;
-            for (h, txid) in lwd::ironwood_txids(&client, tip.saturating_sub(blocks) + 1, tip).await? {
+            let (lo, hi) = match from {
+                Some(f) => (f, f.saturating_add(blocks.saturating_sub(1)).min(tip)),
+                None => (tip.saturating_sub(blocks) + 1, tip),
+            };
+            for (h, txid) in lwd::ironwood_txids(&client, lo, hi).await? {
                 println!("{h} {txid}");
             }
             Ok(())

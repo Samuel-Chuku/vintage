@@ -1,0 +1,122 @@
+<section class="page-head">
+  <div class="label eyebrow">How it works · API</div>
+  <h1 class="display">One request per deposit.</h1>
+  <p class="lead">The verifier over HTTP, for exchanges, bridges and anyone else. Same code and same answers as the command line. Every read-only endpoint below has a <b>Try it live</b> button that calls the real API on mainnet.</p>
+  <div class="toc" role="group" aria-label="On this page">
+    <a href="#base">Basics</a><a href="#verify">/verify</a><a href="#age">/age</a><a href="#link">/verify-link</a><a href="#events">/events</a><a href="#more">/stats, /health</a><a href="#errors">Errors</a>
+  </div>
+</section>
+
+<section id="base" class="reveal">
+  <div class="label eyebrow">01 / Basics</div>
+  <h2 class="display">No key, no account.</h2>
+  <div class="facts">
+    <div class="fact"><b class="mono">api.usevintage.site</b><span>Base URL, Zcash mainnet. JSON in and out. Open to any origin (CORS).</span></div>
+    <div class="fact"><b>No logs</b><span>No request log, no IPs, no txids kept. The only record is the anonymous daily count at /stats.</span></div>
+    <div class="fact"><b>Self-host</b><span>For production, run <span class="mono">vintage-api</span> next to your own node, so nobody learns which deposits you check. See the <a href="https://github.com/Samuel-Chuku/vintage/blob/main/docs/INTEGRATION.md" rel="noopener noreferrer">integration guide</a>.</span></div>
+  </div>
+</section>
+
+<section id="verify" class="reveal">
+  <div class="label eyebrow">02 / The check</div>
+  <h2 class="display ep"><span class="method">GET</span> /verify/{txid}?before={event or height}</h2>
+  <p class="sec-lead">Did every coin this transaction spends exist before the event? Answers <b>PASS</b>, <b>FAIL</b> or <b>NOT_PROVABLE</b>, with the evidence and the coins' age. Only act on <span class="mono">"provisional": false</span>.</p>
+  <div class="win try" data-try="/verify/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7?before=vintage-demo-2026-10">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Request</div><button class="quiet" type="button" data-copy="a-verify">Copy</button></div>
+    <div class="body">
+      <pre class="code" id="a-verify"><span class="m">$</span> curl 'https://api.usevintage.site/verify/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7?before=vintage-demo-2026-10'</pre>
+      <button type="button" class="tkt primary"><span class="lbl">Try it live</span><span class="stub" aria-hidden="true">→</span></button>
+      <pre class="code tryout" aria-live="polite" hidden></pre>
+    </div>
+  </div>
+  <div class="tblwrap" style="margin-top:var(--vt-6)">
+    <table class="reg">
+      <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="num">verdict</td><td><b>PASS</b>: every coin predates the event. <b>FAIL</b>: no information, never a flag. <b>NOT_PROVABLE</b>: non-Ironwood inputs, see <span class="mono">reasons</span>.</td></tr>
+        <tr><td class="num">summary</td><td>One sentence for people.</td></tr>
+        <tr><td class="num">provisional</td><td><span class="mono">true</span> while unmined: the same txid could still be mined with another anchor.</td></tr>
+        <tr><td class="num">age</td><td>Block and time by which every coin was in the pool.</td></tr>
+        <tr><td class="num">evidence</td><td>Blocks covered and distinct pool states ruled out.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="age" class="reveal">
+  <div class="label eyebrow">03 / No event needed</div>
+  <h2 class="display ep"><span class="method">GET</span> /age/{txid}</h2>
+  <p class="sec-lead">The coins' proven age, and for each registered event whether they predate it. One call screens a deposit against every event. The example is a stranger's transaction from the day before the Bitget hack.</p>
+  <div class="win try" data-try="/age/d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Request</div><button class="quiet" type="button" data-copy="a-age">Copy</button></div>
+    <div class="body">
+      <pre class="code" id="a-age"><span class="m">$</span> curl https://api.usevintage.site/age/d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4</pre>
+      <button type="button" class="tkt primary"><span class="lbl">Try it live</span><span class="stub" aria-hidden="true">→</span></button>
+      <pre class="code tryout" aria-live="polite" hidden></pre>
+    </div>
+  </div>
+</section>
+
+<section id="link" class="reveal">
+  <div class="label eyebrow">04 / Coins received after the event</div>
+  <h2 class="display ep"><span class="method">POST</span> /verify-link</h2>
+  <p class="sec-lead">The receipt-account link. The body is a bundle from <span class="mono">vintage link prove</span> and carries one single-use account's viewing key. The API holds it for the request only: never written to disk, a log or a cache. To send the key to nobody, run <span class="mono">vintage link verify</span> yourself.</p>
+  <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Request</div><button class="quiet" type="button" data-copy="a-link">Copy</button></div>
+    <div class="body"><pre class="code" id="a-link"><span class="m">$</span> curl https://api.usevintage.site/verify-link \
+    -H 'content-type: application/json' \
+    -d '{"before": "vintage-demo-2026-10", "bundle": '"$(cat demo/mainnet-link-bundle.json)"'}'</pre></div></div>
+  <p class="ref" style="margin-top:var(--vt-4)">Run it from a clone of the repository: <span class="mono">demo/mainnet-link-bundle.json</span> is our published demo bundle. Expected: <b>PASS</b>, inputs 0 and 1 funded by outputs 1 and 2 of <span class="mono">da9017e0…</span>. Try it in the browser in the <a href="/simulate/">lab</a>, station 4.</p>
+</section>
+
+<section id="events" class="reveal">
+  <div class="label eyebrow">05 / The registry</div>
+  <h2 class="display ep"><span class="method">GET</span> /events</h2>
+  <p class="sec-lead">The signed event registry for this network, its public key, and whether the signature verified. The exact signed bytes: <span class="mono">/registry/events.json</span> and <span class="mono">.sig</span>.</p>
+  <div class="win try" data-try="/events">
+    <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Request</div><button class="quiet" type="button" data-copy="a-events">Copy</button></div>
+    <div class="body">
+      <pre class="code" id="a-events"><span class="m">$</span> curl https://api.usevintage.site/events</pre>
+      <button type="button" class="tkt primary"><span class="lbl">Try it live</span><span class="stub" aria-hidden="true">→</span></button>
+      <pre class="code tryout" aria-live="polite" hidden></pre>
+    </div>
+  </div>
+</section>
+
+<section id="more" class="reveal">
+  <div class="label eyebrow">06 / Service</div>
+  <h2 class="display">Counts and health.</h2>
+  <div class="two">
+    <div class="win try" data-try="/stats">
+      <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t ep"><span class="method">GET</span> /stats</div></div>
+      <div class="body">
+        <p>Anonymous daily totals of checks, by verdict and by event. Nothing else is recorded.</p>
+        <button type="button" class="tkt primary"><span class="lbl">Try it live</span><span class="stub" aria-hidden="true">→</span></button>
+        <pre class="code tryout" aria-live="polite" hidden></pre>
+      </div>
+    </div>
+    <div class="win try" data-try="/health">
+      <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t ep"><span class="method">GET</span> /health</div></div>
+      <div class="body">
+        <p>The network, the lightwalletd server the API reads from, and the chain tip.</p>
+        <button type="button" class="tkt primary"><span class="lbl">Try it live</span><span class="stub" aria-hidden="true">→</span></button>
+        <pre class="code tryout" aria-live="polite" hidden></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="errors" class="reveal">
+  <div class="label eyebrow">07 / Errors</div>
+  <h2 class="display">When there's no verdict.</h2>
+  <div class="tblwrap">
+    <table class="reg">
+      <thead><tr><th>Status</th><th>When</th></tr></thead>
+      <tbody>
+        <tr><td class="num">400</td><td>Malformed txid, missing <span class="mono">before</span>, unknown event, or a height before Ironwood's activation (block 3,428,143) or above the tip.</td></tr>
+        <tr><td class="num">404</td><td>The server doesn't know the transaction.</td></tr>
+        <tr><td class="num">502</td><td>The lightwalletd server couldn't be reached.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="ref" style="margin-top:var(--vt-4)">Errors are JSON: <span class="mono">{"error": "…"}</span>. Treat any error as no information and apply your normal process. Full field reference: <a href="https://github.com/Samuel-Chuku/vintage/blob/main/docs/API.md" rel="noopener noreferrer">docs/API.md</a>. The same checks from a terminal: the <a href="/cli/">command line</a>.</p>
+</section>

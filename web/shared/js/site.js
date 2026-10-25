@@ -185,6 +185,21 @@
     $$('[data-spy]').forEach(function (s) { spy.observe(s); });
   }
 
+  /* ---- API page: [data-try="/path"] windows. The button calls that path and shows the JSON. ---- */
+  $$('[data-try]').forEach(function (w) {
+    var btn = $('.tkt', w), out = $('.tryout', w);
+    btn.addEventListener('click', function () {
+      btn.disabled = true; out.hidden = false; out.textContent = 'Asking the API…';
+      var t0 = Date.now();
+      busy(w, api(w.dataset.try)).then(function (r) {
+        btn.disabled = false;
+        var secs = ((Date.now() - t0) / 1000).toFixed(2);
+        out.textContent = r.status === 0 ? 'Couldn\'t reach the API. Try again in a minute.'
+          : 'HTTP ' + r.status + ' · ' + secs + ' s\n' + JSON.stringify(r.body, null, 2);
+      });
+    });
+  });
+
   /* ---- copy buttons: data-copy="<id of the element to copy>" ---- */
   $$('[data-copy]').forEach(function (b) {
     if (!navigator.clipboard) { b.hidden = true; return; }

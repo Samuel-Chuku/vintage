@@ -1,0 +1,148 @@
+<section class="page-head">
+  <div class="label eyebrow">How it works · Command line</div>
+  <h1 class="display">Check it yourself.</h1>
+  <p class="lead">The <span class="mono">vintage</span> command checks any Zcash mainnet transaction from your own machine, against the public chain. It needs no account, no key and no server of ours. It also makes Vintage payments from a wallet.</p>
+  <div class="toc" role="group" aria-label="On this page">
+    <a href="#install">Install</a><a href="#check">Check</a><a href="#send">Send</a><a href="#fresh">Fresh coins</a><a href="#registry-cmds">Registry</a><a href="#reference">Reference</a>
+  </div>
+</section>
+
+<section class="reveal">
+  <figure class="cli-shot">
+    <img src="/img/cli-verify.png" width="1200" height="560" alt="A terminal running vintage verify on mainnet transaction da9017e0, which prints PASS: these coins existed before block 3,525,709, then vintage age on a stranger's transaction d3252057, which prints that its coins were in the pool by block 3,499,995 on 29 September 2026, before the Bitget hack." loading="lazy">
+    <figcaption class="cap">Real output, 25 October 2026: our demo deposit passes, and a stranger's transaction from the day before the Bitget hack is dated to 29 September.</figcaption>
+  </figure>
+</section>
+
+<section id="install" class="reveal">
+  <div class="label eyebrow">01 / Install</div>
+  <h2 class="display">Build it.</h2>
+  <div class="two">
+    <div class="prose">
+      <p>Rust 1.89 or newer. The first build compiles the Zcash libraries, so it takes a while; later builds are quick.</p>
+      <p>Checking transactions needs nothing else. Sending (<span class="mono">vintage send</span>) also needs <a href="https://github.com/zcash/zcash-devtool" rel="noopener noreferrer">zcash-devtool</a> with the two small patches in <span class="mono">patches/</span>, next to the <span class="mono">vintage</span> binary. Vintage never reads your seed: zcash-devtool signs.</p>
+    </div>
+    <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Terminal</div><button class="quiet" type="button" data-copy="c-install">Copy</button></div>
+      <div class="body"><pre class="code" id="c-install"><span class="m">$</span> git clone https://github.com/Samuel-Chuku/vintage
+<span class="m">$</span> cd vintage
+<span class="m">$</span> cargo build --release
+<span class="m">$</span> ./target/release/vintage --help</pre></div></div>
+  </div>
+</section>
+
+<section id="check" class="reveal">
+  <div class="label eyebrow">02 / Check any transaction</div>
+  <h2 class="display">Three commands, no wallet.</h2>
+  <div class="cmds">
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage verify</div><button class="quiet" type="button" data-copy="c-verify">Copy</button></div>
+      <div class="body">
+        <p>Did every coin this transaction spends exist before an event, or before any block you name? Exit code <b>0</b> PASS, <b>1</b> FAIL, <b>2</b> not provable.</p>
+        <pre class="code" id="c-verify"><span class="m">$</span> vintage verify &lt;txid&gt; --before bitget-2026-09
+<span class="m">$</span> vintage verify &lt;txid&gt; --before 3501240 --json</pre>
+        <pre class="code out">PASS: These coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).
+evidence:    the anchor matched none of the 2890 distinct Ironwood roots at heights 3525709..=3530376; consensus requires it to be the root of an earlier block</pre>
+      </div></div>
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage age</div><button class="quiet" type="button" data-copy="c-age">Copy</button></div>
+      <div class="body">
+        <p>No event needed: the block by which every coin was in the pool, and which registered events that predates.</p>
+        <pre class="code" id="c-age"><span class="m">$</span> vintage age d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4</pre>
+        <pre class="code out">age:         in the pool by block 3499995 (2026-09-29 06:15 UTC)
+             ✓ bitget-2026-09         block   3501240  Bitget hot-wallet exploit: first shielding into Ironwood
+             ✓ vintage-demo-2026-10   block   3525709  Vintage demo, a staged event, not a real hack</pre>
+      </div></div>
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage sample</div><button class="quiet" type="button" data-copy="c-sample">Copy</button></div>
+      <div class="body">
+        <p>Lists real Ironwood transactions to try: from the last N blocks, or from any block with <span class="mono">--from</span>.</p>
+        <pre class="code" id="c-sample"><span class="m">$</span> vintage sample --blocks 20
+<span class="m">$</span> vintage sample --from 3500000 --blocks 1</pre>
+        <pre class="code out">3500000 d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4
+3500000 13ab80b092baae27d3c053bff2367d06e8a9e61e99f13eb907bd8c92825c78b8
+3500000 eb9f4285d97744bc67409247ee7cb2d4cc50ac9ebb75c09c588e35224d3395b4</pre>
+      </div></div>
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage tx</div><button class="quiet" type="button" data-copy="c-tx">Copy</button></div>
+      <div class="body">
+        <p>A transaction's Ironwood details: mined height and time, anchor, and what it spends.</p>
+        <pre class="code" id="c-tx"><span class="m">$</span> vintage tx da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7</pre>
+        <pre class="code out">mined:         3527813  (2026-10-23 12:17:14 UTC)
+ironwood:      3 action(s), spends enabled, outputs enabled
+anchor:        855ccc99a779159d9d98664d1a09737814b930cc782b149660a94a3881d98502</pre>
+      </div></div>
+  </div>
+</section>
+
+<section id="send" class="reveal">
+  <div class="label eyebrow">03 / Send with an older anchor</div>
+  <h2 class="display">Make a deposit that proves its age.</h2>
+  <div class="cmds">
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage status</div><button class="quiet" type="button" data-copy="c-status">Copy</button></div>
+      <div class="body">
+        <p>For each registered event: how much of a wallet's ZEC a Vintage send can prove predates it.</p>
+        <pre class="code" id="c-status"><span class="m">$</span> vintage status --wallet &lt;wallet-dir&gt; --sync</pre>
+      </div></div>
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage send</div><button class="quiet" type="button" data-copy="c-send">Copy</button></div>
+      <div class="body">
+        <p>Sends with an anchor before the event, so the transaction proves its inputs predate it. Always <span class="mono">--dry-run</span> first: it shows which notes qualify and stops before signing.</p>
+        <pre class="code" id="c-send"><span class="m">$</span> vintage send --wallet &lt;wallet-dir&gt; -i &lt;age-identity&gt; \
+    --to &lt;address&gt; --value &lt;zatoshis&gt; --before bitget-2026-09 --dry-run</pre>
+      </div></div>
+  </div>
+</section>
+
+<section id="fresh" class="reveal">
+  <div class="label eyebrow">04 / Coins received after the event</div>
+  <h2 class="display">Ask, pay, link.</h2>
+  <div class="cmds">
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage request</div><button class="quiet" type="button" data-copy="c-request">Copy</button></div>
+      <div class="body">
+        <p>Ask a payer for a Vintage payment. Prints a payment link (ZIP 321) whose memo names the event; the payer pays it with <span class="mono">vintage send --uri</span>.</p>
+        <pre class="code" id="c-request"><span class="m">$</span> vintage request --to &lt;your address&gt; --amount 0.5 --before bitget-2026-09
+<span class="m">$</span> vintage send --wallet &lt;payer-wallet&gt; -i &lt;age-identity&gt; --uri '&lt;URI&gt;' --dry-run</pre>
+      </div></div>
+    <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage link</div><button class="quiet" type="button" data-copy="c-link">Copy</button></div>
+      <div class="body">
+        <p>Link a deposit from a single-use receipt account to the Vintage payment that funded it. Discloses that one account's viewing key, nothing else. The rail can run <span class="mono">link verify</span> itself.</p>
+        <pre class="code" id="c-link"><span class="m">$</span> vintage link prove --deposit &lt;D&gt; --funding &lt;T1&gt; --wallet &lt;receipt-wallet&gt; --out bundle.json
+<span class="m">$</span> vintage link verify bundle.json --before bitget-2026-09</pre>
+        <pre class="code out">input 0:     0.00300000 ZEC from da9017e0fca0d8bd… output 1
+input 1:     0.00300000 ZEC from da9017e0fca0d8bd… output 2
+PASS: Every coin this deposit spends came from 1 payment whose coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).</pre>
+      </div></div>
+  </div>
+</section>
+
+<section id="registry-cmds" class="reveal">
+  <div class="label eyebrow">05 / The event registry</div>
+  <h2 class="display">Signed dates.</h2>
+  <div class="two">
+    <div class="prose">
+      <p>The registry in <span class="mono">registry/</span> is a list of dated events, signed with ed25519. <span class="mono">check</span> verifies the signature; the other two are for whoever maintains a registry.</p>
+    </div>
+    <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage registry</div><button class="quiet" type="button" data-copy="c-reg">Copy</button></div>
+      <div class="body"><pre class="code" id="c-reg"><span class="m">$</span> vintage registry check
+<span class="m">$</span> vintage registry keygen     <span class="m"># once: writes the private key and pubkey.hex</span>
+<span class="m">$</span> vintage registry sign       <span class="m"># after any edit to events.json</span></pre></div></div>
+  </div>
+</section>
+
+<section id="reference" class="reveal">
+  <div class="label eyebrow">06 / Reference</div>
+  <h2 class="display">Every command.</h2>
+  <div class="tblwrap">
+    <table class="reg">
+      <thead><tr><th>Command</th><th>What it does</th><th>Needs</th></tr></thead>
+      <tbody>
+        <tr><td class="num">verify &lt;txid&gt; --before &lt;H&gt;</td><td>PASS, FAIL or not provable against an event or block. <span class="mono">--json</span>, <span class="mono">--received-by</span> (a viewing key, checked locally).</td><td>Nothing</td></tr>
+        <tr><td class="num">age &lt;txid&gt;</td><td>The coins' proven age, and every registered event it predates. <span class="mono">--json</span>.</td><td>Nothing</td></tr>
+        <tr><td class="num">tx &lt;txid&gt;</td><td>A transaction's Ironwood details.</td><td>Nothing</td></tr>
+        <tr><td class="num">sample</td><td>Real Ironwood transactions to try. <span class="mono">--blocks N</span>, <span class="mono">--from H</span>.</td><td>Nothing</td></tr>
+        <tr><td class="num">status --wallet</td><td>How much of a wallet's ZEC predates each event. <span class="mono">--sync</span>.</td><td>A wallet</td></tr>
+        <tr><td class="num">send --wallet</td><td>Send with an anchor before the event. <span class="mono">--to</span>, <span class="mono">--value</span>, <span class="mono">--uri</span>, <span class="mono">--dry-run</span>.</td><td>A wallet, zcash-devtool</td></tr>
+        <tr><td class="num">request</td><td>A payment link asking for a Vintage payment.</td><td>Nothing</td></tr>
+        <tr><td class="num">link prove / verify</td><td>The receipt-account link for coins received after an event.</td><td>Prove: the receipt wallet</td></tr>
+        <tr><td class="num">witness --wallet</td><td>Read-only: which of a wallet's notes have a witness at a height.</td><td>A wallet</td></tr>
+        <tr><td class="num">registry check / keygen / sign</td><td>Verify or maintain the signed event registry.</td><td>Sign: the private key</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="ref" style="margin-top:var(--vt-4)">Options on every command: <span class="mono">--network main|test</span> (default main), <span class="mono">--server host:port</span> (any lightwalletd or Zaino server over TLS; default zec.rocks), <span class="mono">--registry dir</span>. Point <span class="mono">--server</span> at your own node and nobody else is involved. The same checks over HTTP: the <a href="/api/">API</a>.</p>
+</section>

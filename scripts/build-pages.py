@@ -39,6 +39,12 @@ PAGES = {
     "simulate": ("landing", "simulate/index.html", "simulate", "Simulate · Vintage Lab",
                  "A live lab session on Zcash mainnet data: drag your anchor to get a deposit through, move an event and "
                  "watch the verdict follow, and try five attacks against the real verifier.", ["site.js", "sim.js"]),
+    "cli": ("landing", "cli/index.html", "how", "Command line · Vintage",
+            "The vintage command: check any Zcash transaction's age from your own machine, make Vintage payments, "
+            "and link coins received after an event. Every command, with real output.", ["site.js"]),
+    "api": ("landing", "api/index.html", "how", "API · Vintage",
+            "The Vintage verifier over HTTP: /verify, /age, /verify-link, /events, /stats and /health, each with a "
+            "live try-it button on Zcash mainnet.", ["site.js"]),
     "app": ("app", "index.html", "verify", "Verify a deposit · Vintage",
             "Check whether every coin a Zcash transaction spends existed before a hack, a cutoff or any block you name. "
             "Live, from public chain data.", ["site.js", "verify.js"]),
@@ -110,7 +116,7 @@ def footer(site):
     home = "" if site == "landing" else HOME
     return f'''<footer><div class="wrap cols">
   <a class="mark" href="{home}/">VINTAGE</a>
-  <nav class="label" aria-label="Footer"><a href="{REPO}" rel="noopener noreferrer">GitHub {NE}</a><a href="{REPO}/blob/main/docs/THREAT_MODEL.md" rel="noopener noreferrer">Threat model {NE}</a><a href="{home}/how-it-works/#integrate">API</a><span>Zecathon 2026</span></nav>
+  <nav class="label" aria-label="Footer"><a href="{REPO}" rel="noopener noreferrer">GitHub {NE}</a><a href="{REPO}/blob/main/docs/THREAT_MODEL.md" rel="noopener noreferrer">Threat model {NE}</a><a href="{home}/api/">API</a><a href="{home}/cli/">Command line</a><span>Zecathon 2026</span></nav>
   <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests. Fonts are served from this site. Static site served by Cloudflare. Your txid goes from your browser straight to our verifier, which keeps no logs.</p>
 </div></footer>'''
 
