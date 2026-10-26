@@ -103,10 +103,19 @@
     if (!mn.hidden) menu(false);
     if (RM) { location.href = u.href; return; }
     root.classList.add('leaving');
+    loader(u);
     setTimeout(function () { location.href = u.href; }, 200);
   });
+  /* While the next page loads: a small window with a segmented bar and where we're going. CSS keeps it
+     hidden for the first 280 ms, so a fast load never shows it. */
+  function loader(u) {
+    var w = $('.pageload') || document.body.appendChild(document.createElement('div'));
+    w.className = 'pageload'; w.setAttribute('role', 'status');
+    w.innerHTML = '<div class="label">&gt; Opening <span></span></div><div class="seg-bar">' + new Array(13).join('<i></i>') + '</div>';
+    $('span', w).textContent = u.host + u.pathname;
+  }
   /* Coming back through the browser cache: undo the fade. */
-  addEventListener('pageshow', function () { root.classList.remove('leaving'); });
+  addEventListener('pageshow', function () { root.classList.remove('leaving'); var w = $('.pageload'); if (w) w.remove(); });
 
   /* ---- headline: release the rise mask once done ---- */
   var mega = $('#mega');

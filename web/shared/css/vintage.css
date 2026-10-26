@@ -780,3 +780,32 @@ h2.display.ep{font:700 clamp(1.25rem,2.6vw,2rem)/1.2 var(--vt-font-mono);text-tr
 @keyframes drop-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.drop{animation:none!important}.drop-btn svg{transition:none}}
 .mnav a.sub{padding-left:var(--vt-6)}
+
+/* Evidence, three columns (>= 1100px): each window is about 350px wide, too narrow for a label and a
+   value on one line, so values ran past the window edge. Stack the label above its value instead; the
+   value then has the full width and may wrap. Phones (below 600px) are as narrow, so they stack too; one
+   column from 600 to 1099px keeps the side-by-side rows. */
+@media(min-width:1100px),(max-width:599px){
+  .three .ev td{display:block;height:auto;white-space:normal;text-align:left;overflow-wrap:anywhere;border-bottom:0}
+  .three .ev td.wrap{text-align:left}
+  .three .ev td:first-child{padding-top:var(--vt-3);padding-bottom:var(--vt-1)}
+  .three .ev td:last-child{padding-bottom:var(--vt-3);border-bottom:var(--vt-rule)}
+  .three .ev tr:last-child td:last-child{border-bottom:0}
+}
+
+/* Page switch loader (site.js adds it on leaving). Hidden for the first 280 ms so a fast load shows
+   nothing, then a sweep of lit cells runs until the next page replaces this one. */
+.pageload{position:fixed;z-index:8;left:50%;top:50%;width:min(320px,calc(100vw - 32px));transform:translate(-50%,-50%);display:grid;gap:var(--vt-3);padding:var(--vt-4);
+  border:var(--vt-edge);border-radius:var(--vt-radius);background:var(--vt-surface);box-shadow:var(--vt-shadow-hard);
+  opacity:0;animation:pl-in var(--vt-dur-1) var(--vt-ease) 280ms forwards;pointer-events:none}
+.pageload .label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pageload .label span{text-transform:none;letter-spacing:0}
+.pageload .seg-bar i{animation:pl-cell 1.2s steps(1) infinite}
+.pageload .seg-bar i:nth-child(2){animation-delay:.1s}.pageload .seg-bar i:nth-child(3){animation-delay:.2s}
+.pageload .seg-bar i:nth-child(4){animation-delay:.3s}.pageload .seg-bar i:nth-child(5){animation-delay:.4s}
+.pageload .seg-bar i:nth-child(6){animation-delay:.5s}.pageload .seg-bar i:nth-child(7){animation-delay:.6s}
+.pageload .seg-bar i:nth-child(8){animation-delay:.7s}.pageload .seg-bar i:nth-child(9){animation-delay:.8s}
+.pageload .seg-bar i:nth-child(10){animation-delay:.9s}.pageload .seg-bar i:nth-child(11){animation-delay:1s}
+.pageload .seg-bar i:nth-child(12){animation-delay:1.1s}
+@keyframes pl-in{to{opacity:1}}
+@keyframes pl-cell{0%,49%{background:var(--vt-ink)}50%,100%{background:transparent}}
