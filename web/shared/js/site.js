@@ -42,6 +42,8 @@
     tg.dataset.mode = auto ? 'auto' : c;
     var label = 'Switch to the ' + next + ' theme. Now ' + c + (auto ? ', following your device' : '') + '.';
     tg.setAttribute('aria-label', label); tg.title = label;
+    /* Phone browsers tint their own bars with theme-color: keep it on the page's ground colour. */
+    $$('meta[name="theme-color"]').forEach(function (m) { m.content = c === 'dark' ? '#13120F' : '#E6D9BC'; });
   }
   tg.addEventListener('click', function () {
     var n = cur() === 'dark' ? 'light' : 'dark', mode = n === sys() ? 'auto' : n;
@@ -60,9 +62,16 @@
   var nav = $('#nav');
   function onScroll() { nav.classList.toggle('scrolled', scrollY > 8); }
   addEventListener('scroll', onScroll, { passive: true }); onScroll();
-  var mb = $('#menubtn'), mn = $('#mnav');
-  function menu(open) { mb.setAttribute('aria-expanded', open ? 'true' : 'false'); mn.hidden = !open; }
+  /* While the mobile menu is open, the page behind it is blurred and dimmed (a veil under the nav; a tap
+     on it closes the menu) and doesn't scroll. Growing past the phone layout closes it, so the page can
+     never stay locked. */
+  var mb = $('#menubtn'), mn = $('#mnav'), veil = document.createElement('div');
+  veil.className = 'menu-veil'; veil.setAttribute('aria-hidden', 'true'); document.body.appendChild(veil);
+  function menu(open) { mb.setAttribute('aria-expanded', open ? 'true' : 'false'); mn.hidden = !open; root.classList.toggle('menu-open', open); }
   mb.addEventListener('click', function () { menu(mn.hidden); });
+  veil.addEventListener('click', function () { menu(false); });
+  var wide = matchMedia('(min-width: 768px)');
+  if (wide.addEventListener) wide.addEventListener('change', function () { if (wide.matches) menu(false); });
   addEventListener('keydown', function (e) { if (e.key === 'Escape' && !mn.hidden) { menu(false); mb.focus(); } });
 
   /* ---- nav: "How it works" menu. CSS opens it on hover and focus; the arrow toggles what is on screen

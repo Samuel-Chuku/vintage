@@ -809,3 +809,33 @@ h2.display.ep{font:700 clamp(1.25rem,2.6vw,2rem)/1.2 var(--vt-font-mono);text-tr
 .pageload .seg-bar i:nth-child(12){animation-delay:1.1s}
 @keyframes pl-in{to{opacity:1}}
 @keyframes pl-cell{0%,49%{background:var(--vt-ink)}50%,100%{background:transparent}}
+
+/* Mobile menu open (site.js sets html.menu-open): the page under the nav is dimmed and blurred, and it
+   doesn't scroll. Only html is locked: locking body too makes body its own scroll container, and the
+   sticky nav then scrolls away. The menu lies over the page (not in its flow, so nothing shifts), a
+   solid panel that scrolls inside itself on a short screen. */
+html.menu-open{overflow:hidden;overscroll-behavior:none}
+.menu-veil{position:fixed;inset:0;z-index:4;visibility:hidden;opacity:0;background:color-mix(in srgb,var(--vt-ground) 50%,transparent);
+  transition:opacity var(--vt-dur-2) var(--vt-ease),visibility 0s linear var(--vt-dur-2)}
+html.menu-open .menu-veil{visibility:visible;opacity:1;transition:opacity var(--vt-dur-2) var(--vt-ease)}
+/* The blur is on the page itself: a backdrop-filter on the veil left sharp strips at its visible edges. */
+main,footer{transition:filter var(--vt-dur-2) var(--vt-ease)}
+@media(max-width:767px){html.menu-open main,html.menu-open footer{filter:blur(8px)}}
+@media(min-width:768px){.menu-veil{display:none}}
+.mnav{position:absolute;left:0;right:0;top:100%;max-height:calc(100dvh - 64px);overflow-y:auto;overscroll-behavior:contain;border-bottom:var(--vt-edge)}
+
+/* Phones: the theme and Menu buttons look 32px tall; their touch area is 44px. iOS must not enlarge text
+   on rotation. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.menu-btn{position:relative}
+.toggle::before,.menu-btn::before{content:"";position:absolute;inset:-8px -6px}
+/* Without JavaScript the menu is always shown as a list: keep it in the page flow so it covers nothing. */
+@media(scripting:none){.mnav{position:static;max-height:none;border-bottom:0}}
+/* Touch screens: the text buttons (Copy, Paste, Try a real example) and the footer links look 12 to 16px
+   tall; give them a 44px touch area without changing how they look. */
+@media(pointer:coarse),(max-width:767px){
+  .quiet{position:relative}
+  .quiet::before{content:"";position:absolute;inset:-16px -8px}
+  footer nav{row-gap:0}
+  footer nav a,footer nav span{display:inline-flex;align-items:center;min-height:44px}
+}

@@ -189,6 +189,8 @@ def page(name):
 <title>{title}</title>
 <meta name="description" content="{desc}">
 {robots}<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#E6D9BC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13120F" media="(prefers-color-scheme: dark)">
 <meta http-equiv="Content-Security-Policy" content="{CSP}">
 <link rel="canonical" href="{canonical}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
