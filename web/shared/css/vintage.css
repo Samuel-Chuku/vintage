@@ -386,7 +386,9 @@ main :is(p,li,td,dd,pre,.s,.fact span) a:not(.tkt):not(.quiet):hover, .strip-t a
 /* Page transitions: arrive with a short rise, leave with a fade. Durations are tokens, so reduced
    motion zeroes them. */
 @keyframes vt-arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-main,footer{animation:vt-arrive var(--vt-dur-3) var(--vt-ease) both}
+/* backwards, not both: a transform held after the animation would make main the containing block for
+   position:fixed children (the docked switcher). */
+main,footer{animation:vt-arrive var(--vt-dur-3) var(--vt-ease) backwards}
 html.leaving main,html.leaving footer{opacity:0;transform:translateY(-4px);transition:opacity var(--vt-dur-2) var(--vt-ease),transform var(--vt-dur-2) var(--vt-ease)}
 @media(prefers-reduced-motion:reduce){main,footer{animation:none}html.leaving main,html.leaving footer{transition:none}}
 
@@ -732,15 +734,24 @@ h2.display.ep{font:700 clamp(1.25rem,2.6vw,2rem)/1.2 var(--vt-font-mono);text-tr
 .tryout[hidden]{display:none}
 .try .body p{margin:0;font-size:var(--vt-text-sm);color:var(--vt-ink-2)}
 
-/* How it works / Command line / API: one switcher, pinned under the main nav. */
-.subnav{position:sticky;top:72px;z-index:4;display:flex;width:max-content;max-width:100%;margin:var(--vt-6) 0 0;padding:4px;gap:4px;
+/* How it works / Command line / API: one switcher at the top of the page. Once scrolled past, on screens
+   with room in the left margin (site.js adds .docked), it slides into that margin as a vertical rail, so it
+   never covers text. Narrower screens: it simply scrolls away. */
+.subnav-slot{height:44px;margin:var(--vt-6) 0 0}
+.subnav{display:flex;width:max-content;max-width:100%;padding:4px;gap:4px;
   border:var(--vt-edge);border-radius:var(--vt-radius-sm);background:var(--vt-surface);box-shadow:var(--vt-shadow-small)}
 .subnav a{display:inline-flex;align-items:center;height:32px;padding:0 var(--vt-3);border-radius:6px;color:var(--vt-ink);text-decoration:none;white-space:nowrap;
   font:600 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase}
 .subnav a:hover{background:var(--vt-sunk)}
 .subnav a[aria-current="page"]{background:var(--vt-ink);color:var(--vt-surface)}
 .subnav a:focus-visible{outline:2px solid var(--vt-focus);outline-offset:2px}
-.subnav + .page-head{padding-top:var(--vt-8)}
+.subnav-slot + .page-head{padding-top:var(--vt-8)}
 @media(max-width:400px){.subnav a{padding:0 var(--vt-2);letter-spacing:.04em}}
-/* Pages with the switcher: in-page links land below both bars. */
-body:has(.subnav) section{scroll-margin-top:136px}
+.subnav.docked{position:fixed;z-index:4;top:96px;flex-direction:column;align-items:stretch;
+  left:max(16px, calc((100vw - var(--vt-content-max)) / 2 - 156px));
+  animation:subnav-dock var(--vt-dur-3) var(--vt-ease) both}
+.subnav.docked a{justify-content:flex-start}
+.subnav.undock{animation:subnav-undock var(--vt-dur-2) var(--vt-ease) both}
+@keyframes subnav-dock{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+@keyframes subnav-undock{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.subnav.docked,.subnav.undock{animation:none}}

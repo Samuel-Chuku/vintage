@@ -96,7 +96,7 @@ def subnav(name):
         return ""
     links = "".join(
         f'<a href="{href}"{' aria-current="page"' if key == name else ""}>{label}</a>' for key, label, href in SUBNAV)
-    return f'<nav class="subnav" aria-label="How it works">{links}</nav>\n'
+    return f'<div class="subnav-slot"><nav class="subnav" aria-label="How it works">{links}</nav></div>\n'
 
 
 def url(site, path):

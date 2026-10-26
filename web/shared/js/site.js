@@ -185,6 +185,21 @@
     $$('[data-spy]').forEach(function (s) { spy.observe(s); });
   }
 
+  /* ---- How it works switcher: docks into the left margin once its slot scrolls out of view, but only
+     when the margin is wide enough for it (no docking over text). ---- */
+  var slot = $('.subnav-slot');
+  if (slot && 'IntersectionObserver' in window) {
+    var sn = $('.subnav', slot), room = matchMedia('(min-width: 1480px)'), out = false;
+    var place = function () {
+      var dock = out && room.matches;
+      if (dock === sn.classList.contains('docked')) return;
+      sn.classList.toggle('docked', dock);
+      sn.classList.toggle('undock', !dock);
+    };
+    new IntersectionObserver(function (es) { out = !es[0].isIntersecting && es[0].boundingClientRect.top < 0; place(); }).observe(slot);
+    if (room.addEventListener) room.addEventListener('change', place);
+  }
+
   /* ---- API page: [data-try="/path"] windows. The button calls that path and shows the JSON. ---- */
   $$('[data-try]').forEach(function (w) {
     var btn = $('.tkt', w), out = $('.tryout', w);
