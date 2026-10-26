@@ -23,7 +23,8 @@
     deposit: D, funding: [{ txid: T1, outputs: [1, 2] }] };
   var FEE = 10000; /* zat: what the demo's real sends paid */
   var STEP = 100000; /* zat: the deposit stepper moves 0.001 ZEC */
-  /* The demo wallet's two real notes (BUILD_LOG, 21 Oct): 0.015 ZEC before the event, 0.005 ZEC after it. */
+  /* The demo wallet's two real notes (mainnet ef383512… and a4c7622f…, 21 Oct): 0.015 ZEC before the event,
+     0.005 ZEC after it. */
   var NOTES = [
     { zat: 1500000, h: 3525666, tx: FUND, label: 'Received before the event' },
     { zat: 500000, h: 3525726, tx: TAINT, label: 'Received after the event, from the event wallet', tainted: true }

@@ -65,6 +65,28 @@
   mb.addEventListener('click', function () { menu(mn.hidden); });
   addEventListener('keydown', function (e) { if (e.key === 'Escape' && !mn.hidden) { menu(false); mb.focus(); } });
 
+  /* ---- nav: "How it works" menu. CSS opens it on hover and focus; the arrow toggles what is on screen
+     (.shut hides it until the pointer or focus leaves); Escape or a click elsewhere closes it ---- */
+  var nd = $('.navdrop'), db = nd && $('.drop-btn', nd);
+  if (nd) {
+    var drop = function (open) { nd.classList.toggle('open', open); db.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+    // Not "is it on screen": a tap sets :hover before the click arrives, which would close it at once.
+    db.addEventListener('click', function () {
+      var close = nd.classList.contains('open') || db.matches(':focus-visible');
+      nd.classList.toggle('shut', close); drop(!close);
+    });
+    document.addEventListener('click', function (e) { if (!nd.contains(e.target)) drop(false); });
+    nd.addEventListener('keydown', function (e) {
+      // Chrome blurs the old element before checking the new one is focusable, so a menu shown only by
+      // focus would vanish mid-Tab. Pin it open first.
+      if (e.key === 'Tab' && getComputedStyle($('.drop', nd)).display !== 'none') drop(true);
+      if (e.key !== 'Escape') return;
+      drop(false); nd.classList.add('shut'); db.focus();
+    });
+    nd.addEventListener('mouseleave', function () { nd.classList.remove('shut'); });
+    nd.addEventListener('focusout', function (e) { if (!nd.contains(e.relatedTarget)) { nd.classList.remove('shut'); drop(false); } });
+  }
+
   /* ---- navigation: carry the theme across our two sites, and fade out before leaving ----
      usevintage.site and app.usevintage.site keep separate browser storage, so a chosen theme travels in
      the URL fragment (#theme=dark), which is never sent to a server; the next page applies and removes it. */

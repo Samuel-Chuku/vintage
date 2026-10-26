@@ -104,14 +104,31 @@ def url(site, path):
     return base + "/" + path.replace("index.html", "")
 
 
-def nav(site, current):
+def nav(site, current, name):
     home = "" if site == "landing" else HOME
-    links = []
+    links, full = [], []
     for key, label, href in NAV:
         h = href if href.startswith("http") else home + href
         cur = ' aria-current="page"' if key == current else ""
-        links.append(f'<a href="{h}" data-nav="{key}"{cur}>{label}</a>')
-    full = "".join(f'<span class="hide-sm">{a}</span>' for a in links)
+        a = f'<a href="{h}" data-nav="{key}"{cur}>{label}</a>'
+        if key != "how":
+            links.append(a)
+            full.append(f'<span class="hide-sm">{a}</span>')
+            continue
+        # "How it works" opens a menu of its three pages: on hover or focus (CSS, works without JS), or the
+        # arrow button (site.js) for touch screens. The mobile menu lists them indented under it.
+        subs = [(k, l, home + p) for k, l, p in SUBNAV]
+        # Mobile menu: the parent row is marked only on the overview, its child rows on their own pages.
+        mcur = ' aria-current="page"' if name == "how-it-works" else ""
+        links.append(f'<a href="{h}" data-nav="{key}"{mcur}>{label}</a>')
+        drop = "".join(f'<a href="{p}"{' aria-current="page"' if k == name else ""}>{l}</a>' for k, l, p in subs)
+        full.append(f'<span class="hide-sm navdrop">{a}<button type="button" class="drop-btn" aria-expanded="false" '
+                    f'aria-controls="navdrop" aria-label="How it works pages"><svg viewBox="0 0 12 12" width="12" height="12" '
+                    f'aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" '
+                    f'stroke-linecap="square"/></svg></button><span class="drop" id="navdrop">{drop}</span></span>')
+        links += [f'<a class="sub" href="{p}"{' aria-current="page"' if k == name else ""}>{l}</a>'
+                  for k, l, p in subs[1:]]
+    full = "".join(full)
     return f'''<nav class="nav" id="nav" aria-label="Main"><div class="wrap">
   <a class="mark" href="{home or ''}/">VINTAGE</a>
   <div class="navlinks label">
@@ -193,7 +210,7 @@ def page(name):
 
 '''
     js = "".join(f'<script src="/js/{s}?v={VERSION}" defer></script>\n' for s in scripts)
-    html = head + nav(site, current) + f'\n\n<main class="wrap" id="main">\n{body}</main>\n\n' + footer(site) + "\n\n" + js + "</body>\n</html>\n"
+    html = head + nav(site, current, name) + f'\n\n<main class="wrap" id="main">\n{body}</main>\n\n' + footer(site) + "\n\n" + js + "</body>\n</html>\n"
     dest = DIST / site / out
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(html)

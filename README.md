@@ -15,7 +15,7 @@ ZECATHON 2026, Core & Tooling track. Live on Zcash mainnet:
 
 | | |
 |---|---|
-| Website | [usevintage.site](https://usevintage.site) ([how it works](https://usevintage.site/how-it-works/), [simulation](https://usevintage.site/simulate/)) |
+| Website | [usevintage.site](https://usevintage.site) ([how it works](https://usevintage.site/how-it-works/), [command line](https://usevintage.site/cli/), [API](https://usevintage.site/api/), [lab](https://usevintage.site/simulate/)) |
 | Verifier | [app.usevintage.site](https://app.usevintage.site) |
 | API | `https://api.usevintage.site` ([reference](docs/API.md), [integration guide](docs/INTEGRATION.md)) |
 | Mainnet proof | [`da9017e0…e3a7`](https://mainnet.zcashexplorer.app/transactions/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7): a Vintage payment that funded a NEAR Intents swap, verified `PASS` |
@@ -23,8 +23,8 @@ ZECATHON 2026, Core & Tooling track. Live on Zcash mainnet:
 ## Why
 
 - When stolen funds enter the shielded pool, exit rails can't tell whether a shielded deposit contains
-  them. NEAR Intents says its SHIELD screening blocked more than $50M of attempted Bitget-linked swaps. Since the
-  2026-09-30 Bitget inflow into Ironwood, it can't tell whether any shielded deposit contains those coins.
+  them. NEAR Intents says its SHIELD screening blocked more than $50M of attempted Bitget-linked swaps, but
+  since the 2026-09-30 Bitget inflow into Ironwood, that screening has nothing to check on a shielded deposit.
 - A Zcash forum thread (*"My experience exiting shielded ZEC from Zodl to NEAR Intents: $589k USDT still
   held 50 days…"*, forum.zcashcommunity.com/t/57497) shows the cost. The only "proof of innocence"
   available was to give up privacy: the author volunteered addresses, transaction hashes and swap history, and
@@ -160,12 +160,17 @@ Full reference, including `POST /verify-link`: **[docs/API.md](docs/API.md)**.
   at **3,501,240** (876.43 ZEC), [`64e5a66c…73a2`](https://mainnet.zcashexplorer.app/transactions/64e5a66cce034745dfe1447b4779ce37b910d99365d0583cef65eb0504b573a2)
   at 3,501,242, [`61d2cb33…b258`](https://mainnet.zcashexplorer.app/transactions/61d2cb335127636f2854e587dd41fecf2ec31c9c1e9e5e5b543c3a416048b258)
   at 3,501,265; 2,746.31 ZEC in total. Registry event `bitget-2026-09` (type `hack`).
+- **A stranger's coins from before the real hack:**
+  [`d3252057…41e4`](https://mainnet.zcashexplorer.app/transactions/d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4),
+  mined at block 3,500,000 on 29 September, is not ours. Checked against `bitget-2026-09` it **PASSES**: its
+  coins were in the pool by block 3,499,995. Six of six sampled transactions from that day passed
+  (`vintage sample --from 3500000`).
 - **Ordinary mainnet traffic:** 119 Ironwood transactions from 40 recent blocks, each verified against
   Bitget: **70 FAIL** (all with anchors 1–11 blocks old), **49 NOT_PROVABLE** (transparent inputs),
   **0 PASS**. No false PASS.
 - **Testnet:** a Vintage payment with an **8,716-block-old** anchor was accepted by consensus
-  (`2bdc5ced…c19f`, block 4,532,044); the receipt-account link on testnet, and four tampered link
-  bundles that correctly FAIL, are in the build notes.
+  (`2bdc5ced…c19f`, block 4,532,044). The receipt-account link was rehearsed there first, and the
+  negative cases (wrong viewing key, an earlier event height, a deposit with a dummy input) correctly FAIL.
 
 ## Benchmarks
 
@@ -189,12 +194,16 @@ key, works as a research prototype on the mainnet deposit, using the existing Ir
 forgeries rejected). It is unreviewed. Plan: **[docs/ROADMAP.md](docs/ROADMAP.md)**. A draft ZIP describing the
 property is in **[docs/ZIP_DRAFT.md](docs/ZIP_DRAFT.md)**.
 
+Upstream: [librustzcash#3196](https://github.com/zcash/librustzcash/issues/3196) asks for a transfer
+proposal at a caller-chosen anchor height. Today `vintage send` reaches it by computing the confirmation
+count from the wallet's tip and refusing to sign if the resulting anchor is not the one it asked for.
+
 ## Repository
 
 ```
 crates/vintage-core       no I/O: grid anchors, tx parsing, the verdict, the signed event registry
 crates/vintage-verifier   lightwalletd access, roots from compact blocks + cache, reports, the link check
-crates/vintage-cli        `vintage`: verify, send, request, link, status, tx, witness, registry
+crates/vintage-cli        `vintage`: verify, age, send, request, link, status, sample, tx, witness, registry
 crates/vintage-api        `vintage-api`: the HTTP verifier
 registry/                 events.json + ed25519 signature + public key
 demo/                     the mainnet demo: how to reproduce it, and the published link bundle

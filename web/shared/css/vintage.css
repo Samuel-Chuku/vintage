@@ -755,3 +755,28 @@ h2.display.ep{font:700 clamp(1.25rem,2.6vw,2rem)/1.2 var(--vt-font-mono);text-tr
 @keyframes subnav-dock{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
 @keyframes subnav-undock{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.subnav.docked,.subnav.undock{animation:none}}
+
+/* Main nav: "How it works" opens a small window listing its three pages. Hover or keyboard focus opens it
+   (no JS needed); the arrow button toggles it (.open, or .shut to hide it while hovered or focused),
+   and Escape adds .shut until the pointer or focus leaves. A transparent bridge (::before) keeps
+   it open while the pointer moves down from the link. */
+.navlinks .hide-sm.navdrop{display:none}
+@media(min-width:768px){.navlinks .hide-sm.navdrop{display:inline-flex}}
+.navdrop{position:relative;align-items:center;gap:4px}
+.drop-btn{display:inline-grid;place-items:center;width:24px;height:24px;padding:0;border:0;background:none;color:var(--vt-ink);cursor:pointer}
+.drop-btn svg{transition:transform var(--vt-dur-1) var(--vt-ease)}
+.drop{display:none;position:absolute;z-index:6;top:calc(100% + 16px);left:-16px;min-width:200px;padding:4px;flex-direction:column;gap:4px;
+  border:var(--vt-edge);border-radius:var(--vt-radius);background:var(--vt-surface);box-shadow:var(--vt-shadow-hard)}
+.drop::before{content:"";position:absolute;left:0;right:0;top:-20px;height:20px}
+.navdrop:has(a:focus) .drop,.navdrop:has(.drop-btn:focus-visible) .drop,.navdrop.open .drop{display:flex;animation:drop-in var(--vt-dur-1) var(--vt-ease) both}
+.navdrop:hover .drop{display:flex;animation:drop-in var(--vt-dur-1) var(--vt-ease) both}.navdrop:hover .drop-btn svg{transform:rotate(180deg)}
+.navdrop:has(a:focus) .drop-btn svg,.navdrop:has(.drop-btn:focus-visible) .drop-btn svg,.navdrop.open .drop-btn svg{transform:rotate(180deg)}
+.navdrop.shut .drop{display:none!important}.navdrop.shut .drop-btn svg{transform:none!important}
+.navlinks .drop a{display:flex;align-items:center;height:36px;padding:0 var(--vt-3);border:0;border-radius:var(--vt-radius-sm);white-space:nowrap;
+  font:600 var(--vt-text-xs)/1 var(--vt-font-mono);letter-spacing:var(--vt-tracking-caps);text-transform:uppercase}
+.navlinks .drop a:hover{background:var(--vt-sunk);text-decoration:none}
+.navlinks .drop a[aria-current="page"]{background:var(--vt-ink);color:var(--vt-surface)}
+.navlinks .drop a:focus-visible{outline:2px solid var(--vt-focus);outline-offset:2px}
+@keyframes drop-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.drop{animation:none!important}.drop-btn svg{transition:none}}
+.mnav a.sub{padding-left:var(--vt-6)}
