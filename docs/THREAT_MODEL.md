@@ -51,7 +51,7 @@ the depositor is. **Wallets should never use it by default**, and `vintage send`
 
 - It's **opt-in** and **marks no one**. No coin is ever labelled bad, and no list of addresses or people
   exists anywhere.
-- It replaces something worse. Today, after a hack, the only "proof of innocence" available is to
+- It replaces something worse. Today, the only "proof of innocence" available is to
   unshield your history or hand over a viewing key (see the Zcash forum thread on a $589k NEAR Intents
   hold). Or rails screen everyone with blanket suspicion. A one-transaction proof that reveals only "older
   than H" is less invasive than either.

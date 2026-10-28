@@ -185,7 +185,7 @@ Mainnet, checking against Bitget (~25,000 blocks, ~16,000 distinct Ironwood root
 | One root request per block (naive) | 294 s |
 | First check, 16 / 4 / 2 / 1 cores | 19–25 / 41 / 64 / 90 s |
 | CLI repeat check (cache) | 1.5–1.7 s |
-| API repeat check (public server) | 0.06 s on the server |
+| API repeat check (public server) | 0.06–0.13 s on the server |
 | Link check (CLI, mainnet demo) | 1.75 s |
 
 Peak memory is 15–17 MB. The cache is about 2 MB.
