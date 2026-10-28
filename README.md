@@ -97,7 +97,11 @@ vintage age <txid>                                   # no event: when were these
 vintage sample --from 3500000 --blocks 1             # real Ironwood txids to try (here: the day before Bitget)
 ```
 
-Exit codes: `0` PASS, `1` FAIL, `2` not provable. Or use the public verifier, no install:
+Exit codes: `0` PASS, `1` FAIL, `2` not provable. On a terminal, `verify`, `age` and `link verify` open
+with the Vintage wordmark and colour the result: gold for a proven PASS or age, bold for FAIL. Output is
+plain text when piped, with `--json`, or with `NO_COLOR=1`, so scripts see exactly the same lines.
+
+Or use the public verifier, no install:
 
 ```sh
 curl 'https://api.usevintage.site/verify/<txid>?before=bitget-2026-09'

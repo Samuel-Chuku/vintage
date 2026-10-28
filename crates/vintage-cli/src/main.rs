@@ -13,6 +13,7 @@ mod registry_cmd;
 mod request;
 mod send;
 mod status;
+mod style;
 mod witness;
 
 #[derive(Parser)]
@@ -309,25 +310,25 @@ async fn main() -> Result<()> {
                 }
                 println!("{}", serde_json::to_string_pretty(&v)?);
             } else {
-                println!("txid:        {}", d.txid);
-                println!("mined:       {}", d.mined_height.map_or("not yet".into(), |h| h.to_string()));
+                style::banner(network.name());
+                println!("{}{}", style::key("txid:        "), d.txid);
+                println!("{}{}", style::key("mined:       "), d.mined_height.map_or("not yet".into(), |h| h.to_string()));
                 if let Some(a) = &d.anchor {
-                    println!("anchor:      {a}");
+                    println!("{}{a}", style::key("anchor:      "));
                 }
                 if let Some(a) = &d.age {
-                    println!(
-                        "age:         in the pool {} block {} ({})",
+                    println!("{}in the pool {} block {} ({})", style::key("age:         "),
                         if a.exact { "by" } else { "at least by" },
                         a.existed_by_height,
                         vintage_core::time::utc(a.existed_by_time)
                     );
                     for e in &events {
                         let ok = a.existed_by_height < e.height;
-                        println!("             {} {:<22} block {:>9}  {}", if ok { "✓" } else { "×" }, e.id, e.height, e.label);
+                        println!("             {} {:<22} block {:>9}  {}", if ok { style::gold("✓") } else { style::key("×") }, e.id, e.height, e.label);
                     }
                 }
-                println!("time:        {:.2}s\n", d.elapsed_secs);
-                println!("{}: {}", d.verdict, d.summary);
+                println!("{}{:.2}s\n", style::key("time:        "), d.elapsed_secs);
+                println!("{}", style::verdict(d.verdict, &d.summary));
             }
             std::process::exit(if d.verdict == "DATED" { 0 } else { 2 });
         }
@@ -371,17 +372,17 @@ async fn main() -> Result<()> {
                 std::process::exit(code);
             }
             let (h, label) = (r.before.height, &r.before.label);
-            println!("txid:        {}", r.txid);
-            println!("network:     {}", r.network);
-            println!("mined:       {}", r.mined_height.map_or("not yet".into(), |h| h.to_string()));
-            println!("chain tip:   {}", r.chain_tip);
-            println!("before H:    {h}  ({label})");
+            style::banner(network.name());
+            println!("{}{}", style::key("txid:        "), r.txid);
+            println!("{}{}", style::key("network:     "), r.network);
+            println!("{}{}", style::key("mined:       "), r.mined_height.map_or("not yet".into(), |h| h.to_string()));
+            println!("{}{}", style::key("chain tip:   "), r.chain_tip);
+            println!("{}{h}  ({label})", style::key("before H:    "));
             if let Some(a) = &r.anchor {
-                println!("anchor:      {a}");
+                println!("{}{a}", style::key("anchor:      "));
             }
             if let Some(e) = &r.evidence {
-                println!(
-                    "checked:     {} blocks ({h}..={}) = {} distinct Ironwood roots",
+                println!("{}{} blocks ({h}..={}) = {} distinct Ironwood roots", style::key("checked:     "),
                     e.blocks_covered, r.chain_tip, e.distinct_roots
                 );
                 println!(
@@ -390,17 +391,16 @@ async fn main() -> Result<()> {
                 );
             }
             if let Some(a) = &r.age {
-                println!(
-                    "age:         in the pool {} block {} ({})",
+                println!("{}in the pool {} block {} ({})", style::key("age:         "),
                     if a.exact { "by" } else { "at least by" },
                     a.existed_by_height,
                     vintage_core::time::utc(a.existed_by_time)
                 );
             }
-            println!("time:        {:.2}s", r.elapsed_secs);
+            println!("{}{:.2}s", style::key("time:        "), r.elapsed_secs);
             if let Some(rs) = &received {
                 let total: u64 = rs.iter().map(|x| x.value).sum();
-                println!("received:    {} by this viewing key, in {} output(s)", send::fmt_amount(network, total), rs.len());
+                println!("{}{} by this viewing key, in {} output(s)", style::key("received:    "), send::fmt_amount(network, total), rs.len());
                 for x in rs {
                     println!(
                         "             output {}  {}  {}{}",
@@ -417,33 +417,35 @@ async fn main() -> Result<()> {
                 let found: Vec<u32> =
                     below.iter().filter(|(_, root)| hex::encode(root) == *a).map(|(k, _)| *k).collect();
                 match (found.first(), found.last()) {
-                    (Some(lo), Some(hi)) => println!("located:     anchor = Ironwood root at heights {lo}..={hi}"),
-                    _ => println!("located:     anchor not within {from}..{}", h - 1),
+                    (Some(lo), Some(hi)) => println!("{}anchor = Ironwood root at heights {lo}..={hi}", style::key("located:     ")),
+                    _ => println!("{}anchor not within {from}..{}", style::key("located:     "), h - 1),
                 }
             }
             println!();
             match (r.verdict, r.matched_heights) {
                 ("PASS", Some([lo, hi])) => {
-                    println!("PASS: {}", r.summary);
+                    println!("{}", style::verdict("PASS", &r.summary));
                     let first = r.age.as_ref().map_or(h - 1, |a| a.existed_by_height);
                     println!(
-                        "evidence:    the anchor is the Ironwood root at heights {first}..={hi}; blocks {lo}..={hi} added no notes, so the pool it names already existed at block {first}, before {h}"
+                        "{}the anchor is the Ironwood root at heights {first}..={hi}; blocks {lo}..={hi} added no notes, so the pool it names already existed at block {first}, before {h}",
+                        style::key("evidence:    ")
                     );
                 }
                 ("PASS", None) => {
-                    println!("PASS: {}", r.summary);
+                    println!("{}", style::verdict("PASS", &r.summary));
                     if let Some(e) = &r.evidence {
                         println!(
-                            "evidence:    the anchor matched none of the {} distinct Ironwood roots at heights {h}..={}; consensus requires it to be the root of an earlier block",
+                            "{}the anchor matched none of the {} distinct Ironwood roots at heights {h}..={}; consensus requires it to be the root of an earlier block",
+                            style::key("evidence:    "),
                             e.distinct_roots, r.chain_tip
                         );
                     }
                 }
                 ("FAIL", Some([lo, hi])) => {
-                    println!("FAIL: {}", r.summary);
-                    println!("evidence:    the anchor is the Ironwood root at heights {lo}..={hi}, not before block {h}");
+                    println!("{}", style::verdict("FAIL", &r.summary));
+                    println!("{}the anchor is the Ironwood root at heights {lo}..={hi}, not before block {h}", style::key("evidence:    "));
                 }
-                _ => println!("{}: {}", r.verdict, r.summary),
+                _ => println!("{}", style::verdict(r.verdict, &r.summary)),
             }
             std::process::exit(code);
         }

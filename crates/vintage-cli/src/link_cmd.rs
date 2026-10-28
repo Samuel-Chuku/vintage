@@ -74,10 +74,11 @@ pub(crate) async fn run(network: VintageNetwork, server: &str, registry: &std::p
                 std::process::exit(code);
             }
             let zec = |z| fmt_amount(network, z);
-            println!("deposit:     {}  (mined {})", r.deposit.txid, r.deposit.mined_height.map_or("not yet".into(), |h| h.to_string()));
-            println!("before H:    {}  ({})", r.before.height, r.before.label);
+            crate::style::banner(network.name());
+            println!("{}{}  (mined {})", crate::style::key("deposit:     "), r.deposit.txid, r.deposit.mined_height.map_or("not yet".into(), |h| h.to_string()));
+            println!("{}{}  ({})", crate::style::key("before H:    "), r.before.height, r.before.label);
             for f in &r.funding {
-                println!("funding:     {}  {}  {}", f.txid, f.verdict, f.anchor.as_deref().map_or("", |_| "(age check)"));
+                println!("{}{}  {}  {}", crate::style::key("funding:     "), f.txid, f.verdict, f.anchor.as_deref().map_or("", |_| "(age check)"));
                 for o in &f.received {
                     println!(
                         "               output {}  {:>16}  {}{}",
@@ -94,10 +95,10 @@ pub(crate) async fn run(network: VintageNetwork, server: &str, registry: &std::p
                     None => println!("input {}:     NOT covered by the disclosed payments", i.action),
                 }
             }
-            println!("covered:     {}", zec(r.covered_value_zat));
-            println!("disclosed:   {}", r.disclosed);
-            println!("time:        {:.2}s\n", r.elapsed_secs);
-            println!("{}: {}", r.verdict, r.summary);
+            println!("{}{}", crate::style::key("covered:     "), zec(r.covered_value_zat));
+            println!("{}{}", crate::style::key("disclosed:   "), r.disclosed);
+            println!("{}{:.2}s\n", crate::style::key("time:        "), r.elapsed_secs);
+            println!("{}", crate::style::verdict(r.verdict, &r.summary));
             std::process::exit(code);
         }
     }

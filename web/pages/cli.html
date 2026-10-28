@@ -36,7 +36,7 @@
   <div class="cmds">
     <div class="win cmd"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">vintage verify</div><button class="quiet" type="button" data-copy="c-verify">Copy</button></div>
       <div class="body">
-        <p>Did every coin this transaction spends exist before an event, or before any block you name? Exit code <b>0</b> PASS, <b>1</b> FAIL, <b>2</b> not provable.</p>
+        <p>Did every coin this transaction spends exist before an event, or before any block you name? Exit code <b>0</b> PASS, <b>1</b> FAIL, <b>2</b> not provable. On a terminal it opens with the Vintage wordmark and colours the result; piped, with <code>--json</code> or with <code>NO_COLOR=1</code>, the output stays plain.</p>
         <pre class="code" id="c-verify"><span class="m">$</span> vintage verify &lt;txid&gt; --before bitget-2026-09
 <span class="m">$</span> vintage verify &lt;txid&gt; --before 3501240 --json</pre>
         <pre class="code out">PASS: These coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).
