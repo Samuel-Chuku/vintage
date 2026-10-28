@@ -2,6 +2,9 @@
 
 - [One-hop provenance](#one-hop-provenance): proving that newer coins came from a payment whose inputs
   predate H, with no key disclosed. **Prototype working on mainnet data**: `research/zk-link`.
+- [Send from any wallet](#send-from-any-wallet-proof-receipts-and-wallet-integration): a proof for
+  any payment, not only exchange deposits, and a path to Vintage sends from other wallets.
+  **Researched Oct 28; nothing built yet.**
 - [Other items](#other-items)
 
 ## One-hop provenance
@@ -149,18 +152,119 @@ deposit and payment txids, so proofs can't be reused for another pair.
 | 2 | Value coverage with the *coverage* policy, for deposits with dummy inputs | with 1b |
 | 3 | Written spec (ZIP 311 extension draft), review, *strict* policy with wallet support | after the hackathon |
 
+## Send from any wallet: proof receipts and wallet integration
+
+### The goal
+
+Someone sends ZEC to anyone (a friend, a shop, their own address), pastes the transaction hash, and gets
+a proof that none of the coins it spent came from an event. Later: they do it from the wallet they
+already use, or from a website, with the proof produced alongside the payment.
+
+### What already works
+
+- A Vintage send can go to **any address**; nothing about it is specific to exchanges.
+- Any transaction hash can be checked, and the result shared as a link that re-checks itself:
+  `app.usevintage.site/#tx=<hash>&before=<event>`. "Age only" needs no event at all.
+- A PASS covers every coin the transaction **spent**, whatever those coins' earlier history. It says
+  nothing about the rest of the wallet; proving a whole wallet clean means disclosing its viewing key,
+  the cost Vintage exists to avoid.
+
+The limit: the proof has to be built in when the transaction is signed. An ordinary wallet anchors a few
+blocks back, so pasting its hash afterwards proves nothing. Everything below is about getting other
+wallets to sign Vintage sends.
+
+### What we found (Oct 28, 2026)
+
+- **No website-to-wallet standard exists for shielded Zcash yet.** A shielded-Zcash app noted on Oct 23
+  that there is "no dApp 'connect wallet' standard for shielded Zcash (no browser-extension provider,
+  WalletConnect is EVM-only)" and used a ZIP 321 payment request instead
+  ([zpredict#134](https://github.com/zpredict/zpredict/issues/134)). Emerging: the Noir browser wallet
+  advertises a TypeScript dApp SDK (private beta, pools not stated,
+  [repo](https://github.com/NoirWallet/noir-wallet)); Zillions (launched Oct 27) describes a proposed
+  "Zconnect" interface for web apps to request signing, as a draft
+  ([crypto.news](https://crypto.news/zcash-zillions-browser-wallet-ledger-support/)); ChainSafe's MetaMask
+  Snap signs PCZTs inside MetaMask, per its audit, but was announced for Sapling
+  ([ChainSafe](https://blog.chainsafe.io/zcash-in-the-browser-bringing-shielded-zec-to-metamask/),
+  [Hacken](https://hacken.io/audits/zcash/dapp-zcash-snap-may2025/)). None is confirmed for Ironwood.
+- **ZIP 321 payment requests can't ask for an anchor**, but they can *require* a parameter. Only
+  `address`, `amount`, `req-asset`, `label`, `memo` and `message` are defined. "If a parser does not
+  recognize any variables which are prefixed with `req-`, it MUST consider the entire URI invalid";
+  others "SHOULD be ignored" ([ZIP 321](https://zips.z.cash/zip-0321)). So a `req-`-prefixed "before H"
+  parameter fails safe: a wallet that doesn't understand it refuses the request, instead of paying
+  without the proof. Today `vintage request` puts `VINTAGE before=H` in the memo, which wallets ignore.
+- **In v6 transactions the anchor can be set after signing.** [ZIP 374](https://zips.z.cash/zip-0374)
+  (PCZT, Draft): "Signatures (spend authorization signatures and binding signatures) do not commit to
+  the anchors or witnesses", "A shielded bundle anchor MAY be absent until proving", and "The
+  transaction identifier is unchanged by re-anchoring". This applies to Ironwood.
+- **librustzcash implements it** (read at eb38d7a): `pczt::roles::updater::Updater::set_ironwood_anchor`
+  and `set_ironwood_spend_witnesses` (v6 on NU6.3 or NU7; refuses once an Ironwood proof exists, and
+  refuses to *replace* a different anchor); `Redactor` can `clear_anchor` first.
+  `zcash_client_backend` has `create_pczt_from_proposal` and `extract_and_store_transaction_from_pczt`.
+- **Upstream:** [librustzcash#3196](https://github.com/zcash/librustzcash/issues/3196) (explicit anchor
+  height for `propose_transfer`) is open, linked into Zodl's tracker (COR-2586), no discussion yet.
+
+### Routes, most realistic first
+
+**A. Proof receipt (website only).** A page for any transaction: the verdict, the block its coins were in
+the pool by, the events it predates, a re-checkable link, and the API's JSON report to download. No
+wallet work. The receipt is only final once the transaction is mined, as today.
+
+**B. "Vintage builds, your wallet signs" (PCZT).** Using only the user's viewing key, Vintage proposes the
+transfer at the pre-event anchor (the same logic as `vintage send`) and creates a PCZT. The user's signer
+(a hardware wallet, MetaMask Snap or any PCZT signer) signs it. Vintage then proves it, extracts the
+transaction and broadcasts it. Vintage picks the notes, so post-event notes are never chosen, and the
+anchor is set from the start, so nothing is re-anchored.
+- Needs a signer that signs PCZTs it didn't create. Hardware wallets work this way; the Snap does per its
+  audit. Ironwood support must be checked per signer.
+- **Privacy:** the creator and prover see the notes and the viewing key. They must run on the user's
+  device (the CLI, or later in-browser WebAssembly), **never on our server**.
+
+**C. Re-anchor a wallet's own PCZT.** The wallet builds and signs as usual and exports the PCZT before
+proving. Vintage clears the anchor, sets the root at the grid height below H plus each note's Merkle path
+there, then proves. This works with the wallet's own note selection, but only if every chosen note
+predates H, so Vintage must check and refuse otherwise. The hard part is the Merkle path at an old height
+when the wallet didn't keep that checkpoint: it can be rebuilt from public chain data (Vintage already
+recomputes the tree from compact blocks), but this is new work.
+
+**D. Native wallet option.** A "prove these coins predate…" toggle in Zodl, Zingo and others, off by
+default, with the visibility warning. Best user experience, slowest: it waits on #3196 or the PCZT route
+in each wallet.
+
+**E. Websites.** A "pay with proof" page that shows a ZIP 321 request (route A for the result) works today
+with any wallet that supports route B or D. A real "connect wallet" button waits for a shielded standard
+(Noir's SDK, Zconnect); build against whichever ships with PCZT signing and Ironwood first.
+
+### Plan
+
+| Phase | What | Estimate (rough) |
+|---|---|---|
+| 0 | Proof receipt page and downloadable report (route A) | days |
+| 1 | `vintage pczt create` / `prove` / `send`: build at the pre-event anchor from a viewing key, sign with an external signer, prove, broadcast; testnet, then a tiny mainnet send (route B) | 1 to 2 weeks |
+| 2 | Re-anchor an exported PCZT; Merkle paths at old heights from public data; refuse post-event notes (route C) | 1 to 2 weeks |
+| 3 | ZIP draft: a `req-` ZIP 321 parameter for "inputs before block H", and wallet guidance (warning, off by default) | with 1 |
+| 4 | Browser version of 1 and 2 (WebAssembly, on-device) and a "pay with proof" page; a wallet connection once a standard ships | after a standard |
+| 5 | Work with one wallet team on route D; follow #3196 | ongoing |
+
+### Check before building
+
+- Which signers sign foreign PCZTs **with Ironwood** today (hardware wallets, the Snap, Noir, Zillions).
+- Whether the PCZTs wallets export keep the fields the prover needs, or a Redactor strips them.
+- Whether NU7 (2026-11-05) keeps these v6 rules; the library already accepts NU7 for re-anchoring.
+- A hardware wallet shows amounts and recipients, not the anchor. The user trusts the device for *what*
+  is paid and Vintage for the age claim, which anyone can re-check from the mined transaction.
+
 ## Other items
 
 - **Explicit-anchor API in librustzcash.** Today `vintage send` reaches an anchor by choosing
   confirmations (`N = target − H_a`). A `propose_transfer` option for an explicit anchor height would
-  make this direct. We'll propose a small, well-scoped issue upstream (see [ZIP_DRAFT.md](ZIP_DRAFT.md)).
+  make this direct. Posted as [librustzcash#3196](https://github.com/zcash/librustzcash/issues/3196)
+  (see also [ZIP_DRAFT.md](ZIP_DRAFT.md)).
 - **Follow the wallet's grid after NU7.** ZIP 318 moves the grid to multiples of 432 after NU7. Read the
   grid from the wallet's `pool_migration_params` rather than a constant.
 - **Multiple data sources.** Optionally cross-check roots against two independent lightwalletd servers,
   for users who don't run a node.
 - **Sapling and Orchard.** The same anchor argument applies to their anchors. Ironwood comes first
   because that's where shielded value lives after 2026-07-28.
-- **Wallet integration.** A "prove my coins predate…" option in consumer wallets, off by default, that
-  explains the visibility cost.
+- **Wallet integration.** See [Send from any wallet](#send-from-any-wallet-proof-receipts-and-wallet-integration).
 - **Registry governance.** Several signers (threshold), and a public process for adding events with
   primary-source transaction ids.
