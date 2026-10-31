@@ -52,7 +52,7 @@ pub(crate) fn run(
         let h = inc.height;
         println!("{}  (block {h})", inc.id);
         println!("  {}", inc.label);
-        let Some(h_a) = grid::anchor_height_for(h) else { continue };
+        let Some(h_a) = grid::anchor_height_for(network, h) else { continue };
         let old: u64 = notes.iter().filter(|n| n.mined_height.is_some_and(|m| m <= h_a)).map(|n| n.value).sum();
         if old == 0 {
             println!("  ✗ nothing provable: no unspent notes received at or before block {h_a}\n");

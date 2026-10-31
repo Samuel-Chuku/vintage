@@ -135,7 +135,9 @@ Every command, with real output: [usevintage.site/cli](https://usevintage.site/c
 examples: [usevintage.site/api](https://usevintage.site/api/).
 
 `vintage send` never reads your seed. It signs through zcash-devtool (with the patches in
-`patches/`), which must sit next to the `vintage` binary or be passed with `--devtool`.
+`patches/`, see [patches/README.md](patches/README.md)), which must sit next to the `vintage` binary or be
+passed with `--devtool`. Vintage builds on the librustzcash NU7 releases, so sends keep working after NU7
+activates on mainnet (block 3,543,405); after it, anchors sit on the 432-block ZIP 318 grid.
 
 ## Integrating Vintage into exit-rail screening
 
@@ -212,7 +214,7 @@ crates/vintage-api        `vintage-api`: the HTTP verifier
 registry/                 events.json + ed25519 signature + public key
 demo/                     the mainnet demo: how to reproduce it, and the published link bundle
 research/                 zk-link (the link without a viewing key, on mainnet data); one-hop spike; Gate 0
-patches/                  zcash-devtool patches (`propose` and `pay` with --min-confirmations)
+patches/                  zcash-devtool patches (`propose`/`pay` --min-confirmations; NU7 library releases)
 deploy/                   API service + reverse proxy; Cloudflare Pages guide for the website
 web/                      the website: pages/ (one file per page), shared/ design system, static/ per site
 scripts/                  build-web.sh + build-pages.py (static site generator), site checks, og-card.html

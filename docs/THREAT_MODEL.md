@@ -155,9 +155,10 @@ relies on.
 ## Known risks for operators
 
 - **ZIP 318 grid after NU7.** ZIP 318 (Draft) moves the anchor grid from every 144 blocks to every 432
-  after NU7 (mainnet 2026-11-05). On testnet, after NU7 (block 4,465,026), the librustzcash version
-  Vintage builds on still retained checkpoints every 144 blocks, and consensus accepted our 144-grid
-  anchor. Consensus doesn't care about the grid. But if wallets switch to 432, `vintage send` must follow
-  the wallet's grid.
+  from NU7 (mainnet block 3,543,405). Consensus doesn't care about the grid; wallets keep checkpoints on
+  it. `vintage send` takes the grid from librustzcash's NU7 releases (`AnchorGrid`), so after NU7 it
+  anchors on a multiple of 432, which every wallet keeps. Tested on testnet after NU7: `1be324c1…e7ce`,
+  anchor 4,562,352 (432 × 10,561), mined at 4,562,870, PASS before 4,562,500. A zcash-devtool built
+  without `patches/zcash-devtool-nu7-releases.patch` doesn't know mainnet NU7 and can't send after it.
 - **Server support.** The verifier needs a server that returns `ironwoodTree` in `GetTreeState` and
   Ironwood data in compact blocks. zec.rocks does.

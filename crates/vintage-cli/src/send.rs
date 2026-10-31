@@ -137,11 +137,11 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     let zec = |zat| fmt_amount(network, zat);
     let devtool_bin = devtool_path(a.devtool.clone())?;
     let db_path = a.wallet.join("data.sqlite");
-    let h_a = grid::anchor_height_for(a.before)
+    let h_a = grid::anchor_height_for(network, a.before)
         .ok_or_else(|| anyhow!("no grid boundary below block {}", a.before))?;
 
     println!("before H:      {}  ({})", a.before, a.label);
-    println!("anchor H_a:    {h_a}  (newest multiple of 144 below H)");
+    println!("anchor H_a:    {h_a}  (newest ZIP-318 grid boundary below H)");
 
     // 1. Sync.
     if a.no_sync {
@@ -198,7 +198,8 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     let age = n.get() - 1;
     println!("\ntarget height: {target}  (wallet tip + 1)");
     println!("confirmations: {n}  → anchor = {target} − {n} = {h_a}");
-    println!("anchor age:    {age} blocks (~{:.1} h at 75 s/block)", age as f64 * 75.0 / 3600.0);
+    let hours = grid::seconds_between(network, h_a, h_a + age) as f64 / 3600.0;
+    println!("anchor age:    {age} blocks (~{hours:.1} h)");
 
     let accounts = db.get_account_ids()?;
     let [account] = accounts.as_slice() else {

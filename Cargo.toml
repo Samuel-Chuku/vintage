@@ -22,31 +22,15 @@ tokio = { version = "1.21.0", features = ["macros", "rt-multi-thread"] }
 # `tls-ring` selects rustls' crypto provider.
 tonic = { version = "0.14", features = ["gzip", "tls-ring", "tls-webpki-roots"] }
 
-# Zcash: same versions and git revision as zcash-devtool 0b3436b (compiled crates are shared).
+# Zcash: the NU7 mainnet releases (21 Oct 2026; NU7 activates on mainnet at block 3,543,405).
 incrementalmerkletree = "0.9"
 orchard = { version = "0.16", default-features = false }
 rand = { version = "0.10", default-features = false, features = ["sys_rng"] }
-zcash_address = "=0.14.0-pre.2"
+zcash_address = "0.14.0"
 rusqlite = { version = "0.37", features = ["bundled", "time"] }
-zcash_client_backend = { version = "=0.25.0-pre.2", features = ["lightwalletd-tonic-tls-webpki-roots", "orchard"] }
-zcash_client_sqlite = { version = "=0.23.0-pre.2", features = ["transparent-inputs", "unstable", "orchard", "serde", "test-dependencies"] }
-zcash_keys = { version = "=0.17.0-pre.2", features = ["orchard"] }
-zcash_primitives = "=0.31.0-pre.2"
-zcash_protocol = "=0.11.0-pre.1"
-zip321 = "=0.10.0-pre.2"
-
-## Copied verbatim from zcash-devtool 0b3436b.
-[patch.crates-io]
-equihash = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-pczt = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_address = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_client_backend = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_client_sqlite = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_encoding = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_keys = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_pool_migration = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_primitives = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_proofs = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_protocol = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zcash_transparent = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
-zip321 = { git = "https://github.com/zcash/librustzcash.git", rev = "eb38d7a373661179dbc083a2fd58b3a6c9b25818" }
+zcash_client_backend = { version = "0.25.0", features = ["lightwalletd-tonic-tls-webpki-roots", "orchard"] }
+zcash_client_sqlite = { version = "0.23.0", features = ["transparent-inputs", "unstable", "orchard", "serde", "test-dependencies"] }
+zcash_keys = { version = "0.17.0", features = ["orchard"] }
+zcash_primitives = "0.31.0"
+zcash_protocol = "0.11.0"
+zip321 = "0.10.0"

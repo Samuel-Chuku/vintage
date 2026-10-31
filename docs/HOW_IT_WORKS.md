@@ -101,7 +101,7 @@ sequenceDiagram
     V->>D: wallet sync
     D->>N: compact blocks
     D->>W: notes, tree, tip
-    V->>V: H_a = newest multiple of 144 below H
+    V->>V: H_a = newest ZIP 318 grid boundary below H
     V->>W: retained checkpoint at H_a? which notes are older than H_a?
     V->>W: target = tip + 1  (get_target_and_anchor_heights)
     V->>V: N = target − H_a
@@ -117,7 +117,8 @@ sequenceDiagram
 
 Design points:
 
-- **Grid heights.** H_a is a multiple of 144 (the [ZIP 318](https://zips.z.cash/zip-0318) anchor grid).
+- **Grid heights.** H_a is on the [ZIP 318](https://zips.z.cash/zip-0318) anchor grid: a multiple of 144
+  before NU7, and of 432 from NU7 (blocks are three times faster, so boundaries stay about 3 hours apart).
   librustzcash wallets keep a durable tree checkpoint at those heights, so a witness can still be built
   there long after ordinary checkpoints are pruned. A wallet can only make a Vintage send for H if it
   was scanning before H_a.

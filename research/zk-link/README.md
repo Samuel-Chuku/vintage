@@ -84,5 +84,5 @@ Verification needs only the file and public chain data (default server zec.rocks
   a deposit with a dummy input can't pass. This deposit spends two real receipt notes and has no dummy.
   A Vintage-aware wallet could keep the dummy secrets, or a rail could accept a value-coverage rule.
 - One hop, mainnet only, one funding payment per file.
-- Needs a written spec (an Ironwood extension of ZIP 311) and cryptographic review before real use, and
-  a check against NU7.
+- Needs a written spec (an Ironwood extension of ZIP 311) and cryptographic review before real use. NU7
+  keeps the Orchard protocol revision (V3), so the circuit doesn't change.

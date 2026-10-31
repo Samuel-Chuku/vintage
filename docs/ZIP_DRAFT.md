@@ -17,7 +17,7 @@ The key words "MUST", "SHOULD", "MAY" and "RECOMMENDED" are to be interpreted as
 - **Root at h**: the root of the Ironwood note commitment tree after block h.
 - **Anchor-dated spend**: a transaction whose anchor was deliberately chosen as the root at a height
   before some boundary H.
-- **Grid height**: a multiple of the anchor bucket interval in [ZIP 318] (144 blocks before NU7).
+- **Grid height**: a multiple of the anchor bucket interval in [ZIP 318] (144 blocks before NU7, 432 from NU7).
 
 # Abstract
 

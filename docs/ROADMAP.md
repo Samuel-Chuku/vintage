@@ -137,8 +137,8 @@ deposit and payment txids, so proofs can't be reused for another pair.
 3. **Privacy cost.** The verifier learns that T2 spent an output of T1, and possibly the value. That
    reveals much less than zeceipt's `nk` route or a viewing key, but it isn't nothing.
 4. **Spec and review.** This needs a written statement, likely an extension of ZIP 311 for Ironwood
-   "provenance disclosures", plus review by cryptographers, and a check that NU7 (mainnet 2026-11-05)
-   doesn't change the Ironwood circuit or keys.
+   "provenance disclosures", plus review by cryptographers, NU7 (mainnet block 3,543,405) keeps the same Orchard
+   protocol revision (V3) as NU6.3, so the Ironwood circuit and keys don't change.
 5. **Several hops** chain disclosures, and each intermediate transaction must be fully covered. Both the
    privacy cost and the complexity grow per hop.
 
@@ -259,8 +259,8 @@ with any wallet that supports route B or D. A real "connect wallet" button waits
   confirmations (`N = target − H_a`). A `propose_transfer` option for an explicit anchor height would
   make this direct. Posted as [librustzcash#3196](https://github.com/zcash/librustzcash/issues/3196)
   (see also [ZIP_DRAFT.md](ZIP_DRAFT.md)).
-- **Follow the wallet's grid after NU7.** ZIP 318 moves the grid to multiples of 432 after NU7. Read the
-  grid from the wallet's `pool_migration_params` rather than a constant.
+- ✅ **Follow the grid after NU7** (Oct 31). `vintage send` and `status` use librustzcash's NU7-aware
+  `AnchorGrid`: multiples of 144 before NU7, of 432 from it. Tested with a post-NU7 testnet send.
 - **Multiple data sources.** Optionally cross-check roots against two independent lightwalletd servers,
   for users who don't run a node.
 - **Sapling and Orchard.** The same anchor argument applies to their anchors. Ironwood comes first
