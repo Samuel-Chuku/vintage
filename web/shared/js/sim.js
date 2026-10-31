@@ -385,6 +385,46 @@
       box.innerHTML = show(r.body, secs);
     });
   }
+  /* Station 4, zero-knowledge step: post the published proof file (js/zk-demo.js, loaded on demand) to
+     POST /verify-zk-link. If the verifier can't answer, show the recorded command-line result instead. */
+  var ZK_SRC = '<a href="https://github.com/Samuel-Chuku/vintage/tree/main/research/zk-link" rel="noopener noreferrer">how it works</a>, proof file <span class="mono">demo/mainnet-zk-link.json</span>';
+  function zkCard(tag, body) {
+    return '<div class="v idle lab-zk"><div class="row" style="gap:var(--vt-2)">' + tag + '<span class="lab-tag sand">Experimental · unreviewed</span></div>' +
+      '<h3 class="display">Linked, with no key at all.</h3>' + body +
+      '<p class="s">Disclosed: each input\'s value. Not disclosed: any key, which output, addresses, memos. ' + ZK_SRC + '.</p></div>';
+  }
+  function zkReplay() {
+    return zkCard('<span class="lab-tag replay">Replay</span>',
+      '<p>One proof per input, made with Zcash\'s existing spend circuit against a tree of only the payment\'s outputs. Our mainnet run: both inputs of ' + link(D) + ' proven to be outputs of ' + link(T1) +
+      ', 300,000 zat each. Six forged versions were rejected.</p>');
+  }
+  function zkFile(done) {
+    if (window.VT_ZKFILE) { done(window.VT_ZKFILE); return; }
+    var s = document.createElement('script');
+    s.src = '/js/zk-demo.js';
+    s.onload = function () { done(window.VT_ZKFILE || null); };
+    s.onerror = function () { done(null); };
+    document.head.appendChild(s);
+  }
+  function zkCheck() {
+    a4c.innerHTML = card('check', 'Live · checking', 'Asking the verifier on mainnet to check the proofs now.');
+    zkFile(function (file) {
+      if (!file) { a4c.innerHTML = zkReplay(); setChip($('#chip4'), 'Done', 'done'); return; }
+      var t0 = Date.now();
+      VT.busy(a4c, VT.api('/verify-zk-link', { body: { file: file, before: EVENT } })).then(function (r) {
+        var secs = ((Date.now() - t0) / 1000).toFixed(2);
+        if (!r.ok || !r.body || !r.body.verdict) { a4c.innerHTML = zkReplay(); setChip($('#chip4'), 'Done', 'done'); return; }
+        var d = r.body;
+        log('live', 'POST /verify-zk-link for ' + short(D) + ' → ' + d.verdict + ' in ' + secs + ' s.');
+        if (d.verdict !== 'PASS') { a4c.innerHTML = card('fail', 'Live · mainnet · ' + secs + ' s', 'Link not proven.', esc(d.summary)); return; }
+        setChip($('#chip4'), 'Done', 'done');
+        if (sess) sess.proven.link = true;
+        var ins = ((d.proofs && d.proofs.inputs) || []).map(function (i) { return 'input ' + i.action + ': ' + fmt(i.value_zat) + ' zat, proof ' + i.proof; }).join(' · ');
+        a4c.innerHTML = zkCard('<span class="lab-tag live">Live · mainnet · ' + secs + ' s</span>',
+          '<p>The verifier checked one zero-knowledge proof per input of ' + link(D) + ' against a tree of only the outputs of ' + link(T1) + ', and the payment\'s own age. ' + esc(ins) + '. No viewing key was sent.</p>');
+      });
+    });
+  }
   $$('#q4a .chip').forEach(function (c) {
     c.addEventListener('click', function () {
       press($('#q4a'), c);
@@ -451,13 +491,8 @@
             '<div><span class="label">Still private</span><ul class="ticks"><li data-g="✓">Every other account you hold</li><li data-g="✓">Who paid the payer, and their history</li><li data-g="✓">Spending power: a viewing key can\'t spend</li></ul></div></div>';
         });
       } else {
-        log('replay', 'Exchange checks the link with zero-knowledge proofs (research prototype).');
-        setChip($('#chip4'), 'Done', 'done');
-        a4c.innerHTML = '<div class="v idle lab-zk"><div class="row" style="gap:var(--vt-2)"><span class="lab-tag replay">Replay</span><span class="lab-tag sand">Research · unreviewed</span></div>' +
-          '<h3 class="display">Linked, with no key at all.</h3>' +
-          '<p>One proof per input, made with Zcash\'s existing spend circuit against a tree of only the payment\'s outputs. Our mainnet run: both inputs of ' + link(D) + ' proven to be outputs of ' + link(T1) +
-          ', 300,000 zat each, checked in 8.0 s. Six forged versions were rejected.</p>' +
-          '<p class="s">Disclosed: each input\'s value. Not disclosed: any key, which output, addresses, memos. This runs from the command line, not in the browser: <a href="https://github.com/Samuel-Chuku/vintage/tree/main/research/zk-link" rel="noopener noreferrer">research/zk-link</a>, proof file <span class="mono">demo/mainnet-zk-link.json</span>.</p></div>';
+        log('live', 'Exchange checks the link with zero-knowledge proofs (experimental).');
+        zkCheck();
       }
     });
   });

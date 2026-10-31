@@ -52,7 +52,7 @@ pub fn gold(s: &str) -> String {
 /// The verdict line: gold for a proven result, bold for a fail, dim otherwise. The text is unchanged.
 pub fn verdict(verdict: &str, summary: &str) -> String {
     let code = match verdict {
-        "PASS" | "DATED" | "LINK PASS" => GOLD,
+        "PASS" | "DATED" | "LINK PASS" | "ZK LINK PASS" => GOLD,
         "FAIL" | "LINK FAIL" => BOLD,
         _ => DIM,
     };

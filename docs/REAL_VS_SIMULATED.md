@@ -26,7 +26,7 @@ step is tagged on screen, and a legend under the session bar explains the tags.
 | | Vintage payment | Live | `GET /verify` on `da9017e0…`: PASS. |
 | | Receipt account, deposit | Replay | The real transactions `da9017e0…` (outputs 1 and 2, 0.003 ZEC each) and `df151ee2…`. |
 | | Viewing-key link | Live | `POST /verify-link` with the published bundle (`demo/mainnet-link-bundle.json`). |
-| | Zero-knowledge link | Replay, research | The result of `zk-link verify demo/mainnet-zk-link.json`, run on our machine. The prototype is unreviewed and does not run in the browser. |
+| | Zero-knowledge link | Live, experimental | `POST /verify-zk-link` with the published proof file `demo/mainnet-zk-link.json`: the verifier checks both proofs and the payment's age. Making proofs doesn't run in the browser. The construction is unreviewed. Falls back to the recorded result (Replay) if the verifier can't be reached. |
 
 ## The session
 

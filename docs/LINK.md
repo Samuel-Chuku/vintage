@@ -106,5 +106,6 @@ would remove this limit.
 
 - Multi-hop chains.
 - A zero-knowledge version that proves the same statement **without** disclosing the viewing key. It
-  needs no new circuit, and a research prototype already passes on this mainnet deposit:
-  [research/zk-link](../research/zk-link/README.md). Unreviewed, not in the CLI or API yet.
+  needs no new circuit and passes on this mainnet deposit. `vintage link verify` checks its files, and
+  the API has `POST /verify-zk-link`; both are marked experimental, because the construction is
+  unreviewed. See [research/zk-link](../research/zk-link/README.md) and [API.md](API.md).

@@ -166,7 +166,7 @@
                 <div class="row" role="group" aria-label="How the exchange checks">
                   <button type="button" class="chip" aria-pressed="false" data-v="age">Just check the age</button>
                   <button type="button" class="chip" aria-pressed="false" data-v="key">Show the receipt account's viewing key</button>
-                  <button type="button" class="chip" aria-pressed="false" data-v="zk">Zero-knowledge proof (research)</button>
+                  <button type="button" class="chip" aria-pressed="false" data-v="zk">Zero-knowledge proof (experimental)</button>
                 </div>
               </div>
               <div class="lab-a" id="a4c" aria-live="polite"></div>
@@ -209,7 +209,7 @@
     <details><summary>Whose wallet is in station 1?</summary><p>Our demo wallet's two real notes: 0.015 ZEC received before the demo event, and 0.005 ZEC sent from the event wallet after it. You can't spend them. You choose what a deposit would do, and the lab shows the result.</p></details>
     <details><summary>Is the demo event a real hack?</summary><p>No. It's a block we staged on mainnet, 3,525,709, so the whole flow could run with real transactions. The Bitget event, block 3,501,240, is real.</p></details>
     <details><summary>Why do some notes lock when I move the anchor?</summary><p>A note can only be spent at an anchor if it was in the pool by that block. That consensus rule is what the whole proof rests on.</p></details>
-    <details><summary>Why is the zero-knowledge step a replay?</summary><p>It runs on the command line, not in a browser, and it's an unreviewed research prototype. The replay shows its real result on our mainnet deposit.</p></details>
+    <details><summary>Is the zero-knowledge step real?</summary><p>Yes: it sends our published proof file for the mainnet deposit to the verifier, which checks every proof and the payment's age as you click. No viewing key is sent. Making the proofs happens on the holder's machine, not in the browser. The construction is unreviewed, so treat it as an experiment. If the verifier can't be reached, the step shows the recorded command-line result, tagged Replay.</p></details>
     <details><summary>Is my session saved?</summary><p>No. It lives in this tab only, and its ID never leaves your browser. The verifier keeps only its anonymous daily count of checks.</p></details>
   </div>
 </section>

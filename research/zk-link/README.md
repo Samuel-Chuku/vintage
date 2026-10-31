@@ -71,11 +71,16 @@ Forgeries, each rejected:
 
 ## Run it
 
+Verification is now part of Vintage (`vintage_verifier::zk_link`), with the same checks and tests for
+each forgery above (`crates/vintage-verifier/tests/zk_link.rs`):
+
 ```
-cargo build --release -p zk-link
-zk-link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10
+vintage link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10
+curl -X POST https://api.usevintage.site/verify-zk-link -H 'content-type: application/json' \
+  -d '{"before": "vintage-demo-2026-10", "file": <demo/mainnet-zk-link.json>}'
 ```
 
+The prototype binary still works (`cargo build --release -p zk-link`, then `zk-link verify …`).
 Verification needs only the file and public chain data (default server zec.rocks).
 
 ## Limits

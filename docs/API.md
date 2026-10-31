@@ -37,6 +37,7 @@ Resources: ~16 MB RAM. Any core count works; more cores only speed up the very f
 | `GET /verify/{txid}?before={height \| event-id}` | Age check: do all of this transaction's Ironwood inputs predate the event? |
 | `GET /age/{txid}` | Proven age, no event: the block by which every coin it spends was in the pool, and which registered events that predates. |
 | `POST /verify-link` | The receipt-account link (fresh coins). Takes a viewing key; stateless. |
+| `POST /verify-zk-link` | The same link with zero-knowledge proofs, no viewing key. Experimental, unreviewed. |
 | `GET /events` | The signed event registry for this network |
 | `GET /registry/events.json`, `GET /registry/events.json.sig` | The exact signed bytes and signature |
 | `GET /stats` | Anonymous usage counts |
@@ -195,6 +196,97 @@ Errors: 400 for a malformed body (a generic message, nothing echoed), a version 
 or more than 16 funding payments, an undecodable key, or a txid not found; 502 for lightwalletd errors.
 Browsers send a preflight first; `OPTIONS /verify-link` answers 204 with
 `access-control-allow-methods: GET, POST, OPTIONS` and `access-control-allow-headers: content-type`.
+
+### `POST /verify-zk-link` (experimental)
+
+The same statement as `/verify-link`, **without a viewing key**: every coin the deposit spends came from
+the funding payment, and that payment passes the age check. Instead of a key, the file carries one
+zero-knowledge proof per deposit input. Each proof is an ordinary Ironwood spend proof of that input
+against the root of a tree built from the funding payment's outputs, signed over the deposit and
+funding txids. How it works and its limits: [research/zk-link](../research/zk-link/README.md).
+
+**Unreviewed.** No cryptographer has reviewed the construction yet. Treat a PASS as a research result,
+not as a basis for decisions that matter.
+
+What it discloses: each input's value, and that each input came from the funding payment. Not any key,
+which output of the payment, addresses or memos. The file holds no key; the API keeps it in memory for
+the request only, like `/verify-link`. `vintage link verify <file>` runs the same check locally.
+
+Request (`content-type: application/json`; the file is what `vintage link prove --zk` writes, for
+example [demo/mainnet-zk-link.json](../demo/mainnet-zk-link.json)):
+
+```json
+{
+  "before": "vintage-demo-2026-10",
+  "file": {
+    "version": 1,
+    "network": "main",
+    "deposit": "df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402",
+    "funding": "da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7",
+    "proofs": ["<hex: a one-action Ironwood bundle, v6 encoding>", "…"]
+  }
+}
+```
+
+**200**: real response for the mainnet demo's deposit (the funding `summary` shortened):
+
+```json
+{
+  "network": "main",
+  "before": { "height": 3525709, "label": "Vintage demo, a staged event, not a real hack", "requested": "vintage-demo-2026-10", "event_type": "custom" },
+  "verdict": "PASS",
+  "summary": "Every coin this deposit spends came from a payment whose coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).",
+  "provisional": false,
+  "deposit": { "txid": "df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402", "mined_height": 3527827 },
+  "funding": {
+    "txid": "da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7",
+    "verdict": "PASS",
+    "summary": "These coins existed before block 3,525,709 (…).",
+    "mined_height": 3527813,
+    "anchor": "855ccc99a779159d9d98664d1a09737814b930cc782b149660a94a3881d98502"
+  },
+  "proofs": {
+    "funding_root": "2ea7abdeab8487130677b60487d0309a334b715a94e0a2b3ec063364b1809d2c",
+    "funding_outputs": 3,
+    "proofs": [
+      { "index": 0, "valid": true, "reason": null, "nullifier": "60f41a4212e5c7d55fd94200350b9a755102c55232803d244e6f2d7fd5967a16", "value_zat": 300000 },
+      { "index": 1, "valid": true, "reason": null, "nullifier": "3d933873454dbe51d3068f66e209d56708120d084b981a81605c81527e6eeb15", "value_zat": 300000 }
+    ],
+    "inputs": [
+      { "action": 0, "nullifier": "60f41a4212e5c7d55fd94200350b9a755102c55232803d244e6f2d7fd5967a16", "proof": 0, "value_zat": 300000 },
+      { "action": 1, "nullifier": "3d933873454dbe51d3068f66e209d56708120d084b981a81605c81527e6eeb15", "proof": 1, "value_zat": 300000 }
+    ],
+    "proven_value_zat": 600000
+  },
+  "disclosed": "Each input's value, and that each input came from the funding payment. Not disclosed: any key, which output of the payment, addresses or memos.",
+  "status": "Experimental: the zero-knowledge link is an unreviewed construction. Don't rely on it for anything that matters until it has been reviewed.",
+  "elapsed_secs": 1.491
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `verdict` | `PASS` (every proof valid, every deposit input covered, and the funding payment passes), `FAIL`, or `NOT_PROVABLE` (the deposit has non-Ironwood inputs, see `deposit.reasons`). |
+| `funding` | The funding payment's own age check. |
+| `proofs.funding_root` | The root of a tree holding exactly the funding payment's output commitments. Anyone can rebuild it from the chain. |
+| `proofs.proofs[]` | One per proof in the file: `valid`, or `reason` for the rejection (wrong anchor, proof doesn't verify, a signature fails, zero value, nullifier not spent by the deposit, duplicate). |
+| `proofs.inputs[]` | One per Ironwood action of the deposit; `proof: null` means no valid proof covers it (for example a wallet's dummy input). |
+| `status` | The experimental notice, verbatim, for the UI. |
+
+Every check rejected in testing (all on the mainnet pair above, run against the API):
+
+| Attempt | Result |
+|---|---|
+| One bit flipped in a proof | `FAIL`: the zero-knowledge proof does not verify |
+| Deposit and payment swapped | `FAIL`: its anchor is not the root of the funding payment's outputs |
+| The file relabelled for another deposit | `FAIL`: the spend signature over this deposit and payment does not verify |
+| One proof dropped | `FAIL`: 1 of the deposit's 2 inputs have no proof |
+| The same proof twice | `FAIL`: duplicate |
+| An event before the payment (`3525600`), or Bitget | `FAIL`: the funding payment doesn't pass the age check |
+
+Errors: 400 for a malformed body, a version or network mismatch, no or more than 16 proofs, a proof that
+isn't hex or isn't an Ironwood bundle, or a txid not found; 502 for lightwalletd errors. Checks run one
+at a time (about a second each). `OPTIONS /verify-zk-link` answers 204, like `/verify-link`.
 
 ### `GET /events`
 

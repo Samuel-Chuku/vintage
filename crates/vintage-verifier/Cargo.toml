@@ -18,10 +18,14 @@ tokio.workspace = true
 tonic.workspace = true
 
 incrementalmerkletree.workspace = true
-orchard.workspace = true
+orchard = { workspace = true, features = ["circuit"] }
+blake2b_simd = "1"
 rusqlite.workspace = true
 zcash_keys.workspace = true
 zcash_note_encryption = "0.5.1"
 zcash_primitives.workspace = true
 zcash_client_backend.workspace = true
 zcash_protocol.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

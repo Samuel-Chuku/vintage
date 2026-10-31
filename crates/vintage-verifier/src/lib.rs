@@ -4,6 +4,7 @@
 //! - [`roots`]: Ironwood roots for a range of blocks, computed from compact blocks and cached.
 //! - [`report`]: one verification of a transaction against a height, as a serializable report.
 //! - [`link`]: the receipt-account link (fresh coins, one hop), checked from a disclosed viewing key.
+//! - [`zk_link`]: the same link with zero-knowledge proofs instead of a viewing key (experimental).
 //!
 //! The decision logic itself lives in `vintage-core` (no I/O).
 
@@ -19,6 +20,7 @@ pub mod link;
 pub mod lwd;
 pub mod report;
 pub mod roots;
+pub mod zk_link;
 
 /// The registry file in `dir`: `events.json`, or the version-1 name `incidents.json`.
 pub fn registry_file(dir: &Path) -> std::path::PathBuf {

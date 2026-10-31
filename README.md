@@ -157,7 +157,8 @@ GET /verify/{deposit_txid}?before={event}
 The full guide, with code in three languages, self-hosting and mainnet test fixtures:
 [docs/INTEGRATION.md](docs/INTEGRATION.md).
 
-Full reference, including `POST /verify-link`: **[docs/API.md](docs/API.md)**.
+Full reference, including `POST /verify-link` and the experimental `POST /verify-zk-link` (the link
+with zero-knowledge proofs instead of a viewing key): **[docs/API.md](docs/API.md)**.
 
 ## More evidence
 

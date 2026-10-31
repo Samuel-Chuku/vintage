@@ -11,6 +11,8 @@
 //! - `GET /stats`: anonymous daily counts of checks by verdict and event (no txids, no IPs)
 //! - `POST /verify-link`: the receipt-account link. Stateless: the bundle (a viewing key and txids)
 //!   is held in memory for the request only and never written to disk, a log or a cache.
+//! - `POST /verify-zk-link`: the same link with zero-knowledge proofs and no viewing key
+//!   (experimental, unreviewed). Stateless in the same way.
 //!
 //! Read-only and stateless apart from the root cache. It keeps one connection to lightwalletd, and a
 //! background task keeps roots warm from Ironwood's activation to the tip.
@@ -41,6 +43,7 @@ use vintage_verifier::{
     load_registry, lwd,
     report::{self, VerifyError},
     resolve_before, roots,
+    zk_link::{self, ZkLinkFile},
 };
 
 #[derive(Parser)]
@@ -88,6 +91,10 @@ struct AppState {
     stats: stats::Stats,
     limit: Semaphore,
     concurrency: usize,
+    /// The Ironwood verifying key, built once at startup.
+    zk_vk: orchard::circuit::VerifyingKey,
+    /// Zero-knowledge checks are CPU-bound: one at a time.
+    zk_limit: Semaphore,
 }
 
 type Shared = Arc<AppState>;
@@ -193,6 +200,44 @@ async fn verify_link(State(s): State<Shared>, body: Result<Json<LinkRequest>, Js
         Err(VerifyError::NotFound) => error(StatusCode::NOT_FOUND, "transaction not found"),
         Err(VerifyError::Upstream(_)) => {
             eprintln!("verify-link: upstream error");
+            error(StatusCode::BAD_GATEWAY, "lightwalletd request failed")
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct ZkLinkRequest {
+    file: ZkLinkFile,
+    before: String,
+}
+
+/// `POST /verify-zk-link` with `{"file": {...}, "before": "<height|event-id>"}`. Experimental.
+///
+/// Privacy: the file holds two txids and proofs, no key. It is only ever in this function's memory:
+/// never written to disk, logged, cached or counted. Errors log their class only.
+async fn verify_zk_link(State(s): State<Shared>, body: Result<Json<ZkLinkRequest>, JsonRejection>) -> Response {
+    let Ok(Json(req)) = body else {
+        return error(
+            StatusCode::BAD_REQUEST,
+            "body must be JSON: {\"file\": <file from `vintage link prove --zk`>, \"before\": \"<height|event-id>\"}",
+        );
+    };
+    let before = match resolve_before(|| Ok(s.registry.clone()), s.network, &req.before) {
+        Ok(b) => b,
+        Err(e) => return error(StatusCode::BAD_REQUEST, e),
+    };
+    let event = if before.requested.parse::<u32>().is_ok() { stats::CUSTOM_HEIGHT.to_string() } else { before.requested.clone() };
+    let _zk = s.zk_limit.acquire().await.expect("semaphore open");
+    let _permit = s.limit.acquire().await.expect("semaphore open");
+    match zk_link::verify_zk_link(&s.client, s.network, Some(&s.cache), &s.zk_vk, &req.file, before, s.concurrency).await {
+        Ok(r) => {
+            s.stats.count(&event, &format!("ZK_LINK_{}", r.verdict));
+            Json(r).into_response()
+        }
+        Err(VerifyError::BadRequest(m)) => error(StatusCode::BAD_REQUEST, m),
+        Err(VerifyError::NotFound) => error(StatusCode::NOT_FOUND, "transaction not found"),
+        Err(VerifyError::Upstream(_)) => {
+            eprintln!("verify-zk-link: upstream error");
             error(StatusCode::BAD_GATEWAY, "lightwalletd request failed")
         }
     }
@@ -312,6 +357,9 @@ async fn main() -> Result<()> {
     let stats = stats::Stats::open(&stats_path)?;
     let client = lwd::connect(&server).await?;
     let origin = HeaderValue::from_str(&a.allow_origin).context("--allow-origin")?;
+    let t = std::time::Instant::now();
+    let zk_vk = tokio::task::spawn_blocking(zk_link::verifying_key).await?;
+    eprintln!("vintage-api: zero-knowledge verifying key built in {:.1}s", t.elapsed().as_secs_f64());
 
     let state = Arc::new(AppState {
         client,
@@ -325,6 +373,8 @@ async fn main() -> Result<()> {
         stats,
         limit: Semaphore::new(a.max_parallel),
         concurrency: a.concurrency,
+        zk_vk,
+        zk_limit: Semaphore::new(1),
     });
     if a.refresh_secs > 0 {
         tokio::spawn(refresher(state.clone(), Duration::from_secs(a.refresh_secs)));
@@ -334,6 +384,7 @@ async fn main() -> Result<()> {
         .route("/verify/{txid}", get(verify))
         .route("/age/{txid}", get(age))
         .route("/verify-link", axum::routing::post(verify_link).options(preflight))
+        .route("/verify-zk-link", axum::routing::post(verify_zk_link).options(preflight))
         .route("/events", get(events))
         .route("/registry/events.json", get(get_registry_json))
         .route("/registry/events.json.sig", get(get_registry_sig))

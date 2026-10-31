@@ -4160,6 +4160,7 @@ dependencies = [
  "anyhow",
  "axum",
  "clap",
+ "orchard",
  "rusqlite",
  "serde",
  "serde_json",
@@ -4212,12 +4213,14 @@ name = "vintage-verifier"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "blake2b_simd",
  "futures-util",
  "hex",
  "incrementalmerkletree",
  "orchard",
  "rusqlite",
  "serde",
+ "serde_json",
  "thiserror 2.0.21",
  "tokio",
  "tonic",

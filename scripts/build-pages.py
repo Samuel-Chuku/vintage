@@ -259,6 +259,11 @@ def main():
         shutil.copytree(WEB / "shared", d, dirs_exist_ok=True)
         if (WEB / "static" / site).exists():
             shutil.copytree(WEB / "static" / site, d, dirs_exist_ok=True)
+        if site == "landing":
+            # The lab's zero-knowledge step posts the published proof file to the API. As a script (not a
+            # fetched JSON file) so the CSP's connect-src can stay the API alone; loaded on demand.
+            zk = json.loads((ROOT / "demo" / "mainnet-zk-link.json").read_text())
+            (d / "js" / "zk-demo.js").write_text("window.VT_ZKFILE = " + json.dumps(zk, separators=(",", ":")) + ";\n")
         html_paths = set()
         for f in d.rglob("*.html"):
             rel = "/" + str(f.relative_to(d))

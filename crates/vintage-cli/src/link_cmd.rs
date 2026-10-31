@@ -12,6 +12,7 @@ use vintage_core::VintageNetwork;
 use vintage_verifier::{
     link::{self, FundingRef, LinkBundle},
     load_registry, lwd, resolve_before, roots,
+    zk_link::{self, ZkLinkFile},
 };
 use zcash_client_backend::data_api::{Account, WalletRead};
 use zcash_client_sqlite::WalletDb;
@@ -35,7 +36,8 @@ pub(crate) enum LinkCmd {
         #[arg(long)]
         out: Option<PathBuf>,
     },
-    /// Check a link bundle against a block height or event (exit code 0 PASS, 1 FAIL, 2 not provable).
+    /// Check a link bundle, or a zero-knowledge link file (experimental), against a block height or event
+    /// (exit code 0 PASS, 1 FAIL, 2 not provable).
     Verify {
         bundle: PathBuf,
         /// A block height, or an event id from the registry.
@@ -55,7 +57,7 @@ pub(crate) async fn run(network: VintageNetwork, server: &str, registry: &std::p
     match cmd {
         LinkCmd::Prove { deposit, funding, wallet, out } => prove(network, server, &deposit, &funding, &wallet, out).await,
         LinkCmd::Verify { bundle, before, json, cache, concurrency } => {
-            let b: LinkBundle = serde_json::from_slice(&std::fs::read(&bundle).context("reading the bundle")?)
+            let v: serde_json::Value = serde_json::from_slice(&std::fs::read(&bundle).context("reading the bundle")?)
                 .context("parsing the bundle")?;
             let before = resolve_before(|| load_registry(registry), network, &before)?;
             let client = lwd::connect(server).await?;
@@ -63,6 +65,12 @@ pub(crate) async fn run(network: VintageNetwork, server: &str, registry: &std::p
                 Some(p) => Some(roots::Cache::open(&p, network)?),
                 None => None,
             };
+            // A file with proofs and no viewing key is a zero-knowledge link.
+            if v.get("proofs").is_some() {
+                let z: ZkLinkFile = serde_json::from_value(v).context("parsing the zero-knowledge link file")?;
+                return verify_zk(network, &client, cache.as_ref(), &z, before, json, concurrency).await;
+            }
+            let b: LinkBundle = serde_json::from_value(v).context("parsing the bundle")?;
             let r = link::verify_link(&client, network, cache.as_ref(), &b, before, concurrency).await?;
             let code = match r.verdict {
                 "PASS" => 0,
@@ -102,6 +110,59 @@ pub(crate) async fn run(network: VintageNetwork, server: &str, registry: &std::p
             std::process::exit(code);
         }
     }
+}
+
+/// `vintage link verify` on a zero-knowledge link file (vintage_verifier::zk_link). Experimental.
+async fn verify_zk(
+    network: VintageNetwork,
+    client: &lwd::Client,
+    cache: Option<&roots::Cache>,
+    z: &ZkLinkFile,
+    before: vintage_verifier::report::Before,
+    json: bool,
+    concurrency: usize,
+) -> Result<()> {
+    if !json {
+        eprintln!("building the verifying key …");
+    }
+    let vk = zk_link::verifying_key();
+    let r = zk_link::verify_zk_link(client, network, cache, &vk, z, before, concurrency).await?;
+    let code = match r.verdict {
+        "PASS" => 0,
+        "FAIL" => 1,
+        _ => 2,
+    };
+    if json {
+        println!("{}", serde_json::to_string_pretty(&r)?);
+        std::process::exit(code);
+    }
+    let zec = |z| fmt_amount(network, z);
+    let key = crate::style::key;
+    crate::style::banner(network.name());
+    println!("{}{}  (mined {})", key("deposit:     "), r.deposit.txid, r.deposit.mined_height.map_or("not yet".into(), |h| h.to_string()));
+    println!("{}{}  ({})", key("before H:    "), r.before.height, r.before.label);
+    println!("{}{}  {}  (age check)", key("funding:     "), r.funding.txid, r.funding.verdict);
+    if let Some(c) = &r.proofs {
+        println!("{}{}  (root of its {} outputs)", key("synthetic:   "), c.funding_root, c.funding_outputs);
+        for p in &c.proofs {
+            match (&p.reason, p.value_zat) {
+                (None, Some(v)) => println!("proof {}:     {} valid, {} from the funding payment", p.index, crate::style::gold("✓"), zec(v)),
+                (reason, _) => println!("proof {}:     {} rejected: {}", p.index, key("×"), reason.as_deref().unwrap_or("invalid")),
+            }
+        }
+        for i in &c.inputs {
+            match i.proof {
+                Some(p) => println!("input {}:     covered by proof {p}", i.action),
+                None => println!("input {}:     NOT covered by any proof", i.action),
+            }
+        }
+        println!("{}{}", key("proven:      "), zec(c.proven_value_zat));
+    }
+    println!("{}{}", key("disclosed:   "), r.disclosed);
+    println!("{}{}", key("status:      "), r.status);
+    println!("{}{:.2}s\n", key("time:        "), r.elapsed_secs);
+    println!("{}", crate::style::verdict(if r.verdict == "PASS" { "ZK LINK PASS" } else { r.verdict }, &r.summary));
+    std::process::exit(code);
 }
 
 async fn prove(
