@@ -75,6 +75,10 @@ offered:
 
 - **The key is permanent.** It can't be revoked, and it shows that account's future activity too. Hence
   single-use accounts, and never a diversified address of a main account (one account, one viewing key).
+- **Or disclose no key (experimental).** `vintage link prove --zk` replaces the key with one
+  zero-knowledge proof per input; it reveals each input's value and that it came from the payment. The
+  construction is unreviewed, and the zcash-devtool command that signs it (`wallet disclose-spend`)
+  signs a caller-supplied message, so it's part of what a review must cover.
 - **Keep it local if you can.** A rail that runs `vintage link verify` itself sends the key to nobody.
   `POST /verify-link` holds the bundle in memory for one request and never writes it to disk, a log, a
   cache or a queue; errors log their class only. A malformed body is answered with a generic message, so

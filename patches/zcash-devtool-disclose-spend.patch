@@ -1,0 +1,220 @@
+diff --git a/src/commands/wallet.rs b/src/commands/wallet.rs
+index aba023e..889bbb4 100644
+--- a/src/commands/wallet.rs
++++ b/src/commands/wallet.rs
+@@ -4,6 +4,7 @@ pub(crate) mod balance;
+ pub(crate) mod delete_account;
+ pub(crate) mod derive_address;
+ pub(crate) mod derive_path;
++pub(crate) mod disclose_spend;
+ pub(crate) mod display_mnemonic;
+ pub(crate) mod enhance;
+ pub(crate) mod fan_out;
+@@ -108,6 +109,10 @@ pub(crate) enum Command {
+     /// Create a transaction fulfilling a payment request
+     Pay(pay::Command),
+ 
++    /// Prove and sign a one-action spend of one of the wallet's notes against a given anchor and
++    /// path, signing a given message (for Vintage's zero-knowledge link; nothing is broadcast)
++    DiscloseSpend(disclose_spend::Command),
++
+     /// Commands that operate directly on the note commitment trees
+     #[command(subcommand)]
+     Tree(tree::Command),
+diff --git a/src/main.rs b/src/main.rs
+index 8d75ad8..90ee6e3 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -180,6 +180,7 @@ fn main() -> Result<(), anyhow::Error> {
+                 commands::wallet::Command::Shield(command) => command.run(wallet_dir).await,
+                 commands::wallet::Command::Propose(command) => command.run(wallet_dir).await,
+                 commands::wallet::Command::Pay(command) => command.run(wallet_dir).await,
++                commands::wallet::Command::DiscloseSpend(command) => command.run(wallet_dir).await,
+                 commands::wallet::Command::Send(command) => command.run(wallet_dir).await,
+                 commands::wallet::Command::FanOut(command) => command.run(wallet_dir).await,
+                 commands::wallet::Command::Tree(command) => match command {
+diff --git a/src/commands/wallet/disclose_spend.rs b/src/commands/wallet/disclose_spend.rs
+new file mode 100644
+index 0000000..79864a4
+--- /dev/null
++++ b/src/commands/wallet/disclose_spend.rs
+@@ -0,0 +1,179 @@
++//! `wallet disclose-spend`: prove and sign a one-action Ironwood spend of one of the wallet's notes
++//! against a caller-supplied anchor and Merkle path, with both signatures over a caller-supplied
++//! 32-byte message, and print the bundle (v6 encoding, hex).
++//!
++//! The result is not a transaction: nothing is broadcast, and a bundle whose anchor is not a chain root
++//! can never be mined. Vintage's zero-knowledge link (`vintage link prove --zk`) uses it so that the
++//! spending key stays inside zcash-devtool: Vintage computes the anchor (the root of a tree of one
++//! payment's outputs), the path and the message, and checks the bundle; this command only reads the
++//! key and the note.
++//!
++//! The message is signed with the spend authorization key (under the bundle's own randomized key) and
++//! the binding key. Only pass messages from software you trust, as with any signing command.
++
++use std::io::Read;
++
++use anyhow::{anyhow, bail};
++use clap::Args;
++use orchard::{
++    Anchor,
++    builder::{Builder, BundleType},
++    bundle::BundleVersion,
++    circuit::{OrchardCircuitVersion, ProvingKey},
++    keys::{FullViewingKey, PreparedIncomingViewingKey, Scope, SpendAuthorizingKey},
++    note::ExtractedNoteCommitment,
++    note_encryption::IronwoodDomain,
++    tree::{MerkleHashOrchard, MerklePath},
++};
++use rand::{rand_core::UnwrapErr, rngs::SysRng};
++use secrecy::ExposeSecret;
++use uuid::Uuid;
++use zcash_client_backend::data_api::Account;
++use zcash_client_sqlite::{WalletDb, util::SystemClock};
++use zcash_keys::keys::UnifiedSpendingKey;
++use zcash_note_encryption::try_note_decryption;
++use zcash_primitives::transaction::{Transaction, components::orchard::write_v6_bundle};
++use zcash_protocol::{consensus::BranchId, value::ZatBalance};
++
++use crate::{commands::select_account, config::WalletConfig, data::get_db_paths, error};
++
++const DEPTH: usize = 32;
++
++// Options accepted for the `wallet disclose-spend` command
++#[derive(Debug, Args)]
++pub(crate) struct Command {
++    /// The UUID of the account that owns the note
++    account_id: Option<Uuid>,
++
++    /// age identity file to decrypt the mnemonic phrase with
++    #[arg(short, long)]
++    identity: String,
++
++    /// File holding the raw transaction that created the note, as hex (`-` for stdin)
++    #[arg(long)]
++    tx: String,
++
++    /// Index of the note's Ironwood action in that transaction
++    #[arg(long)]
++    output: usize,
++
++    /// The anchor to prove against (32 bytes, hex)
++    #[arg(long)]
++    anchor: String,
++
++    /// The note's position in the tree that `--anchor` is the root of
++    #[arg(long)]
++    position: u32,
++
++    /// The note's authentication path: 32 sibling hashes of 32 bytes, leaf level first, hex
++    #[arg(long)]
++    auth_path: String,
++
++    /// The 32-byte message both signatures sign (hex)
++    #[arg(long)]
++    message: String,
++}
++
++fn hex32(name: &str, s: &str) -> anyhow::Result<[u8; 32]> {
++    hex::decode(s.trim())
++        .ok()
++        .and_then(|b| b.try_into().ok())
++        .ok_or_else(|| anyhow!("--{name} must be 32 bytes of hex"))
++}
++
++impl Command {
++    pub(crate) async fn run(self, wallet_dir: Option<String>) -> Result<(), anyhow::Error> {
++        let mut config = WalletConfig::read(wallet_dir.as_ref())?;
++        let params = config.network();
++
++        // The note, from the transaction that created it.
++        let raw_hex = if self.tx == "-" {
++            let mut s = String::new();
++            std::io::stdin().read_to_string(&mut s)?;
++            s
++        } else {
++            std::fs::read_to_string(&self.tx)?
++        };
++        let raw = hex::decode(raw_hex.trim()).map_err(|_| anyhow!("--tx must hold the transaction as hex"))?;
++        // v5 and later transactions carry their consensus branch in the header.
++        let tx = Transaction::read(&raw[..], BranchId::Nu6_3)?;
++        let action = tx
++            .ironwood_bundle()
++            .and_then(|b| b.actions().get(self.output))
++            .ok_or_else(|| anyhow!("the transaction has no Ironwood action {}", self.output))?;
++
++        let anchor = Option::from(Anchor::from_bytes(hex32("anchor", &self.anchor)?))
++            .ok_or_else(|| anyhow!("--anchor is not a valid tree root"))?;
++        let path_bytes = hex::decode(self.auth_path.trim()).map_err(|_| anyhow!("--auth-path must be hex"))?;
++        if path_bytes.len() != DEPTH * 32 {
++            bail!("--auth-path must be {DEPTH} hashes of 32 bytes");
++        }
++        let auth = path_bytes
++            .chunks(32)
++            .enumerate()
++            .map(|(i, chunk)| {
++                Option::from(MerkleHashOrchard::from_bytes(&chunk.try_into().expect("32 bytes")))
++                    .ok_or_else(|| anyhow!("--auth-path hash {i} is not a valid tree node"))
++            })
++            .collect::<anyhow::Result<Vec<_>>>()?;
++        let path = MerklePath::from_parts(self.position, auth.try_into().expect("DEPTH hashes"));
++        let message = hex32("message", &self.message)?;
++
++        // The spending key, from the wallet's encrypted mnemonic.
++        let (_, db_data) = get_db_paths(wallet_dir.as_ref());
++        let db_data = WalletDb::for_path(db_data, params, SystemClock, UnwrapErr(SysRng))?;
++        let account = select_account(&db_data, self.account_id)?;
++        let derivation = account
++            .source()
++            .key_derivation()
++            .ok_or(anyhow!("Cannot sign with view-only accounts"))?;
++        let identities = age::IdentityFile::from_file(self.identity.clone())?.into_identities()?;
++        let seed = config
++            .decrypt_seed(identities.iter().map(|i| i.as_ref() as _))?
++            .ok_or(anyhow!("Seed must be present to sign"))?;
++        let usk = UnifiedSpendingKey::from_seed(&params, seed.expose_secret(), derivation.account_index())
++            .map_err(error::Error::from)?;
++        let sk = usk.orchard();
++        let fvk = FullViewingKey::from(sk);
++
++        let note = [Scope::External, Scope::Internal]
++            .into_iter()
++            .find_map(|scope| {
++                let ivk = PreparedIncomingViewingKey::new(&fvk.to_ivk(scope));
++                try_note_decryption(&IronwoodDomain::for_action(action), &ivk, action).map(|(n, _, _)| n)
++            })
++            .ok_or_else(|| anyhow!("Ironwood action {} does not belong to this account", self.output))?;
++        if path.root(ExtractedNoteCommitment::from(note.commitment())) != anchor {
++            bail!("the authentication path does not lead from this note to --anchor");
++        }
++
++        // Prove and sign.
++        let mut rng = UnwrapErr(SysRng);
++        let version = BundleVersion::ironwood_v3();
++        let mut builder = Builder::new(
++            BundleType::Transactional { bundle_required: true, pad_to_minimum: Some(1) },
++            version,
++            version.default_flags(),
++            anchor,
++        )
++        .map_err(|e| anyhow!("{e:?}"))?;
++        builder.add_spend(fvk, note, path).map_err(|e| anyhow!("add_spend: {e:?}"))?;
++        let (bundle, _) = builder
++            .build::<ZatBalance>(&mut rng)
++            .map_err(|e| anyhow!("{e:?}"))?
++            .ok_or_else(|| anyhow!("empty bundle"))?;
++        let pk = ProvingKey::build(OrchardCircuitVersion::PostNu6_3);
++        let bundle = bundle
++            .create_proof(&pk, &mut rng)
++            .map_err(|e| anyhow!("{e:?}"))?
++            .prepare(&mut rng, message)
++            .sign(&mut rng, &SpendAuthorizingKey::from(sk))
++            .finalize()
++            .map_err(|e| anyhow!("{e:?}"))?;
++
++        let mut out = vec![];
++        write_v6_bundle(Some(&bundle), &mut out)?;
++        println!("{}", hex::encode(out));
++        Ok(())
++    }
++}

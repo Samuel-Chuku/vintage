@@ -71,8 +71,10 @@ Forgeries, each rejected:
 
 ## Run it
 
-Verification is now part of Vintage (`vintage_verifier::zk_link`), with the same checks and tests for
-each forgery above (`crates/vintage-verifier/tests/zk_link.rs`):
+Both halves are now part of Vintage. Proving: `vintage link prove --zk`, where zcash-devtool (with
+`patches/zcash-devtool-disclose-spend.patch`) proves and signs, so Vintage never reads the key, unlike
+this prototype. Verifying: `vintage_verifier::zk_link`, with the same checks and a test for each forgery
+above (`crates/vintage-verifier/tests/zk_link.rs`):
 
 ```
 vintage link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10

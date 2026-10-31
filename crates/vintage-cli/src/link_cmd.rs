@@ -4,7 +4,11 @@
 //! zcash-devtool wallet and writes the bundle. `verify` does the same check as `POST /verify-link`,
 //! locally, so a rail never has to send anyone a viewing key.
 
-use std::{io::Write, path::PathBuf};
+use std::{
+    io::Write,
+    path::PathBuf,
+    process::Stdio,
+};
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::Subcommand;
@@ -35,6 +39,16 @@ pub(crate) enum LinkCmd {
         /// Write the bundle here (mode 600) instead of stdout.
         #[arg(long)]
         out: Option<PathBuf>,
+        /// Experimental: write zero-knowledge proofs instead of the viewing key. zcash-devtool proves and
+        /// signs each input (Vintage never reads a key); needs --identity and exactly one --funding.
+        #[arg(long, requires = "identity")]
+        zk: bool,
+        /// With --zk: the age identity file that zcash-devtool decrypts the receipt wallet's keys with.
+        #[arg(short, long)]
+        identity: Option<PathBuf>,
+        /// With --zk: path to zcash-devtool (default: next to the vintage binary).
+        #[arg(long)]
+        devtool: Option<PathBuf>,
     },
     /// Check a link bundle, or a zero-knowledge link file (experimental), against a block height or event
     /// (exit code 0 PASS, 1 FAIL, 2 not provable).
@@ -55,7 +69,14 @@ pub(crate) enum LinkCmd {
 
 pub(crate) async fn run(network: VintageNetwork, server: &str, registry: &std::path::Path, cmd: LinkCmd) -> Result<()> {
     match cmd {
-        LinkCmd::Prove { deposit, funding, wallet, out } => prove(network, server, &deposit, &funding, &wallet, out).await,
+        LinkCmd::Prove { deposit, funding, wallet, out, zk: false, .. } => prove(network, server, &deposit, &funding, &wallet, out).await,
+        LinkCmd::Prove { deposit, funding, wallet, out, zk: true, identity, devtool } => {
+            let [funding] = funding.as_slice() else {
+                bail!("--zk takes exactly one --funding payment");
+            };
+            let identity = identity.ok_or_else(|| anyhow!("--zk needs --identity"))?;
+            prove_zk(network, server, &deposit, funding, &wallet, &identity, devtool, out).await
+        }
         LinkCmd::Verify { bundle, before, json, cache, concurrency } => {
             let v: serde_json::Value = serde_json::from_slice(&std::fs::read(&bundle).context("reading the bundle")?)
                 .context("parsing the bundle")?;
@@ -165,6 +186,111 @@ async fn verify_zk(
     std::process::exit(code);
 }
 
+/// The receipt account's viewing key, read from the holder's own wallet (no seed needed).
+fn receipt_ufvk(network: VintageNetwork, wallet: &std::path::Path) -> Result<String> {
+    let db = WalletDb::for_path(wallet.join("data.sqlite"), network.params(), (), ())?;
+    let ids = db.get_account_ids()?;
+    let [id] = ids.as_slice() else {
+        bail!("the receipt wallet must have exactly one account (it has {})", ids.len());
+    };
+    let account = db.get_account(*id)?.ok_or_else(|| anyhow!("account not found"))?;
+    account
+        .ufvk()
+        .ok_or_else(|| anyhow!("the account has no viewing key"))?
+        .encode(&network.params())
+        .map_err(|e| anyhow!("encoding the viewing key: {e:?}"))
+}
+
+/// `vintage link prove --zk`: one zero-knowledge proof per deposit input (vintage_verifier::zk_link).
+///
+/// Vintage reads only the receipt account's viewing key, to find which of the payment's outputs the
+/// deposit spends, and computes each note's path in the tree of the payment's outputs and the message
+/// to sign. zcash-devtool (`wallet disclose-spend`) reads the key, proves and signs. Vintage then runs
+/// the same proof checks a rail runs before writing the file.
+#[allow(clippy::too_many_arguments)]
+async fn prove_zk(
+    network: VintageNetwork,
+    server: &str,
+    deposit: &str,
+    funding: &str,
+    wallet: &std::path::Path,
+    identity: &std::path::Path,
+    devtool: Option<PathBuf>,
+    out: Option<PathBuf>,
+) -> Result<()> {
+    let devtool_bin = crate::send::devtool_path(devtool)?;
+    let fvk = link::decode_ufvk(network, &receipt_ufvk(network, wallet)?)?;
+    let client = lwd::connect(server).await?;
+    let t = link::fetch(&client, network, funding).await?;
+    let d = link::fetch(&client, network, deposit).await?;
+    let (funding, deposit) = (t.tx.txid().to_string(), d.tx.txid().to_string());
+    let leaves = zk_link::leaves(&t.tx).ok_or_else(|| anyhow!("the funding payment has no Ironwood outputs"))?;
+    let received = link::received_by(&t.tx, &fvk);
+    if received.is_empty() {
+        bail!("{funding}: none of its Ironwood outputs belong to this receipt account");
+    }
+    let message = hex::encode(zk_link::challenge(&deposit, &funding));
+    let raw_hex = hex::encode(&t.raw);
+    let d_nfs = link::nullifiers(&d.tx);
+    eprintln!("funding {funding}: {} outputs, {} to this account", leaves.len(), received.len());
+    eprintln!("deposit {deposit}: {} inputs", d_nfs.len());
+
+    let mut proofs = vec![];
+    for (i, nf) in d_nfs.iter().enumerate() {
+        let Some(r) = received.iter().find(|r| r.nullifier == *nf) else {
+            eprintln!("input {i}: not one of this account's outputs in the payment (a wallet's dummy input?); `link verify` will FAIL");
+            continue;
+        };
+        let (root, auth) = zk_link::synthetic_path(&leaves, r.action);
+        let auth_hex: String = auth.iter().map(|h| hex::encode(h.to_bytes())).collect();
+        eprintln!("input {i}: output {} ({}), proving and signing in zcash-devtool …", r.action, fmt_amount(network, r.value));
+        let mut child = crate::send::devtool(&devtool_bin, wallet)
+            .arg("disclose-spend")
+            .arg("-i")
+            .arg(identity)
+            .args(["--tx", "-", "--output", &r.action.to_string(), "--position", &r.action.to_string()])
+            .args(["--anchor", &hex::encode(root.to_bytes()), "--auth-path", &auth_hex, "--message", &message])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .context("running zcash-devtool")?;
+        child.stdin.take().expect("piped stdin").write_all(raw_hex.as_bytes())?;
+        let output = child.wait_with_output()?;
+        if !output.status.success() {
+            bail!("zcash-devtool wallet disclose-spend failed (its error is above; it needs patches/zcash-devtool-disclose-spend.patch)");
+        }
+        let proof = String::from_utf8(output.stdout)?.lines().last().unwrap_or_default().trim().to_string();
+        proofs.push(proof);
+    }
+    if proofs.is_empty() {
+        bail!("the deposit spends none of this account's outputs in the payment");
+    }
+
+    let file = ZkLinkFile { version: 1, network: network.name().into(), deposit, funding, proofs };
+    eprintln!("checking the proofs …");
+    let check = zk_link::check_proofs(&zk_link::verifying_key(), &t.tx, &d.tx, &file)?;
+    if let Some(p) = check.invalid().first() {
+        bail!("proof {} doesn't verify: {}", p.index, p.reason.as_deref().unwrap_or("invalid"));
+    }
+    eprintln!(
+        "{} of {} inputs proven, {} in total. Next: `vintage link verify <file> --before <event>` checks the payment's age too.",
+        check.inputs.len() - check.uncovered(),
+        check.inputs.len(),
+        fmt_amount(network, check.proven_value_zat)
+    );
+    eprintln!("\nThis file discloses: {}\n{}", zk_link::DISCLOSED, zk_link::STATUS);
+    let json = serde_json::to_string_pretty(&file)? + "\n";
+    match out {
+        Some(p) => {
+            std::fs::OpenOptions::new().write(true).create_new(true).open(&p)?.write_all(json.as_bytes())?;
+            eprintln!("written to {} (no key inside)", p.display());
+        }
+        None => print!("{json}"),
+    }
+    Ok(())
+}
+
 async fn prove(
     network: VintageNetwork,
     server: &str,
@@ -173,18 +299,7 @@ async fn prove(
     wallet: &std::path::Path,
     out: Option<PathBuf>,
 ) -> Result<()> {
-    // The receipt account's viewing key, read from the holder's own wallet (no seed needed).
-    let db = WalletDb::for_path(wallet.join("data.sqlite"), network.params(), (), ())?;
-    let ids = db.get_account_ids()?;
-    let [id] = ids.as_slice() else {
-        bail!("the receipt wallet must have exactly one account (it has {})", ids.len());
-    };
-    let account = db.get_account(*id)?.ok_or_else(|| anyhow!("account not found"))?;
-    let ufvk = account
-        .ufvk()
-        .ok_or_else(|| anyhow!("the account has no viewing key"))?
-        .encode(&network.params())
-        .map_err(|e| anyhow!("encoding the viewing key: {e:?}"))?;
+    let ufvk = receipt_ufvk(network, wallet)?;
     let fvk = link::decode_ufvk(network, &ufvk)?;
 
     let client = lwd::connect(server).await?;

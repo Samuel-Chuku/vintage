@@ -148,7 +148,7 @@ deposit and payment txids, so proofs can't be reused for another pair.
 |---|---|---|
 | ✅ 0 | Feasibility spike (above) | done |
 | ✅ 1a | Prototype prover and verifier on a real mainnet T1 → T2 pair, *strict* policy, challenge binding, file format (`research/zk-link`) | done Oct 24 |
-| ◐ 1b | Verification in `vintage link verify` and `POST /verify-zk-link` (done Oct 31, with a test per forgery); `vintage link prove --zk` next | days |
+| ✅ 1b | `vintage link prove --zk` (zcash-devtool proves and signs), `vintage link verify` and `POST /verify-zk-link`, with a test per forgery | done Oct 31 |
 | 2 | Value coverage with the *coverage* policy, for deposits with dummy inputs | with 1b |
 | 3 | Written spec (ZIP 311 extension draft), review, *strict* policy with wallet support | after the hackathon |
 

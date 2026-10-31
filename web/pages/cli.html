@@ -20,7 +20,7 @@
   <div class="two">
     <div class="prose">
       <p>Rust 1.89 or newer. The first build compiles the Zcash libraries, so it takes a while; later builds are quick.</p>
-      <p>Checking transactions needs nothing else. Sending (<span class="mono">vintage send</span>) also needs <a href="https://github.com/zcash/zcash-devtool" rel="noopener noreferrer">zcash-devtool</a> with the three small patches in <span class="mono">patches/</span> (see its README), next to the <span class="mono">vintage</span> binary. Vintage never reads your seed: zcash-devtool signs.</p>
+      <p>Checking transactions needs nothing else. Sending (<span class="mono">vintage send</span>) also needs <a href="https://github.com/zcash/zcash-devtool" rel="noopener noreferrer">zcash-devtool</a> with the four small patches in <span class="mono">patches/</span> (see its README), next to the <span class="mono">vintage</span> binary. Vintage never reads your seed: zcash-devtool signs.</p>
     </div>
     <div class="win codewin"><div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Terminal</div><button class="quiet" type="button" data-copy="c-install">Copy</button></div>
       <div class="body"><pre class="code" id="c-install"><span class="m">$</span> git clone https://github.com/Samuel-Chuku/vintage
@@ -102,7 +102,8 @@ anchor:        855ccc99a779159d9d98664d1a09737814b930cc782b149660a94a3881d98502<
       <div class="body">
         <p>Link a deposit from a single-use receipt account to the Vintage payment that funded it. Discloses that one account's viewing key, nothing else. The rail can run <span class="mono">link verify</span> itself.</p>
         <pre class="code" id="c-link"><span class="m">$</span> vintage link prove --deposit &lt;D&gt; --funding &lt;T1&gt; --wallet &lt;receipt-wallet&gt; --out bundle.json
-<span class="m">$</span> vintage link verify bundle.json --before bitget-2026-09</pre>
+<span class="m">$</span> vintage link verify bundle.json --before bitget-2026-09
+<span class="m">$</span> vintage link prove --zk --deposit &lt;D&gt; --funding &lt;T1&gt; --wallet &lt;receipt-wallet&gt; -i &lt;identity&gt; --out zk.json   <span class="m"># no viewing key; experimental</span></pre>
         <pre class="code out">input 0:     0.00300000 ZEC from da9017e0fca0d8bd… output 1
 input 1:     0.00300000 ZEC from da9017e0fca0d8bd… output 2
 PASS: Every coin this deposit spends came from 1 payment whose coins existed before block 3,525,709 (Vintage demo, a staged event, not a real hack).</pre>

@@ -131,10 +131,18 @@ vintage link prove --deposit <D> --funding <T1> --wallet <receipt-wallet> --out 
 vintage link verify bundle.json --before bitget-2026-09      # what a rail runs, locally
 ```
 
+The same link with zero-knowledge proofs and **no viewing key** (experimental, unreviewed). zcash-devtool
+proves and signs each input; the file holds no key:
+
+```sh
+vintage link prove --zk --deposit <D> --funding <T1> --wallet <receipt-wallet> -i <age-identity> --out zk.json
+vintage link verify zk.json --before bitget-2026-09         # or POST /verify-zk-link
+```
+
 Every command, with real output: [usevintage.site/cli](https://usevintage.site/cli/). The API, with live
 examples: [usevintage.site/api](https://usevintage.site/api/).
 
-`vintage send` never reads your seed. It signs through zcash-devtool (with the patches in
+Vintage never reads your seed or a spending key. `vintage send` and `vintage link prove --zk` sign through zcash-devtool (with the patches in
 `patches/`, see [patches/README.md](patches/README.md)), which must sit next to the `vintage` binary or be
 passed with `--devtool`. Vintage builds on the librustzcash NU7 releases, so sends keep working after NU7
 activates on mainnet (block 3,543,405); after it, anchors sit on the 432-block ZIP 318 grid.

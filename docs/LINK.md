@@ -41,6 +41,15 @@ vintage link prove --deposit <D> --funding <T1>[,<T2>…] --wallet <receipt-wall
 vintage link verify bundle.json --before <event|height>      # or POST /verify-link
 ```
 
+Without the viewing key (experimental, unreviewed): one zero-knowledge proof per deposit input instead,
+made by zcash-devtool so Vintage never handles a key. Vintage reads only the receipt account's viewing key
+from the local wallet, to find which outputs the deposit spends; the file it writes holds no key.
+
+```sh
+vintage link prove --zk --deposit <D> --funding <T1> --wallet <receipt-wallet> -i <age-identity> --out zk.json
+vintage link verify zk.json --before <event|height>          # or POST /verify-zk-link
+```
+
 How the check works:
 
 1. Each `Tᵢ` must PASS the ordinary age check against `H`, and be mined.
@@ -106,6 +115,6 @@ would remove this limit.
 
 - Multi-hop chains.
 - A zero-knowledge version that proves the same statement **without** disclosing the viewing key. It
-  needs no new circuit and passes on this mainnet deposit. `vintage link verify` checks its files, and
-  the API has `POST /verify-zk-link`; both are marked experimental, because the construction is
+  needs no new circuit and passes on this mainnet deposit. `vintage link prove --zk` makes its files
+  (through zcash-devtool), `vintage link verify` checks them, and the API has `POST /verify-zk-link`; both are marked experimental, because the construction is
   unreviewed. See [research/zk-link](../research/zk-link/README.md) and [API.md](API.md).
