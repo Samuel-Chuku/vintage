@@ -3,7 +3,9 @@
    {"url": "<terminal>", "expires_at": <unix seconds>} or {"error": "...", "message": "<sentence>"}.
    Nothing about the visitor is sent: no cookies, no referrer, no body.
    While it starts, the window shows a boot sequence. The launcher answers once, at the end, so the steps
-   advance on a timer (they are what it does, in order) and all complete when the terminal has loaded. */
+   advance on a timer (they are what it does, in order) and all complete when the terminal has loaded.
+   End sandbox, and leaving the page, send POST /end {"id", "key"} (text/plain: no preflight, and it works
+   from sendBeacon): the sandbox is deleted at once instead of at 15 minutes. */
 (function () {
   var COPY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 5h9v9H5zM2 11V2h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg>';
   var DONE = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 8l4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"/></svg>';
@@ -60,6 +62,7 @@
   var steps = boot.querySelectorAll('.sb-steps li'), cells = boot.querySelectorAll('#sb-bar i');
   var note = boot.querySelector('.sb-note'), noteText = note.textContent;
   var clock = document.getElementById('sb-clock'), open = document.getElementById('sb-open');
+  var endBtn = document.getElementById('sb-end'), session = null;
   var lbl = btn.querySelector('.lbl'), timer = null, ticker = null;
   var STEP_MS = 1400, FILL_MS = 8000, SLOW_MS = 25000, GIVE_UP_MS = 90000;
 
@@ -101,7 +104,8 @@
     if (timer) { clearInterval(timer); timer = null; }
     stopBoot();
     frame.removeAttribute('src'); frame.hidden = true; boot.hidden = true;
-    idle.hidden = false; clock.hidden = true; open.hidden = true;
+    idle.hidden = false; clock.hidden = true; open.hidden = true; endBtn.hidden = true;
+    session = null;
     btn.disabled = false; lbl.textContent = 'Start a new sandbox';
     show(text);
   }
@@ -121,6 +125,24 @@
     btn.disabled = false;
     show(text);
   }
+
+  function endBody() { return session ? JSON.stringify({ id: session.id, key: session.key }) : null; }
+  endBtn.addEventListener('click', function () {
+    var body = endBody();
+    if (!body) return;
+    endBtn.disabled = true;
+    fetch(LAUNCH + 'end', { method: 'POST', body: body, headers: { 'content-type': 'text/plain' }, credentials: 'omit', referrerPolicy: 'no-referrer' })
+      .catch(function () {})
+      .then(function () {
+        endBtn.disabled = false;
+        closeSandbox('Sandbox ended and deleted. Start another any time.');
+      });
+  });
+  /* Leaving the page ends the sandbox too, so it doesn't sit idle for 15 minutes. */
+  window.addEventListener('pagehide', function () {
+    var body = endBody();
+    if (body && navigator.sendBeacon) navigator.sendBeacon(LAUNCH + 'end', new Blob([body], { type: 'text/plain' }));
+  });
 
   btn.addEventListener('click', function () {
     btn.disabled = true; show('');
@@ -147,6 +169,7 @@
         setTimeout(reveal, 10000);
         frame.src = j.url;
         open.href = j.url; open.hidden = false;
+        if (j.id && j.key) { session = { id: j.id, key: j.key }; endBtn.hidden = false; }
         countdown(j.expires_at || (Date.now() / 1000 + 900));
       }, function () {
         clearTimeout(giveUp);

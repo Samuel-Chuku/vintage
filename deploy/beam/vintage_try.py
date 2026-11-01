@@ -5,17 +5,27 @@
   first checks are quick.
 - launcher: a public HTTP endpoint. POST starts one sandbox from IMAGE: 2 vCPU, 1 GiB, deleted after
   LIFETIME seconds, outbound traffic only to the Zcash data servers and our API, ttyd on PORT. It
-  answers {"url", "expires_at"} or {"error", "message"}.
+  answers {"url", "expires_at", "id", "key"} or {"error", "message"}. POST /end with {"id", "key"} (as
+  text/plain, so browsers send no preflight and sendBeacon works) deletes that sandbox at once: the page's
+  End button, and leaving the page. Only the launch's one-time key can end it; the launcher keeps a hash.
+
+Lifetime: Beam's keep_warm_seconds is an idle window (an open terminal connection keeps a sandbox alive),
+so it can't be the 15-minute limit by itself. The limit is enforced three ways: a timer inside the sandbox
+closes the terminal at LIFETIME; the idle window is IDLE, so a sandbox whose page closed dies soon after; and
+every launch first deletes any sandbox past its LIFETIME.
 
 Limits: at most MAX_LIVE sandboxes at once, MAX_PER_DAY launches per UTC day, MAX_PER_MONTH per
-month. The only state is those counts and the live sandboxes' expiry times (a Beam Map). No IP,
-no request log, nothing about the visitor.
+month. The only state is those counts, the live sandboxes' expiry times, and each live sandbox's key hash
+(a Beam Map). No IP, no request log, nothing about the visitor.
 
 Deploy from a folder that holds only this file (beam deploy uploads the working directory):
   beam deploy vintage_try.py:launcher
 """
 
 import base64
+import hashlib
+import json
+import secrets
 import time
 import urllib.request
 
@@ -24,6 +34,7 @@ from beam import Image, Map, Sandbox, asgi
 COMMIT = "8b08738"
 PORT = 7681
 LIFETIME = 900
+IDLE = 300
 MAX_LIVE, MAX_PER_DAY, MAX_PER_MONTH = 3, 40, 300
 ALLOW = ["zec.rocks", "testnet.zec.rocks", "api.usevintage.site"]
 
@@ -60,13 +71,13 @@ IMAGE = Image(
 
 
 def start_sandbox():
-    """One sandbox with the terminal running. Returns (url, expires_at)."""
+    """One sandbox with the terminal running. Returns (url, expires_at, sandbox id)."""
     sb = Sandbox(
         name="vintage-try",
         image=IMAGE,
         cpu=2,
         memory="1Gi",
-        keep_warm_seconds=LIFETIME,
+        keep_warm_seconds=IDLE,
         ports=[PORT],
         allow_list=ALLOW,
         env={"HOME": "/root"},  # the image warmed /root/.cache/vintage
@@ -76,6 +87,9 @@ def start_sandbox():
         "ttyd", "-W", "-p", str(PORT), "-m", "2", "-t", "titleFixed=vintage", "-t", "fontSize=14",
         "bash", "--rcfile", "/etc/vintage-bashrc", cwd="/workspace",
     )
+    # Close the terminal at LIFETIME whatever the browser does; with nothing connected the sandbox then goes
+    # idle and Beam deletes it IDLE seconds later.
+    sb.process.exec("sh", "-c", f"sleep {LIFETIME}; pkill -x ttyd; pkill -x bash; true")
     url = sb.list_urls().get(PORT) or sb.expose_port(PORT)
     # Hand the URL over only once the terminal answers.
     for _ in range(40):
@@ -84,7 +98,29 @@ def start_sandbox():
                 break
         except Exception:
             time.sleep(0.5)
-    return url, expires_at
+    return url, expires_at, sb.container_id
+
+
+def free_slot(state: Map, expires_at: int):
+    """Remove one live sandbox's expiry, so its slot opens now instead of at expiry."""
+    live = list(state.get("live") or [])
+    if expires_at in live:
+        live.remove(expires_at)
+        state.set("live", live, ttl=86_400)
+
+
+def sweep(state: Map, now: int):
+    """Delete every sandbox past its LIFETIME (a backstop for the in-sandbox timer and the idle window)."""
+    keep = []
+    for sid, slot in state.get("open") or []:
+        if slot > now:
+            keep.append((sid, slot))
+            continue
+        try:
+            Sandbox().connect(sid).terminate()
+        except Exception:
+            pass  # already gone
+    state.set("open", keep, ttl=86_400)
 
 
 def admit(state: Map, now: int):
@@ -107,7 +143,7 @@ def admit(state: Map, now: int):
 
 @asgi(name="vintage-try", image=Image(python_packages=["fastapi"]), cpu=0.25, memory="512Mi", keep_warm_seconds=60, authorized=False)
 def launcher():
-    from fastapi import FastAPI
+    from fastapi import FastAPI, Request
 
     # No CORS middleware: Beam's gateway already answers with Access-Control-Allow-Origin: *, and a
     # second header would make browsers reject the response. The page sends no cookies or credentials.
@@ -117,19 +153,38 @@ def launcher():
     @app.post("/")
     def launch():
         now = int(time.time())
+        sweep(state, now)
         refused = admit(state, now)
         if refused:
             return refused
         try:
-            url, expires_at = start_sandbox()
+            url, expires_at, sid = start_sandbox()
         except Exception:
             print("launch: sandbox error")  # class only: nothing about the request
-            # Give the slot back: no sandbox is running for it.
-            live = list(state.get("live") or [])
-            if now + LIFETIME in live:
-                live.remove(now + LIFETIME)
-                state.set("live", live, ttl=86_400)
+            free_slot(state, now + LIFETIME)  # no sandbox is running for it
             return {"error": "failed", "message": "Couldn't start a sandbox just now. Try again in a minute."}
-        return {"url": url, "expires_at": expires_at}
+        state.set("open", list(state.get("open") or []) + [(sid, now + LIFETIME)], ttl=86_400)
+        key = secrets.token_urlsafe(24)
+        state.set("end:" + sid, {"h": hashlib.sha256(key.encode()).hexdigest(), "slot": now + LIFETIME}, ttl=LIFETIME + 300)
+        return {"url": url, "expires_at": expires_at, "id": sid, "key": key}
+
+    @app.post("/end")
+    async def end(request: Request):
+        try:
+            body = json.loads(await request.body())
+            sid, key = str(body["id"]), str(body["key"])
+        except Exception:
+            return {"error": "bad request"}
+        rec = state.get("end:" + sid)
+        if not rec or not secrets.compare_digest(rec["h"], hashlib.sha256(key.encode()).hexdigest()):
+            return {"error": "unknown sandbox"}
+        try:
+            Sandbox().connect(sid).terminate()
+        except Exception:
+            print("end: terminate error")  # class only
+        del state["end:" + sid]
+        free_slot(state, rec["slot"])
+        state.set("open", [o for o in (state.get("open") or []) if o[0] != sid], ttl=86_400)
+        return {"ended": True}
 
     return app

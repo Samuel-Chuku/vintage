@@ -842,7 +842,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 /* ---- /try/: commands beside a sandbox terminal (stacked below 900px) ---- */
 .try-grid{display:grid;gap:var(--vt-8)}
-@media(min-width:900px){.try-grid{grid-template-columns:5fr 7fr;align-items:start}.try-term{position:sticky;top:var(--vt-24)}}
+@media(min-width:900px){.try-grid{grid-template-columns:5fr 8fr;align-items:start;width:calc(100% + (100vw - var(--vt-sbw,0px) - 100%) / 2 - var(--vt-gutter-lg))}.try-term{position:sticky;top:var(--vt-24)}}
 .try-cmds{display:grid;gap:var(--vt-4);min-width:0}
 .try-head{display:flex;align-items:center;gap:var(--vt-3);flex-wrap:wrap;position:relative}
 .info{display:inline-flex}
@@ -884,12 +884,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .apis[open] summary>[aria-hidden]{transform:rotate(180deg)}
 .apis[open]{padding-bottom:var(--vt-4)}
 .apis .cg-lead{margin:0 0 var(--vt-4)}
-#sb-open{margin-left:auto;margin-right:var(--vt-3)}
+#sb-open{margin-left:auto;margin-right:var(--vt-4)}
+#sb-end{margin-right:var(--vt-4)}
 .try-term{display:grid;gap:var(--vt-3);min-width:0}
 #sandbox .body{padding:0;display:block}
 #sb-idle .tkt{justify-self:start}
 #sb-idle{border:0;border-radius:0;box-shadow:none;margin:0;padding:var(--vt-6);display:grid;gap:var(--vt-4);min-height:320px;align-content:center}
-#sb-frame{display:block;width:100%;height:min(72vh,640px);border:0;background:#13120F}
+#sb-frame{display:block;width:100%;height:min(76vh,720px);border:0;background:#13120F}
 #sb-frame[hidden],#sb-idle[hidden]{display:none}
 @media(max-width:899px){#sb-frame{height:440px}}
 @media(max-width:899px){.try-term{order:-1}}
@@ -897,7 +898,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* /try/ boot sequence: shown in the terminal window while a sandbox starts. Always dark, like the terminal
    it turns into; a dither edge band marks it as "checking" (no gold: nothing is proven here). */
 .sb-boot{--b-bg:#13120F;--b-fg:#EFE9DC;--b-dim:#A39B8C;--b-sunk:#26231E;position:relative;background:var(--b-bg);color:var(--b-fg);
-  min-height:min(72vh,640px);padding:var(--vt-6) var(--vt-6) var(--vt-6) calc(var(--vt-6) + 14px);display:grid;align-content:center;gap:var(--vt-5);
+  min-height:min(76vh,720px);padding:var(--vt-6) var(--vt-6) var(--vt-6) calc(var(--vt-6) + 14px);display:grid;align-content:center;gap:var(--vt-5);
   font:400 var(--vt-text-sm)/1.6 var(--vt-font-mono)}
 .sb-boot::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;border-right:2px solid var(--b-dim);
   background:radial-gradient(var(--b-dim) .8px,transparent .9px) 0 0/4px 4px,var(--b-bg)}
