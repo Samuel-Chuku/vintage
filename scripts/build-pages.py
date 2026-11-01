@@ -154,7 +154,7 @@ def footer(site):
     return f'''<footer><div class="wrap cols">
   <a class="mark" href="{home}/">VINTAGE</a>
   <nav class="label" aria-label="Footer"><a href="{REPO}" rel="noopener noreferrer">GitHub {NE}</a><a href="{REPO}/blob/main/docs/THREAT_MODEL.md" rel="noopener noreferrer">Threat model {NE}</a><a href="{home}/api/">API</a><a href="{home}/cli/">Command line</a><span>Zecathon 2026</span></nav>
-  <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests. Fonts are served from this site. Static site served by Cloudflare. Your txid goes from your browser straight to our verifier, which keeps no logs.</p>
+  <p style="flex-basis:100%;margin:0;font-size:14px;color:var(--vt-ink-2)">No cookies, no analytics, no third-party requests, except Beam when you start a sandbox on the Try page. Fonts are served from this site. Static site served by Cloudflare. Your txid goes from your browser straight to our verifier, which keeps no logs.</p>
 </div></footer>'''
 
 

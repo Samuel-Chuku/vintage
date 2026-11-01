@@ -32,11 +32,12 @@ only the Zcash data servers and our API, and it's deleted after 15 minutes. Noth
 machine. The sandboxes run on [Beam](https://www.beam.cloud); the setup is in
 [deploy/beam/vintage_try.py](deploy/beam/vintage_try.py).
 
-Real transactions to try, with what you should see (checked against the live API on 31 Oct 2026):
+Real transactions to try, with what you should see (checked against the live API on 31 Oct and 1 Nov 2026):
 
 | Transaction (mainnet) | What it is | Check against | Expected |
 |---|---|---|---|
 | `d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4` | A stranger's transaction, the day before the Bitget hack | `bitget-2026-09` | **PASS**; its age: in the pool by block 3,499,995 |
+| `5c24a1c29264c6aa0f49890c8dbbe97db675b8e32097756347cfaaf339d58d53` | A stranger's transaction, the day after the Bitget hack | `bitget-2026-09` | **FAIL**; its age: in the pool by block 3,501,995, after the hack |
 | `da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7` | Our Vintage payment (funded a NEAR Intents swap) | `vintage-demo-2026-10` | **PASS** (and FAIL against `bitget-2026-09`, which came earlier) |
 | `a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143` | Coins that arrived after the demo event | `vintage-demo-2026-10` | **FAIL** |
 | `df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402` | A deposit of fresh coins from a receipt account | `vintage-demo-2026-10` | **FAIL** by age; **PASS** with the link ([bundle](demo/mainnet-link-bundle.json)) or the zero-knowledge proofs ([file](demo/mainnet-zk-link.json)) |
@@ -44,6 +45,10 @@ Real transactions to try, with what you should see (checked against the live API
 
 `vintage-demo-2026-10` is an event we staged for the demo (block 3,525,709); `bitget-2026-09` is the
 real hack (block 3,501,240). Any block height works in place of an event.
+
+**Bring your own transaction.** These are only examples: `vintage verify <txid> --before <event or height>`
+and `vintage age <txid>` work on any Zcash mainnet transaction, yours or anyone's. Copy one from a block
+explorer, or list real ones with `vintage sample`. A FAIL only means no proof of age; it flags nothing.
 
 ### 1. Website (a minute, nothing to install)
 
