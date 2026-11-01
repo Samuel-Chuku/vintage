@@ -21,7 +21,7 @@ import urllib.request
 
 from beam import Image, Map, Sandbox, asgi
 
-COMMIT = "946a973"
+COMMIT = "8b08738"
 PORT = 7681
 LIFETIME = 900
 MAX_LIVE, MAX_PER_DAY, MAX_PER_MONTH = 3, 40, 300
@@ -51,7 +51,8 @@ IMAGE = Image(
         # Warm the root cache: later checks only fetch blocks newer than the image.
         f"cd /workspace && vintage verify {TX_STRANGER} --before bitget-2026-09 > /dev/null; "
         f"vintage age {TX_STRANGER} > /dev/null; "
-        "vintage link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10 > /dev/null; true",
+        "vintage link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10 > /dev/null; "
+        "vintage --network test link verify demo/testnet-zk-link.json --before 4562500 > /dev/null; true",
         f"echo {base64.b64encode(WELCOME.encode()).decode()} | base64 -d > /etc/vintage-welcome",
         "printf 'cat /etc/vintage-welcome\\ncd /workspace\\nPS1=\"vintage:\\\\w$ \"\\n' > /etc/vintage-bashrc",
     ],
