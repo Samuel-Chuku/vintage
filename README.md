@@ -352,7 +352,7 @@ registry/                 events.json + ed25519 signature + public key
 demo/                     the mainnet demo: how to reproduce it, and the published link bundle
 research/                 zk-link (the link without a viewing key, on mainnet data); one-hop spike; Gate 0
 patches/                  zcash-devtool patches (`propose`/`pay` --min-confirmations; NU7 library releases)
-deploy/                   API service + reverse proxy; Cloudflare Pages guide for the website
+deploy/                   API service + reverse proxy (self-hosting); beam/ = the browser sandbox
 web/                      the website: pages/ (one file per page), shared/ design system, static/ per site
 scripts/                  build-web.sh + build-pages.py (static site generator), site checks, og-card.html
 docs/                     HOW_IT_WORKS, INTEGRATION, API, LINK, THREAT_MODEL, ROADMAP, ZIP_DRAFT

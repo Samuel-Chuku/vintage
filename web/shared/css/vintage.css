@@ -842,7 +842,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 /* ---- /try/: commands beside a sandbox terminal (stacked below 900px) ---- */
 .try-grid{display:grid;gap:var(--vt-8)}
-@media(min-width:900px){.try-grid{grid-template-columns:5fr 8fr;align-items:start;width:calc(100% + (100vw - var(--vt-sbw,0px) - 100%) / 2 - var(--vt-gutter-lg))}.try-term{position:sticky;top:var(--vt-24)}}
+@media(min-width:900px){.try-grid{grid-template-columns:5fr 6.2fr;align-items:start;width:calc(100% + (100vw - var(--vt-sbw,0px) - 100%) / 2 - var(--vt-gutter-lg))}.try-term{position:sticky;top:var(--vt-24)}}
 .try-cmds{display:grid;gap:var(--vt-4);min-width:0}
 .try-head{display:flex;align-items:center;gap:var(--vt-3);flex-wrap:wrap;position:relative}
 .info{display:inline-flex}

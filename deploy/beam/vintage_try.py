@@ -33,20 +33,26 @@ from beam import Image, Map, Sandbox, asgi
 
 COMMIT = "8b08738"
 PORT = 7681
+TERM_THEME = 'theme={"background":"#13120F","foreground":"#EFE9DC","cursor":"#EFE9DC","selectionBackground":"#3B362D"}'
 LIFETIME = 900
 IDLE = 300
 MAX_LIVE, MAX_PER_DAY, MAX_PER_MONTH = 3, 40, 300
 ALLOW = ["zec.rocks", "testnet.zec.rocks", "api.usevintage.site"]
 
 TX_STRANGER = "d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4"
-WELCOME = """
-  VINTAGE sandbox: proof of age for private money.
-  vintage, the signed event registry and demo/ are here.
-  Paste a command from the page, or try: vintage --help
-  This machine reaches only zec.rocks and our API.
-  It is deleted after 15 minutes. Nothing you type is kept.
-
-"""
+# The banner, in the CLI's colours: gold wordmark (as `vintage verify` prints it), dim labels.
+GOLD, BOLD, DIM, OFF = "\x1b[1;38;2;244;183;40m", "\x1b[1m", "\x1b[2m", "\x1b[0m"
+WELCOME = (
+    "\n"
+    f"  {GOLD}█ █ █ █▄ █ ▀█▀ ▄▀█ █▀▀ █▀▀{OFF}\n"
+    f"  {GOLD}▀▄▀ █ █ ▀█  █  █▀█ █▄█ ██▄{OFF}  {DIM}sandbox{OFF}\n"
+    f"  {DIM}◆ proof of age for private money{OFF}\n"
+    "\n"
+    f"  {BOLD}vintage --help{OFF}   {DIM}every command{OFF}\n"
+    f"  {BOLD}ls demo/{OFF}         {DIM}the demo files{OFF}\n"
+    f"  {DIM}Reaches only zec.rocks and our API. Deleted after 15 minutes.{OFF}\n"
+    "\n"
+)
 
 IMAGE = Image(
     base_image="docker.io/library/ubuntu:24.04",
@@ -85,6 +91,7 @@ def start_sandbox():
     expires_at = int(time.time()) + LIFETIME
     sb.process.exec(
         "ttyd", "-W", "-p", str(PORT), "-m", "2", "-t", "titleFixed=vintage", "-t", "fontSize=14",
+        "-t", TERM_THEME,
         "bash", "--rcfile", "/etc/vintage-bashrc", cwd="/workspace",
     )
     # Close the terminal at LIFETIME whatever the browser does; with nothing connected the sandbox then goes
