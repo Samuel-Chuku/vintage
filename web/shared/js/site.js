@@ -240,13 +240,33 @@
     if (room.addEventListener) room.addEventListener('change', place);
   }
 
-  /* ---- API page: [data-try="/path"] windows. The button calls that path and shows the JSON. ---- */
+  /* ---- API page: [data-try="/path"] windows. The button calls that path and shows the JSON. With
+     data-try-body="link" or "zk" it POSTs the published demo bundle or proof file (js/zk-demo.js, built
+     from demo/, loaded on demand), so nothing has to be downloaded. ---- */
+  function demoFiles() {
+    if (window.VT_ZKFILE) return Promise.resolve();
+    return new Promise(function (ok) {
+      var s = document.createElement('script');
+      s.src = '/js/zk-demo.js'; s.onload = s.onerror = function () { ok(); };
+      document.head.appendChild(s);
+    });
+  }
+  function tryCall(w) {
+    var kind = w.dataset.tryBody;
+    if (!kind) return api(w.dataset.try);
+    return demoFiles().then(function () {
+      var body = { before: w.dataset.tryBefore };
+      if (kind === 'zk') body.file = window.VT_ZKFILE; else body.bundle = window.VT_LINKBUNDLE;
+      if (!body.file && !body.bundle) return { ok: false, status: 0, body: null };
+      return api(w.dataset.try, { body: body });
+    });
+  }
   $$('[data-try]').forEach(function (w) {
     var btn = $('.tkt', w), out = $('.tryout', w);
     btn.addEventListener('click', function () {
       btn.disabled = true; out.hidden = false; out.textContent = 'Asking the API…';
       var t0 = Date.now();
-      busy(w, api(w.dataset.try)).then(function (r) {
+      busy(w, tryCall(w)).then(function (r) {
         btn.disabled = false;
         var secs = ((Date.now() - t0) / 1000).toFixed(2);
         out.textContent = r.status === 0 ? 'Couldn\'t reach the API. Try again in a minute.'

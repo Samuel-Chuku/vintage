@@ -162,6 +162,15 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
     let conn = Connection::open_with_flags(&db_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
         .with_context(|| format!("opening {}", db_path.display()))?;
     if !has_retained_checkpoint(&conn, h_a)? {
+        let tip: Option<u32> = conn.query_row("SELECT MAX(height) FROM blocks", [], |r| r.get(0))?;
+        if tip.is_some_and(|t| t < h_a) {
+            bail!(
+                "the anchor block {h_a} hasn't been reached yet (the wallet is at block {}). A Vintage \
+                 payment for H = {} can be made once the chain passes block {h_a}.",
+                tip.unwrap_or_default(),
+                a.before
+            );
+        }
         bail!(
             "the wallet has no retained Ironwood checkpoint at block {h_a}. It must have been \
              scanning before then: restore or rescan it from a birthday below {h_a}."

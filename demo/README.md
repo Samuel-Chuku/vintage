@@ -37,16 +37,23 @@ payments, the amounts received, the receipt address, and the deposit. Nothing fr
 accounts. The viewing key cannot spend. This account was single-use and is retired; it still holds
 0.00135 ZEC of change, which anyone with the key can see.
 
-## 3. Fresh coins, no key: the zero-knowledge link (research prototype)
+## 3. Fresh coins, no key: the zero-knowledge link (experimental)
 
 The same deposit, proven without any viewing key: one zero-knowledge proof per input shows it is an
 output of the Vintage payment `da9017e0…e3a7`. Unreviewed; see
 [research/zk-link](../research/zk-link/README.md).
 
 ```sh
-cargo build --release -p zk-link
-zk-link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10
-# ZK LINK PASS: every coin df151ee2… spends came from a payment whose coins existed before block 3525709.
+vintage link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10
+# ZK LINK PASS: Every coin this deposit spends came from a payment whose coins existed before block 3,525,709 (…).
+```
+
+`demo/testnet-zk-link.json` is the same flow on testnet, made with `vintage link prove --zk` (payment
+`2b5838f3…5a7d`, deposit `129f13ee…d9cd`):
+
+```sh
+vintage --network test link verify demo/testnet-zk-link.json --before 4562500
+# ZK LINK PASS
 ```
 
 **What the proof file discloses:** that both inputs of the deposit are outputs of that payment, and each

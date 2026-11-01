@@ -263,7 +263,10 @@ def main():
             # The lab's zero-knowledge step posts the published proof file to the API. As a script (not a
             # fetched JSON file) so the CSP's connect-src can stay the API alone; loaded on demand.
             zk = json.loads((ROOT / "demo" / "mainnet-zk-link.json").read_text())
-            (d / "js" / "zk-demo.js").write_text("window.VT_ZKFILE = " + json.dumps(zk, separators=(",", ":")) + ";\n")
+            bundle = json.loads((ROOT / "demo" / "mainnet-link-bundle.json").read_text())
+            (d / "js" / "zk-demo.js").write_text(
+                "window.VT_ZKFILE = " + json.dumps(zk, separators=(",", ":")) + ";\n"
+                "window.VT_LINKBUNDLE = " + json.dumps(bundle, separators=(",", ":")) + ";\n")
         html_paths = set()
         for f in d.rglob("*.html"):
             rel = "/" + str(f.relative_to(d))

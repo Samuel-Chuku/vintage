@@ -20,6 +20,119 @@ ZECATHON 2026, Core & Tooling track. Live on Zcash mainnet:
 | API | `https://api.usevintage.site` ([reference](docs/API.md), [integration guide](docs/INTEGRATION.md)) |
 | Mainnet proof | [`da9017e0…e3a7`](https://mainnet.zcashexplorer.app/transactions/da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7): a Vintage payment that funded a NEAR Intents swap, verified `PASS` |
 
+## How to test
+
+**No wallet, no key and no wallet connection needed** for the website, the API or checking with the
+command line. Only sending (step 4) uses a wallet: a free testnet wallet on your own machine.
+
+Real transactions to try, with what you should see (checked against the live API on 31 Oct 2026):
+
+| Transaction (mainnet) | What it is | Check against | Expected |
+|---|---|---|---|
+| `d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4` | A stranger's transaction, the day before the Bitget hack | `bitget-2026-09` | **PASS**; its age: in the pool by block 3,499,995 |
+| `da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7` | Our Vintage payment (funded a NEAR Intents swap) | `vintage-demo-2026-10` | **PASS** (and FAIL against `bitget-2026-09`, which came earlier) |
+| `a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143` | Coins that arrived after the demo event | `vintage-demo-2026-10` | **FAIL** |
+| `df151ee2e670d683018edd85bb1bf8eca2ccefe3ff464853368c1ff949db9402` | A deposit of fresh coins from a receipt account | `vintage-demo-2026-10` | **FAIL** by age; **PASS** with the link ([bundle](demo/mainnet-link-bundle.json)) or the zero-knowledge proofs ([file](demo/mainnet-zk-link.json)) |
+| `9bf8d13474eff83ee9fcb214a3df7e1d1acbb745a0f820c837c08eb35e1e4e1a` | The Bitget hacker's own shielding transaction | `bitget-2026-09` | **NOT_PROVABLE** (transparent inputs) |
+
+`vintage-demo-2026-10` is an event we staged for the demo (block 3,525,709); `bitget-2026-09` is the
+real hack (block 3,501,240). Any block height works in place of an event.
+
+### 1. Website (a minute, nothing to install)
+
+- [app.usevintage.site](https://app.usevintage.site): paste a transaction from the table, pick the
+  event, verify.
+- [usevintage.site/simulate](https://usevintage.site/simulate/): start a session. Station 3 runs five
+  attacks (four live against the verifier, one replayed from our wallet); station 4 takes coins received after an event through, with a viewing-key
+  link or the zero-knowledge proofs (live, experimental). Every step is tagged Live, Sandbox or Replay.
+- [usevintage.site/api](https://usevintage.site/api/): a **Try it live** button on every endpoint,
+  including both link checks, which send our published demo files from the page.
+
+### 2. API (curl)
+
+```sh
+curl 'https://api.usevintage.site/verify/d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4?before=bitget-2026-09'
+curl  https://api.usevintage.site/age/d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4
+curl  https://api.usevintage.site/events
+
+# The link for fresh coins: with the published viewing-key bundle, then with zero-knowledge proofs (no key)
+R=https://raw.githubusercontent.com/Samuel-Chuku/vintage/main/demo
+curl -s $R/mainnet-link-bundle.json | python3 -c 'import json,sys; print(json.dumps({"before":"vintage-demo-2026-10","bundle":json.load(sys.stdin)}))' \
+  | curl -s -X POST https://api.usevintage.site/verify-link -H 'content-type: application/json' -d @-
+curl -s $R/mainnet-zk-link.json | python3 -c 'import json,sys; print(json.dumps({"before":"vintage-demo-2026-10","file":json.load(sys.stdin)}))' \
+  | curl -s -X POST https://api.usevintage.site/verify-zk-link -H 'content-type: application/json' -d @-
+```
+
+The link commands stream the published JSON from GitHub straight into the API; nothing is saved to your
+machine and nothing runs. The checks answer with a `verdict`; `/events` lists the registry. Reference: [docs/API.md](docs/API.md).
+
+### 3. Command line (checking needs no wallet)
+
+```sh
+git clone https://github.com/Samuel-Chuku/vintage && cd vintage
+cargo build --release                       # Rust 1.89+; the first build compiles the Zcash crates
+alias vintage=$PWD/target/release/vintage
+vintage verify d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4 --before bitget-2026-09   # PASS
+vintage verify a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143 --before vintage-demo-2026-10   # FAIL
+vintage age d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4                       # DATED
+vintage link verify demo/mainnet-link-bundle.json --before vintage-demo-2026-10    # PASS
+vintage link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10        # ZK LINK PASS
+vintage --network test link verify demo/testnet-zk-link.json --before 4562500       # ZK LINK PASS (testnet)
+vintage sample --blocks 5                   # recent real txids to try (most FAIL; a FAIL flags nothing)
+```
+
+Exit codes: 0 PASS, 1 FAIL, 2 not provable. Add `--json` for the API's report.
+
+### 4. Send a Vintage payment, then prove a deposit with zero-knowledge (testnet, free coins)
+
+This is the full holder flow: old coins, a Vintage payment into a fresh receipt account, a deposit from
+it, and a proof with no key. Coins come from the [fauzec.com](https://fauzec.com) testnet faucet (1 TAZ
+per address per day, to a shielded Unified Address). Vintage never reads your seed: zcash-devtool signs.
+
+1. **Build zcash-devtool** with the four patches ([patches/README.md](patches/README.md)) and put
+   `target/release/zcash-devtool` next to `vintage` (or pass `--devtool <path>` below).
+2. **Two wallets**, each with its own age identity (created if missing):
+   ```sh
+   zcash-devtool wallet -w payer init --name payer -i payer-key.txt -n test
+   zcash-devtool wallet -w receipt init --name receipt -i receipt-key.txt -n test
+   zcash-devtool wallet -w payer list-addresses      # a utest1… address
+   ```
+3. **Fund the payer** at [fauzec.com](https://fauzec.com) with that address, then note the block the coins
+   arrived at (`zcash-devtool wallet -w payer sync`, then `zcash-devtool wallet -w payer list-tx`).
+4. **Wait for the event to be after your coins.** A Vintage payment anchors on a ZIP 318 grid block (a
+   multiple of 432 on testnet now), so pick the event `H` = the first multiple of 432 above your funding
+   block, plus 1. On testnet, blocks come about every 25 s, so that's up to 3 hours. Until the chain
+   passes that grid block, `send` refuses and names the block it's waiting for.
+5. **Pay the receipt account twice in one Vintage payment** (a deposit has to spend at least two receipt
+   notes, so no input is a wallet's dummy):
+   ```sh
+   vintage --network test request --to <receipt utest1…> --amount 0.003 --to <receipt utest1…> --amount 0.003 --before <H>
+   vintage --network test send --wallet payer -i payer-key.txt --uri '<the zcash: URI>' --dry-run
+   vintage --network test send --wallet payer -i payer-key.txt --uri '<the zcash: URI>'
+   vintage --network test verify <payment txid> --before <H>         # PASS once mined
+   ```
+6. **Deposit from the receipt account**, about 10 blocks later, for more than one note's worth, so it
+   spends both:
+   ```sh
+   zcash-devtool wallet -w receipt sync
+   zcash-devtool wallet -w receipt send -i receipt-key.txt --address <any utest1…> --value 450000
+   vintage --network test verify <deposit txid> --before <H>         # FAIL: these coins are new
+   ```
+7. **Prove where the deposit came from, without a key:**
+   ```sh
+   vintage --network test link prove --zk --deposit <deposit txid> --funding <payment txid> \
+     --wallet receipt -i receipt-key.txt --out zk.json
+   vintage --network test link verify zk.json --before <H>          # ZK LINK PASS
+   ```
+   Without `--zk` (and without `-i`), `link prove` writes the viewing-key bundle instead.
+
+Our run of exactly these steps on testnet (31 Oct 2026): payment
+`2b5838f314adaa694efe9d9416b8eabef9ee36950eda69e3ecdb402b5e2b5a7d` (anchor 4,562,352, mined at 4,563,929,
+**PASS** before 4,562,500), deposit `129f13ee840b82e475a3721cec7b15ef79d3f11926205671049dd7c63d8bd9cd`
+(mined at 4,563,978, **FAIL** by age), then **PASS** with the viewing-key link and **ZK LINK PASS** with
+[demo/testnet-zk-link.json](demo/testnet-zk-link.json). The public API is mainnet only, so check testnet
+transactions with the command line (`--network test`).
+
 ## Why
 
 - When stolen funds enter the shielded pool, exit rails can't tell whether a shielded deposit contains
