@@ -9,3 +9,6 @@ target/
 
 # Built sites (scripts/build-web.sh)
 /dist/
+
+# Python bytecode (deploy/beam)
+__pycache__/

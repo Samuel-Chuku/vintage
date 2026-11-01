@@ -42,6 +42,7 @@
           <tr><td><b>Our verifier</b></td><td>The txid and event, for the length of the request. Your IP, at the connection level.</td><td>Any key. It writes none of it down: no access log, no request log.</td></tr>
           <tr><td><b>zec.rocks</b></td><td>The txid and the block ranges our server asks for, from our server's address.</td><td>Your IP or who asked.</td></tr>
           <tr><td><b>Cloudflare</b></td><td>That you loaded a page of this site.</td><td>The txid, the verdict. No analytics script is allowed to run.</td></tr>
+          <tr><td><b>Beam</b>, only if you start a sandbox on <a href="/try/">Try it</a></td><td>Beam runs the sandbox, so it can see your IP and what you type in that terminal, for up to 15 minutes. Our launcher keeps only daily and monthly launch counts.</td><td>Anything from the rest of this site, and any key: the sandbox holds none.</td></tr>
           <tr><td><b>Anyone on chain</b></td><td>That the transaction used an older anchor than most wallets would.</td><td>Amounts, senders, receivers, history: all stay shielded.</td></tr>
         </tbody>
       </table>
@@ -49,7 +50,7 @@
   <div class="never" style="margin-top:var(--vt-8)">
     <div><span class="label">We never see</span><b>Your keys</b><p>Age proofs need no key of any kind, not even a viewing key.</p></div>
     <div><span class="label">We never see</span><b>Your balance</b><p>Amounts, senders and history stay encrypted on chain.</p></div>
-    <div><span class="label">We never keep</span><b>Your txid or IP</b><p>No logs, no analytics, no cookies, no third-party requests. Fonts are served from this site.</p></div>
+    <div><span class="label">We never keep</span><b>Your txid or IP</b><p>No logs, no analytics, no cookies, no third-party requests (the one exception: Beam, if you start a sandbox on the Try page). Fonts are served from this site.</p></div>
     <div><span class="label">You can skip us</span><b>Run it yourself</b><p>The verifier is open source. Your machine, a public lightwalletd, nobody else.</p></div>
   </div>
 </section>

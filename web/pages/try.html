@@ -1,0 +1,90 @@
+<section class="page-head">
+  <div class="label eyebrow">How it works · Try it</div>
+  <h1 class="display">Try it in a sandbox.</h1>
+  <p class="lead">Start a sandbox, copy a command from the list, paste it into the terminal. The <span class="mono">vintage</span> command checks real Zcash transactions against the public chain, and gets the same answers as the API. Nothing to install, nothing downloaded to your machine.</p>
+</section>
+
+<section class="reveal">
+  <div class="try-grid">
+    <div class="try-cmds">
+      <div class="try-head">
+        <span class="label">Commands to paste</span>
+        <details class="info">
+          <summary aria-label="About the sandbox"><span aria-hidden="true">i</span></summary>
+          <p>These run in a <b>sandbox</b>: a disposable Linux machine on Beam, started for you, with the <span class="mono">vintage</span> command, the signed event registry and our demo files (<span class="mono">demo/</span>) pre-installed. It can reach only the Zcash data server (zec.rocks) and our API. It closes after 15 minutes and keeps nothing: no logs, no history. Your own machine runs nothing and downloads nothing.</p>
+        </details>
+      </div>
+
+      <ol class="cmdlist">
+        <li><span class="label">A stranger's coins, checked against the Bitget hack</span>
+          <pre class="code" id="t1">vintage verify d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4 --before bitget-2026-09</pre>
+          <span class="exp">Expect <b>PASS</b>: its coins were already in the pool.</span><button class="quiet" type="button" data-copy="t1">Copy</button></li>
+        <li><span class="label">When were those coins in the pool?</span>
+          <pre class="code" id="t2">vintage age d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4</pre>
+          <span class="exp">Expect <b>DATED</b>: by block 3,499,995, on 29 September.</span><button class="quiet" type="button" data-copy="t2">Copy</button></li>
+        <li><span class="label">Coins that arrived after an event</span>
+          <pre class="code" id="t3">vintage verify a4c7622f2e3e39ce0cd5a65fc4417f490568990a6f90fda5579a924a0d83c143 --before vintage-demo-2026-10</pre>
+          <span class="exp">Expect <b>FAIL</b>: no proof of age. A fail flags nothing.</span><button class="quiet" type="button" data-copy="t3">Copy</button></li>
+        <li><span class="label">Our Vintage payment, against our staged event</span>
+          <pre class="code" id="t4">vintage verify da9017e0fca0d8bd87def8e3faa7956067f2bd2234cfee91ca7ad4e67095e3a7 --before vintage-demo-2026-10</pre>
+          <span class="exp">Expect <b>PASS</b>. Try <span class="mono">--before bitget-2026-09</span> too: FAIL, the hack came first.</span><button class="quiet" type="button" data-copy="t4">Copy</button></li>
+        <li><span class="label">Coins received after the event, linked with a viewing key</span>
+          <pre class="code" id="t5">vintage link verify demo/mainnet-link-bundle.json --before vintage-demo-2026-10</pre>
+          <span class="exp">Expect <b>PASS</b>: both inputs came from the Vintage payment.</span><button class="quiet" type="button" data-copy="t5">Copy</button></li>
+        <li><span class="label">The same link, no key (experimental)</span>
+          <pre class="code" id="t6">vintage link verify demo/mainnet-zk-link.json --before vintage-demo-2026-10</pre>
+          <span class="exp">Expect <b>ZK LINK PASS</b>: two zero-knowledge proofs, no viewing key.</span><button class="quiet" type="button" data-copy="t6">Copy</button></li>
+        <li><span class="label">The same, from our testnet run</span>
+          <pre class="code" id="t7">vintage --network test link verify demo/testnet-zk-link.json --before 4562500</pre>
+          <span class="exp">Expect <b>ZK LINK PASS</b>.</span><button class="quiet" type="button" data-copy="t7">Copy</button></li>
+        <li><span class="label">Any block height instead of an event, as JSON</span>
+          <pre class="code" id="t8">vintage verify d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4 --before 3501240 --json</pre>
+          <span class="exp">The API's report, from the command line.</span><button class="quiet" type="button" data-copy="t8">Copy</button></li>
+        <li><span class="label">Real transactions to try your own checks on</span>
+          <pre class="code" id="t9">vintage sample --blocks 3</pre>
+          <span class="exp">Most will FAIL: wallets anchor a few blocks back.</span><button class="quiet" type="button" data-copy="t9">Copy</button></li>
+      </ol>
+
+      <details class="apis">
+        <summary><span class="label">Want to test the API too?</span><span aria-hidden="true">▾</span></summary>
+        <p class="ref">Paste these into the same terminal; they call our public API. The last two send the demo files that are already in the sandbox.</p>
+        <ol class="cmdlist">
+          <li><span class="label">GET /verify: a transaction against an event</span>
+            <pre class="code" id="u1">curl -s 'https://api.usevintage.site/verify/d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4?before=bitget-2026-09'</pre>
+            <span class="exp">Expect <span class="mono">"verdict":"PASS"</span>.</span><button class="quiet" type="button" data-copy="u1">Copy</button></li>
+          <li><span class="label">GET /age: when were the coins in the pool?</span>
+            <pre class="code" id="u2">curl -s https://api.usevintage.site/age/d3252057850259c86ffae437d0df207ff8b500e4d83dfe4409f585dcd6b441e4</pre>
+            <span class="exp">Expect <span class="mono">"verdict":"DATED"</span>.</span><button class="quiet" type="button" data-copy="u2">Copy</button></li>
+          <li><span class="label">GET /events: the signed registry</span>
+            <pre class="code" id="u3">curl -s https://api.usevintage.site/events</pre>
+            <span class="exp">The two events and the registry's public key.</span><button class="quiet" type="button" data-copy="u3">Copy</button></li>
+          <li><span class="label">GET /stats: the only thing we count</span>
+            <pre class="code" id="u4">curl -s https://api.usevintage.site/stats</pre>
+            <span class="exp">Daily totals by verdict. No txids, no IPs.</span><button class="quiet" type="button" data-copy="u4">Copy</button></li>
+          <li><span class="label">POST /verify-link: the viewing-key link</span>
+            <pre class="code" id="u5">curl -s https://api.usevintage.site/verify-link -H 'content-type: application/json' -d "{\"before\":\"vintage-demo-2026-10\",\"bundle\":$(cat demo/mainnet-link-bundle.json)}"</pre>
+            <span class="exp">Expect <span class="mono">"verdict":"PASS"</span>.</span><button class="quiet" type="button" data-copy="u5">Copy</button></li>
+          <li><span class="label">POST /verify-zk-link: the link with zero-knowledge proofs</span>
+            <pre class="code" id="u6">curl -s https://api.usevintage.site/verify-zk-link -H 'content-type: application/json' -d "{\"before\":\"vintage-demo-2026-10\",\"file\":$(cat demo/mainnet-zk-link.json)}"</pre>
+            <span class="exp">Expect <span class="mono">"verdict":"PASS"</span>, 2 of 2 inputs proven.</span><button class="quiet" type="button" data-copy="u6">Copy</button></li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="try-term">
+      <div class="win" id="sandbox" data-launcher="https://vintage-try-094cd2e.app.beam.cloud/">
+        <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="t">Sandbox · vintage</div><span class="label" id="sb-clock" hidden></span></div>
+        <div class="body" id="sb-body">
+          <div class="v idle" id="sb-idle">
+            <h3 class="display">A terminal, ready in seconds.</h3>
+            <p>Start a sandbox to get a shell with <span class="mono">vintage</span> and the demo files. It's yours for 15 minutes, then it's deleted.</p>
+            <button type="button" class="tkt primary" id="sb-start"><span class="lbl">Start a sandbox</span><span class="stub" aria-hidden="true">→</span></button>
+            <p class="ref" id="sb-msg" aria-live="polite"></p>
+          </div>
+          <iframe id="sb-frame" title="Sandbox terminal" hidden referrerpolicy="no-referrer"></iframe>
+        </div>
+      </div>
+      <p class="ref">Paste with your usual shortcut or a right-click. Prefer your own machine? Every command works there too: <a href="/cli/">install the command line</a>.</p>
+    </div>
+  </div>
+</section>

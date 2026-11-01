@@ -25,6 +25,13 @@ ZECATHON 2026, Core & Tooling track. Live on Zcash mainnet:
 **No wallet, no key and no wallet connection needed** for the website, the API or checking with the
 command line. Only sending (step 4) uses a wallet: a free testnet wallet on your own machine.
 
+**Fastest: [usevintage.site/try](https://usevintage.site/try/)** starts a disposable sandbox with a
+terminal in your browser, next to a list of labelled commands to copy and paste (the API's too). The
+`vintage` command, the signed event registry and our demo files are pre-installed there; it can reach
+only the Zcash data servers and our API, and it's deleted after 15 minutes. Nothing runs on your
+machine. The sandboxes run on [Beam](https://www.beam.cloud); the setup is in
+[deploy/beam/vintage_try.py](deploy/beam/vintage_try.py).
+
 Real transactions to try, with what you should see (checked against the live API on 31 Oct 2026):
 
 | Transaction (mainnet) | What it is | Check against | Expected |
@@ -67,6 +74,9 @@ The link commands stream the published JSON from GitHub straight into the API; n
 machine and nothing runs. The checks answer with a `verdict`; `/events` lists the registry. Reference: [docs/API.md](docs/API.md).
 
 ### 3. Command line (checking needs no wallet)
+
+The same commands run in the [browser sandbox](https://usevintage.site/try/) with nothing to install.
+On your own machine:
 
 ```sh
 git clone https://github.com/Samuel-Chuku/vintage && cd vintage
