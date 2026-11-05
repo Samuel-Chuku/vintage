@@ -385,7 +385,7 @@
       for (var x = 0; x < 10; x++) { var sp = document.createElement('span'); sp.textContent = x; s.appendChild(sp); }
       cell.appendChild(s); box.appendChild(cell);
     });
-    box.setAttribute('aria-label', fmt(r.body.total_checks) + ' checks run since launch');
+    box.setAttribute('aria-label', fmt(r.body.total_checks) + ' checks run since 5 November 2026');
     counted = true;
     if (bandIn) roll();
   });
