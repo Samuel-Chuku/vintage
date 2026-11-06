@@ -176,11 +176,32 @@ pub(crate) fn run(network: VintageNetwork, server: &str, a: Args) -> Result<()> 
              scanning before then: restore or rescan it from a birthday below {h_a}."
         );
     }
-    println!("checkpoint:    retained at {h_a} ✓");
-
-    // Unspent Ironwood notes, split by whether they existed at H_a.
+    // A retained checkpoint is not enough: the tree must also still hold the nodes to compute the
+    // root there, or devtool fails at proving time ("Unable to compute root; missing values").
+    // Happens at a grid block with no shielded outputs that was scanned in a batch of more than
+    // 100 blocks (see patches/README.md, zcash-devtool-sync-batch.patch).
     let notes = unspent_ironwood_notes(&conn)?;
     drop(conn);
+    let mut db = WalletDb::for_path(&db_path, network.params(), SystemClock, UnwrapErr(SysRng))?;
+    let root_check = db
+        .with_ironwood_tree_mut::<_, _, anyhow::Error>(|t| {
+            Ok(t.root_at_checkpoint_id(&BlockHeight::from_u32(h_a)).map(|r| r.is_some()).map_err(|e| e.to_string()))
+        })?
+        .unwrap_or(Ok(false));
+    drop(db);
+    match root_check {
+        Ok(true) => {}
+        Ok(false) => bail!("the wallet has a checkpoint at block {h_a} but no Ironwood root there"),
+        Err(e) => bail!(
+            "the wallet keeps a checkpoint at block {h_a}, but its tree can't compute the root there \
+             ({e}), so no proof can be built for this anchor. This happens when the wallet caught \
+             up across that block in one large batch. Repair it with `zcash-devtool wallet reset` and \
+             a sync using a devtool built with patches/zcash-devtool-sync-batch.patch, then try again."
+        ),
+    }
+    println!("checkpoint:    retained at {h_a}, root computable ✓");
+
+    // Unspent Ironwood notes, split by whether they existed at H_a.
     let qualifies = |n: &NoteRow| n.mined_height.is_some_and(|h| h <= h_a);
     let qualifying: u64 = notes.iter().filter(|n| qualifies(n)).map(|n| n.value).sum();
     println!("\nunspent Ironwood notes:");

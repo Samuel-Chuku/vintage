@@ -104,7 +104,7 @@ This is the full holder flow: old coins, a Vintage payment into a fresh receipt 
 it, and a proof with no key. Coins come from the [fauzec.com](https://fauzec.com) testnet faucet (1 TAZ
 per address per day, to a shielded Unified Address). Vintage never reads your seed: zcash-devtool signs.
 
-1. **Build zcash-devtool** with the four patches ([patches/README.md](patches/README.md)) and put
+1. **Build zcash-devtool** with the five patches ([patches/README.md](patches/README.md)) and put
    `target/release/zcash-devtool` next to `vintage` (or pass `--devtool <path>` below).
 2. **Two wallets**, each with its own age identity (created if missing):
    ```sh

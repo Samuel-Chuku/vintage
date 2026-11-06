@@ -1,0 +1,19 @@
+diff --git a/src/commands/wallet/sync.rs b/src/commands/wallet/sync.rs
+index c4bc0cb..b993efc 100644
+--- a/src/commands/wallet/sync.rs
++++ b/src/commands/wallet/sync.rs
+@@ -56,7 +56,13 @@ use crate::tui::Tui;
+ #[cfg(feature = "tui")]
+ mod defrag;
+ 
+-const BATCH_SIZE: u32 = 10_000;
++// Vintage: at most PRUNING_DEPTH (100) blocks per batch. zcash_client_backend 0.25 `update_tree`
++// adds the checkpoint for a ZIP 318 grid block with no shielded outputs only after `insert_tree`,
++// pointing at the previous block's checkpoint leaf. In a batch with more than 100 newer
++// checkpoints, `insert_tree` has already pruned that leaf, so the retained anchor's root can no
++// longer be computed ("Unable to compute root; missing values for nodes"). Keeping batches within
++// the checkpoint budget means that leaf is never pruned before the anchor checkpoint protects it.
++const BATCH_SIZE: u32 = 100;
+ 
+ /// When a reorg is detected, rewind this many blocks below the reorg point
+ /// before re-scanning, to give a margin for re-crossing the actual fork height.
