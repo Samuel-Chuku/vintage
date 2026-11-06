@@ -45,3 +45,6 @@ blocks at a time, so any wallet that catches up after more than about 100 blocks
 Batches of at most 100 blocks avoid it. `vintage send` checks the root before proposing and stops with
 a clear message if it can't be computed; `vintage witness --anchor-height <H>` shows the same check.
 A wallet already affected is repaired by `zcash-devtool wallet reset` and a sync with the patched build.
+librustzcash fixed this on `main` in commit `5b0f6de98` (4 Nov 2026, "checkpoint only within the pruning
+window"), not yet in a crates.io release; once the devtool builds against a release that includes it,
+this patch can be dropped.
